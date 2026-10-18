@@ -17,6 +17,8 @@ captures/
 *.aab
 *.ap_
 *.dex
+# IDE settings from opening the repo root (the Android project keeps its own in android/.idea)
+/.idea/
 # Android Studio keeps some shared settings in .idea; ignore the per-user parts
 .idea/workspace.xml
 .idea/tasks.xml

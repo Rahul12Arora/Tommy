@@ -11,7 +11,7 @@
 | Layer | Choice | Version |
 |---|---|---|
 | Android app | Kotlin + Jetpack Compose, single `:app` module | Kotlin 2.4.21 · Compose BOM 2026.09.00 |
-| Android build | Android Gradle plugin + Gradle | AGP 9.4.0 · Gradle 9.6.0 |
+| Android build | Android Gradle plugin + Gradle | AGP 9.4.1 · Gradle 9.6.0 |
 | Android SDK levels | min / target / compile | 30 / 36 / 37 |
 | Backend | Node.js + Fastify, JavaScript (ES modules) | Node 26 LTS · Fastify 5.12.7 |
 | Admin console | React + Vite, forms generated from the config schema | React 19.3.1 · Vite 8.3.4 · RJSF 6.11.0 |
@@ -90,7 +90,7 @@ project/
 | Tool | Version | Notes |
 |---|---|---|
 | Android Studio | Rabbit 1 (current stable) | With the Claude Code plugin |
-| Android Gradle plugin | 9.4.0 | Supports up to API 37; requires Gradle ≥ 9.6.0, JDK ≥ 17, Build Tools ≥ 36.0.0 |
+| Android Gradle plugin | 9.4.1 (CR-06) | Patch release of 9.4.0. Supports up to API 37; requires Gradle ≥ 9.6.0, JDK ≥ 17, Build Tools ≥ 36.0.0 |
 | Gradle (wrapper) | 9.6.0 | AGP 9.4's minimum and default |
 | JDK | 17 or newer | Use the one bundled with Android Studio |
 | Kotlin | 2.4.21 | AGP 9 builds Kotlin itself (no `kotlin-android` plugin) but defaults to Kotlin 2.2.10; we opt into 2.4.21 via the build classpath |
@@ -161,7 +161,7 @@ project/
 
 | Package | Version | Layer | Purpose | Cost without it | License |
 |---|---|---|---|---|---|
-| `com.android.application` (AGP) | 9.4.0 | Build | Builds the app | No Android build | Apache-2.0 |
+| `com.android.application` (AGP) | 9.4.1 (CR-06) | Build | Builds the app | No Android build | Apache-2.0 |
 | `org.jetbrains.kotlin:kotlin-gradle-plugin` | 2.4.21 | Build | Use Kotlin 2.4 instead of AGP's default 2.2.10 | Older compiler than the libraries below are built with | Apache-2.0 |
 | `org.jetbrains.kotlin.plugin.compose` | 2.4.21 | Build | Compose compiler | No Compose | Apache-2.0 |
 | `org.jetbrains.kotlin.plugin.serialization` | 2.4.21 | Build | Generates JSON parsers for config classes | Hand-written parsing for a large config | Apache-2.0 |
