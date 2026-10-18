@@ -1,0 +1,56 @@
+# ---- OS / editors ----
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+*.iml
+
+# ---- Android / Gradle ----
+.gradle/
+build/
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+.kotlin/
+*.apk
+*.aab
+*.ap_
+*.dex
+# IDE settings from opening the repo root (the Android project keeps its own in android/.idea)
+/.idea/
+# Android Studio keeps some shared settings in .idea; ignore the per-user parts
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/usage.statistics.xml
+.idea/dictionaries/
+.idea/shelf/
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/deploymentTargetDropDown.xml
+.idea/deploymentTargetSelector.xml
+
+# ---- Signing keys and credentials — never commit ----
+*.jks
+*.keystore
+keystore.properties
+google-services.json
+*.pem
+*.p12
+
+# ---- Node ----
+node_modules/
+dist/
+coverage/
+npm-debug.log*
+
+# ---- Environment files — only the example is committed ----
+.env
+.env.*
+!.env.example
+
+# ---- Logs ----
+*.log

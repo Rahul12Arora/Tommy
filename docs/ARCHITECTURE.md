@@ -632,6 +632,7 @@ Tests: every admin route is checked for `401` without a session (M11).
 | Change the database schema | a new `backend/migrations/NNN_<name>.sql` |
 | Change a console screen | `admin/src/features/<feature>/` |
 | Change seed or test data | `shared/fixtures/` · `backend/seeds/` · Android debug scenarios in `android/app/src/debug/` |
+| Change what CI runs | `.github/workflows/android.yml` (Node workflow from M10) |
 
 `android/…` = `android/app/src/main/java/com/companionstudio/nyx/`. The depth is Android's convention; everything below it is one level of feature packages.
 
