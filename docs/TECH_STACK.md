@@ -245,7 +245,10 @@ Built into Node instead of packages: test runner (`node:test`), password hashing
 |---|---|---|
 | Docker image `node` | 26-alpine (exact tag pinned in M0) | Backend container |
 | Docker image `postgres` | 18-alpine | Local database |
-| GitHub Actions: checkout, setup-node, setup-java, setup-gradle | pinned in M0 | CI |
+| GitHub Actions: `actions/checkout` | v7.0.1 (pinned by commit SHA) | CI |
+| GitHub Actions: `actions/setup-java` (Temurin JDK 25) | v6.1.0 (SHA) | CI |
+| GitHub Actions: `gradle/actions/setup-gradle` | v6.4.0 (SHA), `cache-provider: basic` — the default "enhanced" cache is a commercial service | CI |
+| GitHub Actions: `actions/setup-node` | pinned in M10 | CI |
 
 ---
 

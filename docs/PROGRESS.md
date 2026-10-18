@@ -1,7 +1,7 @@
 ## Current state
 - Phase: 5 — Build · Milestone: M0 Foundation (in progress), branch `feat/m0-foundation`
-- Last done: lint (warnings fail the build) + JaCoCo unit-test coverage; earlier: KSP check passed, `android/` project created by the wizard and aligned with TECH_STACK (AGP 9.4.1, Kotlin 2.4.21, BOM 2026.09.00, SDK 30/36/37); the version catalog matches the register exactly
-- Next step: GitHub Actions workflow for Android (build + unit tests + lint)
+- Last done: Android CI workflow written (not yet run); lint + JaCoCo coverage; earlier: KSP check passed, `android/` project created by the wizard and aligned with TECH_STACK (AGP 9.4.1, Kotlin 2.4.21, BOM 2026.09.00, SDK 30/36/37); the version catalog matches the register exactly
+- Next step: push `feat/m0-foundation` and confirm the first Android CI run is green; then `android/README.md`
 - Blockers: none
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator + Pixel 7a
@@ -25,3 +25,4 @@
 - Done: KSP 2.3.12 confirmed with Kotlin 2.4.21 + AGP 9.4.1. KSP plugin and Room runtime/compiler are wired in the app module; a throwaway entity, DAO and database produced `_Impl` classes and were then deleted (the real database comes in M1)
 - Done: Android Lint set to fail on warnings. Off: AndroidGradlePluginVersion, GradleDependency, NewerVersionAvailable, OldTargetApi (versions are pinned on purpose; these would fail CI whenever a new release ships). Fixed the wizard's lint warnings: deleted unused `colors.xml` (with approval) and the duplicate activity label
 - Done: unit-test coverage on for debug (`createDebugUnitTestCoverageReport`). Verified: lint passes clean, fails (exit 1) on a probe warning; `assembleDebug test lint` passes
+- Done: `.github/workflows/android.yml` — on push touching `android/`: JDK 25 + `./gradlew assembleDebug test lint`. Actions pinned by SHA; Gradle cache set to `basic` (the default "enhanced" one is a commercial service). Not yet run on GitHub
