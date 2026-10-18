@@ -1,7 +1,7 @@
 ## Current state
 - Phase: 5 — Build · Milestone: M0 Foundation (in progress), branch `feat/m0-foundation`
-- Last done: `android/` project created by the wizard and aligned with TECH_STACK (AGP 9.4.1, Kotlin 2.4.21, BOM 2026.09.00, SDK 30/36/37); the version catalog matches the register exactly
-- Next step: confirm KSP 2.3.12 builds with Kotlin 2.4.21 (apply KSP + Room compiler, build)
+- Last done: KSP check passed; before that, `android/` project created by the wizard and aligned with TECH_STACK (AGP 9.4.1, Kotlin 2.4.21, BOM 2026.09.00, SDK 30/36/37); the version catalog matches the register exactly
+- Next step: Android Lint config + unit-test coverage
 - Blockers: none
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator + Pixel 7a
@@ -22,3 +22,4 @@
 - Done: root `.idea/` (from opening the repo root in the IDE) is gitignored; `android/.idea` project files stay uncommitted
 - Learned: terminal builds now use Homebrew JDK 27 on PATH as the Gradle launcher; the Gradle daemon runs on the JDK 25 toolchain set in `android/gradle/gradle-daemon-jvm.properties`
 - Next: KSP check → lint + coverage → CI → `android/README.md`
+- Done: KSP 2.3.12 confirmed with Kotlin 2.4.21 + AGP 9.4.1. KSP plugin and Room runtime/compiler are wired in the app module; a throwaway entity, DAO and database produced `_Impl` classes and were then deleted (the real database comes in M1)

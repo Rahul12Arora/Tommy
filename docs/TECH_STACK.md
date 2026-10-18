@@ -94,7 +94,7 @@ project/
 | Gradle (wrapper) | 9.6.0 | AGP 9.4's minimum and default |
 | JDK | 17 or newer | Use the one bundled with Android Studio |
 | Kotlin | 2.4.21 | AGP 9 builds Kotlin itself (no `kotlin-android` plugin) but defaults to Kotlin 2.2.10; we opt into 2.4.21 via the build classpath |
-| KSP | 2.3.12 | Needed only for Room's code generator. ⚠ Confirm it builds with Kotlin 2.4.21 in M0 |
+| KSP | 2.3.12 | Needed only for Room's code generator. ✓ Confirmed with Kotlin 2.4.21 + AGP 9.4.1 in M0 (2026-10-19) |
 | minSdk / targetSdk / compileSdk | 30 / 36 / 37 | Android 11+ (A-07). Target 36 is Google Play's current requirement; compile 37 is the newest AGP 9.4 supports |
 | SDK Build Tools | 36.0.0 | AGP 9.4's minimum and default |
 | Node.js | 26 LTS | Node 26 enters LTS in Oct 2026, maintenance Oct 2027, end of life Apr 2029. Pin the exact patch in M0, after the 21 Oct 2026 security release |
@@ -261,7 +261,7 @@ Built into Node instead of packages: test runner (`node:test`), password hashing
 
 ## 8. To confirm during M0 (couldn't be verified from docs today)
 
-- KSP 2.3.12 builds with Kotlin 2.4.21 under AGP 9.4. If not: use the Kotlin version KSP supports.
+- ~~KSP 2.3.12 builds with Kotlin 2.4.21 under AGP 9.4.~~ ✓ Confirmed 2026-10-19: Room generated a database and DAO through KSP; no fallback needed.
 - Node 26's LTS promotion and the 21 Oct security release → pin the exact patch.
 - emoji2 "replace all" works for Compose text in the overlay window.
 - Restarting the service after a reboot on Android 15+ (R-09) → handled when that milestone's design is written.

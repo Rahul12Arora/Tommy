@@ -111,7 +111,7 @@ Stories: all (foundation)
 Tasks:
 - [x] Repo `github.com/Rahul12Arora/Tommy`: `.gitignore` (Android, Node, `.env`, keystores, `local.properties`); `README.md`; `AGENTS.md` + `docs/` (branch `feat/m0-foundation`)
 - [x] `android/` project (Android Studio "Empty Activity" wizard, then aligned): app name Nyx, app ID `com.companionstudio.nyx`, AGP 9.4.1 (CR-06), Gradle 9.6.0, Kotlin 2.4.21, Compose BOM 2026.09.00, min/target/compile 30/36/37, version catalog with exactly the TECH_STACK register
-- [ ] Confirm KSP 2.3.12 builds with Kotlin 2.4.21 (TECH_STACK §8); if not, record the fallback as a decision
+- [x] Confirm KSP 2.3.12 builds with Kotlin 2.4.21 (TECH_STACK §8); if not, record the fallback as a decision
 - [x] `shared/` with `README.md` and empty `fixtures/valid` + `fixtures/invalid` (filled in M2)
 - [ ] Android Lint configured; unit-test coverage turned on
 - [ ] GitHub Actions: Android build + unit tests + lint
