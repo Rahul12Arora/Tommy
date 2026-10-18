@@ -21,6 +21,10 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Coverage report: ./gradlew createDebugUnitTestCoverageReport (targets in docs/ROADMAP.md)
+            enableUnitTestCoverage = true
+        }
         release {
             optimization {
                 enable = true
@@ -34,6 +38,12 @@ android {
     }
     buildFeatures {
         compose = true
+    }
+    lint {
+        warningsAsErrors = true
+        // Versions are pinned in docs/TECH_STACK.md and only change through approval, so these
+        // "newer version available" checks would just fail CI whenever a new release ships
+        disable += setOf("AndroidGradlePluginVersion", "GradleDependency", "NewerVersionAvailable", "OldTargetApi")
     }
 }
 

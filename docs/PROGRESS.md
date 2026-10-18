@@ -1,7 +1,7 @@
 ## Current state
 - Phase: 5 — Build · Milestone: M0 Foundation (in progress), branch `feat/m0-foundation`
-- Last done: KSP check passed; before that, `android/` project created by the wizard and aligned with TECH_STACK (AGP 9.4.1, Kotlin 2.4.21, BOM 2026.09.00, SDK 30/36/37); the version catalog matches the register exactly
-- Next step: Android Lint config + unit-test coverage
+- Last done: lint (warnings fail the build) + JaCoCo unit-test coverage; earlier: KSP check passed, `android/` project created by the wizard and aligned with TECH_STACK (AGP 9.4.1, Kotlin 2.4.21, BOM 2026.09.00, SDK 30/36/37); the version catalog matches the register exactly
+- Next step: GitHub Actions workflow for Android (build + unit tests + lint)
 - Blockers: none
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator + Pixel 7a
@@ -23,3 +23,5 @@
 - Learned: terminal builds now use Homebrew JDK 27 on PATH as the Gradle launcher; the Gradle daemon runs on the JDK 25 toolchain set in `android/gradle/gradle-daemon-jvm.properties`
 - Next: KSP check → lint + coverage → CI → `android/README.md`
 - Done: KSP 2.3.12 confirmed with Kotlin 2.4.21 + AGP 9.4.1. KSP plugin and Room runtime/compiler are wired in the app module; a throwaway entity, DAO and database produced `_Impl` classes and were then deleted (the real database comes in M1)
+- Done: Android Lint set to fail on warnings. Off: AndroidGradlePluginVersion, GradleDependency, NewerVersionAvailable, OldTargetApi (versions are pinned on purpose; these would fail CI whenever a new release ships). Fixed the wizard's lint warnings: deleted unused `colors.xml` (with approval) and the duplicate activity label
+- Done: unit-test coverage on for debug (`createDebugUnitTestCoverageReport`). Verified: lint passes clean, fails (exit 1) on a probe warning; `assembleDebug test lint` passes

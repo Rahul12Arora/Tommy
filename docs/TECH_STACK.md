@@ -147,7 +147,7 @@ project/
 - **Backend:** Node's built-in test runner + Fastify's in-process request injection. Database tests run against the Postgres in Docker Compose.
 - **Admin console:** build + lint only in v1. Its logic is the schema, which the backend tests cover.
 - **Lint and format:**
-  - Android Lint (built in).
+  - Android Lint (built in). Warnings fail the build; only the "newer version available" checks are off, because versions change through approval (configured in `android/app/build.gradle.kts`).
   - Biome for all JavaScript: one tool for lint and format.
 - **CI:** GitHub Actions — one workflow for Android (build, unit tests, lint) and one for Node (lint, tests, console build). Action versions are pinned in M0.
 
