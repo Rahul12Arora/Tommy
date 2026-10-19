@@ -1,10 +1,11 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M0 Foundation (in progress), branch `feat/m0-foundation`
-- Last done: Android CI workflow written (not yet run); lint + JaCoCo coverage; earlier: KSP check passed, `android/` project created by the wizard and aligned with TECH_STACK (AGP 9.4.1, Kotlin 2.4.21, BOM 2026.09.00, SDK 30/36/37); the version catalog matches the register exactly
-- Next step: push `feat/m0-foundation` and confirm the first Android CI run is green; then `android/README.md`
+- Phase: 5 — Build · Milestone: M0 Foundation **done** (tag `m0-done`) · next: M1 Shell & storage
+- Last done: M0 closed — Android project aligned with TECH_STACK, KSP confirmed, lint + coverage, Android CI green, READMEs, placeholder screen verified on the emulator
+- Next step: create branch `feat/m1-shell-storage`, write the M1 LLD in ARCHITECTURE.md §14 before any code
 - Blockers: none
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator + Pixel 7a
+- Build setup: Homebrew JDK on PATH starts Gradle; daemon runs on JDK 25 (`android/README.md`)
 
 ## Session log (append-only)
 
@@ -26,3 +27,9 @@
 - Done: Android Lint set to fail on warnings. Off: AndroidGradlePluginVersion, GradleDependency, NewerVersionAvailable, OldTargetApi (versions are pinned on purpose; these would fail CI whenever a new release ships). Fixed the wizard's lint warnings: deleted unused `colors.xml` (with approval) and the duplicate activity label
 - Done: unit-test coverage on for debug (`createDebugUnitTestCoverageReport`). Verified: lint passes clean, fails (exit 1) on a probe warning; `assembleDebug test lint` passes
 - Done: `.github/workflows/android.yml` — on push touching `android/`: JDK 25 + `./gradlew assembleDebug test lint`. Actions pinned by SHA; Gradle cache set to `basic` (the default "enhanced" one is a commercial service). Not yet run on GitHub
+- Done: pushed `feat/m0-foundation`; the developer merged it to `main` as PR #1 (`c01419d`) before M0 closed — remaining M0 commits go to `main` through PR #2
+- Done: `android/README.md` (requirements incl. JDK 25 daemon, run, test/lint/coverage commands, versions); root README links to it. `shared/README.md` already current
+- Verified: first Android CI runs green — branch `ddd3a10` (run 39172675327) and `main` `c01419d` (run 39172872758)
+- Verified: the developer ran the app on the emulator — placeholder screen shows "Hello Android!"
+- Done: M0 closed — remaining commits merged to `main` through PR #2, tagged `m0-done`
+- Next: M1 — LLD first (ARCHITECTURE.md §14), then `PetApp`, `AppContainer`, Navigation 3, Room `AppDatabase`, DataStore, `DayClock`, Home with fake data

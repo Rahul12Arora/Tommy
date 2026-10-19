@@ -37,6 +37,7 @@ docs/      ← the docs above
 - Android Studio Rabbit 1 or newer (bundles the JDK).
 - Open the `android/` folder in Android Studio and let Gradle sync.
 - Run ▶ on an emulator or a USB-connected phone with developer options and USB debugging on.
+- Terminal builds, all test commands and coverage: [`android/README.md`](android/README.md).
 
 **Backend and console** — instructions arrive with M10 and M11 (Node 26 LTS, Docker).
 

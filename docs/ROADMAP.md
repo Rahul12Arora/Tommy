@@ -104,7 +104,7 @@ Also not in v1's milestones:
 
 ## 4. Milestones — week 1
 
-### M0 — Foundation            status: in-progress
+### M0 — Foundation            status: done
 Goal: a repo where the Android app builds, runs a blank screen on the emulator, and CI is green.
 Depends on: Phase 4 approval (D-46) · app ID (D-49) · GitHub repo (D-48)
 Stories: all (foundation)
@@ -114,12 +114,12 @@ Tasks:
 - [x] Confirm KSP 2.3.12 builds with Kotlin 2.4.21 (TECH_STACK §8); if not, record the fallback as a decision
 - [x] `shared/` with `README.md` and empty `fixtures/valid` + `fixtures/invalid` (filled in M2)
 - [x] Android Lint configured; unit-test coverage turned on
-- [ ] GitHub Actions: Android build + unit tests + lint
-- [ ] `android/README.md`, `shared/README.md`
+- [x] GitHub Actions: Android build + unit tests + lint
+- [x] `android/README.md`, `shared/README.md`
 - [x] AGENTS.md Project card: name, commands; `docs/PROGRESS.md` created
 Done when:
-- [ ] `./gradlew assembleDebug test lint` passes locally and in CI
-- [ ] The app opens a placeholder screen on the emulator
+- [x] `./gradlew assembleDebug test lint` passes locally and in CI
+- [x] The app opens a placeholder screen on the emulator
 Verify with: `./gradlew assembleDebug test lint` · CI run on GitHub · emulator launch
 Not in this milestone: `backend/`, `admin/` (→ M10, M11)
 
