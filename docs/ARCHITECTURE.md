@@ -1015,10 +1015,11 @@ sequenceDiagram
 - If `NyxConfig.kt` or `ConfigValidator.kt` passes ~250 lines, it's split by block (AGENTS §4).
 
 **Build**
-- A small `CopyDefaultConfig` task (`@InputFile` → `@OutputDirectory`) copies `shared/default-config.json` into a generated assets folder. It's wired with `androidComponents.onVariants { it.sources.assets?.addGeneratedSourceDirectory(task, CopyDefaultConfig::outputDir) }` (checked against `gradle-api` 9.4.1: `Sources.getAssets(): SourceDirectories.Layered`, `addGeneratedSourceDirectory(TaskProvider, (Task) -> DirectoryProperty)`).
+- A small `CopyDefaultConfig` task (`@InputFile` → `@OutputDirectory`), registered once per variant as `copy<Variant>DefaultConfig`, copies `shared/default-config.json` into a generated assets folder. It's wired with `androidComponents.onVariants { it.sources.assets?.addGeneratedSourceDirectory(task, CopyDefaultConfig::outputDir) }` (checked against `gradle-api` 9.4.1: `Sources.getAssets(): SourceDirectories.Layered`, `addGeneratedSourceDirectory(TaskProvider, (Task) -> DirectoryProperty)`).
   - So only that one file reaches the APK. The schema and fixtures stay out.
   - A changed `default-config.json` triggers a rebuild; nothing is committed under `android/`.
-- Unit tests get the path to `shared/` as the system property `nyx.sharedDir`, set in `testOptions.unitTests.all`. Tests never guess relative paths.
+- Unit tests get the path to `shared/` as the system property `nyx.sharedDir`, set in `testOptions.unitTests.all`. Tests never guess relative paths. `shared/` is also a declared test input, so editing a fixture re-runs the tests.
+- CI (`.github/workflows/android.yml`) also runs on changes to `shared/**`.
 
 **Tests**
 

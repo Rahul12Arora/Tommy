@@ -31,3 +31,7 @@ All versions live in [`gradle/libs.versions.toml`](gradle/libs.versions.toml), w
 
 - AGP 9 compiles Kotlin itself; the top-level `build.gradle.kts` opts it into our Kotlin version.
 - Lint's "newer version available" checks are off on purpose — versions change only through approval.
+
+## Built-in config
+
+The app's built-in config is [`../shared/default-config.json`](../shared/default-config.json). The build copies it into the app's assets (`copyDebugDefaultConfig` / `copyReleaseDefaultConfig`), so edit it there — there's no copy under `android/` to change. Config unit tests read `../shared/fixtures/` directly.

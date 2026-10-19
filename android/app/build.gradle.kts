@@ -5,6 +5,9 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+// The repo's shared/ folder: the config contract used by the app, the backend and the console
+val sharedDir: File = rootProject.file("../shared")
+
 android {
     namespace = "com.companionstudio.nyx"
     compileSdk {
@@ -45,6 +48,41 @@ android {
         // Versions are pinned in docs/TECH_STACK.md and only change through approval, so these
         // "newer version available" checks would just fail CI whenever a new release ships
         disable += setOf("AndroidGradlePluginVersion", "GradleDependency", "NewerVersionAvailable", "OldTargetApi")
+    }
+    testOptions {
+        unitTests.all { test ->
+            // Config tests read the fixtures and defaults straight from shared/ (docs/ARCHITECTURE.md §14.2).
+            // Declared as an input so a changed fixture re-runs the tests instead of reusing the last result
+            test.systemProperty("nyx.sharedDir", sharedDir.path)
+            test.inputs.dir(sharedDir).withPathSensitivity(PathSensitivity.RELATIVE)
+        }
+    }
+}
+
+// The built-in config is shared/default-config.json, copied into the app's assets at build time (D-43).
+// Only that one file is copied, so the schema and fixtures stay out of the APK
+abstract class CopyDefaultConfig : DefaultTask() {
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val defaultConfig: RegularFileProperty
+
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    @TaskAction
+    fun copy() {
+        val target = outputDir.get().asFile
+        target.deleteRecursively()
+        defaultConfig.get().asFile.copyTo(target.resolve("default-config.json"))
+    }
+}
+
+androidComponents {
+    onVariants { variant ->
+        val copyTask = tasks.register<CopyDefaultConfig>("copy${variant.name.replaceFirstChar(Char::uppercase)}DefaultConfig") {
+            defaultConfig.set(sharedDir.resolve("default-config.json"))
+        }
+        variant.sources.assets?.addGeneratedSourceDirectory(copyTask, CopyDefaultConfig::outputDir)
     }
 }
 

@@ -4,6 +4,8 @@ on:
   push:
     paths:
       - "android/**"
+      # The app ships shared/default-config.json and its tests read shared/fixtures
+      - "shared/**"
       - ".github/workflows/android.yml"
 
 permissions:

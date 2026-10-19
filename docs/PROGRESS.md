@@ -1,7 +1,7 @@
 ## Current state
 - Phase: 5 — Build · Milestone: M2 Config (in progress, branch `feat/m2-config`)
-- Last done: `shared/fixtures/` — 3 valid, 17 invalid (every rule; 8 `schema` cases)
-- Next step: Gradle copies `shared/default-config.json` into app assets (+ `nyx.sharedDir` for unit tests)
+- Last done: Gradle copies `shared/default-config.json` into the APK's assets; unit tests get `nyx.sharedDir`
+- Next step: Kotlin config models, `ConfigParser`, `ConfigValidator`, `EffectiveConfig`, `ConfigManager` + their tests
 - Blockers: none
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
@@ -50,3 +50,5 @@
 - Approved: M2 LLD with D-51 to D-53, A-28
 - Done: schema + default config. Checked with a throwaway Python script (not committed): the subset of draft-07 the schema uses + the cross-field rules; it also rejects a deliberately broken copy for the right reasons. No real JSON Schema validator on this Mac (no Python `jsonschema`, no Node) — a real schema run comes with the backend's Ajv tests (M10); the Kotlin validator checks the defaults from the next tasks on
 - Done: fixtures, 3 valid + 17 invalid. Verified with Python `jsonschema` 4.25.1 (draft-07) in a scratchpad virtualenv, not a project dependency: the schema is a valid draft-07 schema; valid files and `default-config.json` pass it; each `schema--*` file fails it for exactly its intended reason; every other invalid file passes the schema and fails exactly its own cross-field rule (checked with a throwaway reference script)
+- Done: Gradle asset copy (`copy<Variant>DefaultConfig` via `sources.assets.addGeneratedSourceDirectory`) and `nyx.sharedDir` for unit tests, with `shared/` as a test input; CI also runs on `shared/**`. Verified: debug and release APKs contain only `assets/default-config.json` from `shared/`, byte-identical to the source; the copy is up to date when unchanged and re-runs after an edit; a throwaway probe test (deleted) saw the property, was skipped when nothing changed and re-ran after a fixture edit; `assembleDebug test lint` passes
+- Learned: `shared/fixtures/*/` still hold M0's `.gitkeep`, so the fixture tests list `*.json` only
