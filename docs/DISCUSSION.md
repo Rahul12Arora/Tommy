@@ -382,6 +382,15 @@ stateDiagram-v2
 | D-59 | The "what won't work" list shows on S-03 when the user continues with permissions not granted | Feedback at the moment of skipping; setup can still finish | A summary at the end of setup | 2026-10-19 |
 | D-60 | Brand battery steps are written instructions plus the app-details settings screen; no brand-private Settings intents, and the extra steps have no tick | Brand component names aren't documented and change between OS versions | Brand-specific intents | 2026-10-19 |
 | D-61 | A user value is stored only when the user moves a slider, clamped to the range first | Untouched settings keep following the admin default, including later changes | Store every value shown on S-06 | 2026-10-19 |
+| D-62 | Usage time is credited from Android's usage event log with a cursor stored in Room; after any restart the tracker replays the log and credits the gap (≤ 7 days); the first start credits from the start of today (ARCHITECTURE §14.4) | Time used while the service was dead is still counted, nothing twice; Home matches Digital Wellbeing from day one | Count only while the service runs; daily totals from `queryUsageStats` | 2026-10-20 |
+| D-63 | `daily_app_usage` stores milliseconds (`duration_ms`) | Segments are often a few seconds; rounding each to seconds drifts by minutes a day | Seconds, as the HLD said | 2026-10-20 |
+| D-64 | The `events` table arrives with its first writer (M6/M7), not in M4 | Same rule as D-50: a table comes with its first real use | An empty table in M4 | 2026-10-20 |
+| D-65 | The stretch counts only time in the stretch categories; other apps neither add nor reset it; a break (D-27) or the day reset resets it | Matches US-09 and the glossary | Count all screen time once a stretch has started | 2026-10-20 |
+| D-66 | N-03 covers usage access and overlay; it fires when one goes missing since the last check (once per service start for one never granted); tracking pauses meanwhile and catches up afterwards | Without events the last front app would keep collecting time; the catch-up makes the pause lossless | Also watch notifications and battery; persist what was notified | 2026-10-20 |
+| D-67 | Debug test tools: scenario files + a fast clock, run over adb through a debug-only receiver guarded by `DUMP`; main code gets an adjustable clock (real in release) and a swappable usage source | Time-based behaviour can be checked in seconds, deterministically (Track A) | A debug screen in the app; injecting real usage events (impossible without root) | 2026-10-20 |
+| D-68 | Home's goals in M4 are the limit goals from the effective config; the face is the chosen pet's starting face until mood exists (M6) | Real data with no new concepts; positive goals come in M13 | Keep the fake goals until M13 | 2026-10-20 |
+| D-69 | Not counted: Nyx, `com.android.systemui`, every HOME handler (found through a second `<queries>` intent) | A-20, without a hard-coded launcher list | A fixed list of known launcher packages | 2026-10-20 |
+| D-70 | The service starts on setup Finish, every app open, boot and app update, and is sticky after process death; M4's tick is fast only when a limit on the front app is less than one slow tick away | Every restart path R-09 names; fast ticks only where they change a reaction time | Start only on Finish and boot; a fixed tick | 2026-10-20 |
 
 ### D-16 — Admin / user settings split
 
@@ -498,4 +507,5 @@ stateDiagram-v2
 - Config version history, staged rollout and rollback in the console (F-16)
 - Optional app blocking
 - More languages
+- Home banner when usage access is missing: today Home just shows zeros while N-03 explains it (noticed in M4's LLD)
 - Pin the CI runner to `ubuntu-24.04` instead of `ubuntu-latest`: GitHub moves `ubuntu-latest` to Ubuntu 26 from 2026-10-19, and a new image can break a build with no change on our side (noticed on M2's CI run)

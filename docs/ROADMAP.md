@@ -175,12 +175,12 @@ Done when:
 Verify with: `./gradlew test connectedAndroidTest` · manual QA checklist
 Not in this milestone: the pet appearing (→ M5)
 
-### M4 — Service & tracking            status: pending
+### M4 — Service & tracking            status: in-progress
 Goal: an always-on service tracks real usage into per-app/category daily totals and survives reboots.
 Depends on: M3
 Stories: US-06 (restart after reboot), US-26, US-28 (real numbers), F-02
 Tasks:
-- [ ] LLD: service lifecycle, restart paths (boot, app update, process death — R-09), tick loop, event → seconds crediting, stretches, exclusions (A-20), screen on/off
+- [x] LLD: service lifecycle, restart paths (boot, app update, process death — R-09), tick loop, event → seconds crediting, stretches, exclusions (A-20), screen on/off
 - [ ] `PetService`: special-use foreground service + persistent notification N-01; started after setup and from boot
 - [ ] Tracker: adaptive tick, foreground app, credit `(day, package, category)`, stretch counter, new-app category suggestion
 - [ ] Day reset; 31-day cleanup

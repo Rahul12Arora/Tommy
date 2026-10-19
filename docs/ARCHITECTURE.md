@@ -3,7 +3,7 @@
 > Phase 4 output. Read this first if you're new to the repo: after ~10 minutes you should know how data moves through the system and where every piece lives.
 > Low-level design (LLD) for each module is added to §14 at the **start** of its milestone, before any code.
 > Rule: code and diagrams must agree. A task that changes a component, a flow or a folder updates this file in the same task.
-> Last updated: 2026-10-19
+> Last updated: 2026-10-20
 
 ---
 
@@ -275,8 +275,9 @@ Full fields, indexes and ERDs are written in each milestone's LLD.
 
 | Table | Holds | Key |
 |---|---|---|
-| `daily_app_usage` | Seconds per app per day, with the category at the time (US-04) | `(day, package, category)` |
-| `events` | Engine event log: limit_exceeded, nag_shown, snoozed, break_due, break_taken, doomscroll_10min, goal_met, focus_*, idle_shown, ran_away… | `id`, index on `day` |
+| `daily_app_usage` | Time per app per day (stored in milliseconds, D-63), with the category at the time (US-04) | `(day, package, category)` |
+| `tracking_cursor` | One row: the moment usage has been credited up to (D-62) | `id` = 0 |
+| `events` (from M6/M7, D-64) | Engine event log: limit_exceeded, nag_shown, snoozed, break_due, break_taken, doomscroll_10min, goal_met, focus_*, idle_shown, ran_away… | `id`, index on `day` |
 | `focus_sessions` | Goal, allowed apps, pet mode, start/end, outcome, switch count | `id` |
 | `app_categories` | Category per package, only where the user chose one; suggestions are computed when needed (D-58) | `package_name` |
 
@@ -688,7 +689,7 @@ Written at the start of each milestone, before code.
 | App shell, storage, DayClock | M1 | done 2026-10-19 (§14.1) |
 | Config: schema, defaults, validator, layering | M2 | done 2026-10-19 (§14.2) |
 | Setup flow + app categories | M3 | done 2026-10-19 (§14.3) |
-| PetService + usage tracking | M4 | pending |
+| PetService + usage tracking | M4 | done 2026-10-20 (§14.4) |
 | Overlay: pet, bubble, panel, hide | M5 | pending |
 | Lines, bubble arbiter, mood | M6 | pending |
 | Limits, nags, breaks, idle lines | M7 | pending |
@@ -1214,3 +1215,196 @@ fun suggestCategory(packageName: String, androidCategory: Int, config: NyxConfig
 - **A-30:** S-05 lists every app with a launcher icon, system apps included, except Nyx.
 
 **Not in M3:** the pet appearing and the service starting after setup (→ M4, M5), new-app suggestions while tracking (→ M4), Settings opening single steps (→ M7), positive goals (→ M13), the install ID and uploads (→ M14), an emoji font for the faces on S-04 (→ M5, F-15).
+
+### 14.4 M4 — PetService and usage tracking
+
+Approved 2026-10-20, with D-62 to D-70.
+
+**Purpose:** after setup, an always-on foreground service turns Android's usage events into per-app and per-category daily totals. It comes back after a reboot, an app update and process death. Home shows the real numbers. Stories: US-06 (restart only), US-26, US-28 (real numbers), US-04 (new apps), F-02.
+
+**Service lifecycle**
+
+```mermaid
+flowchart LR
+  F["S-07 Finish"] --> S
+  O["App opened<br/>(setup done)"] --> S
+  B["BOOT_COMPLETED"] --> R[ServiceStartReceiver] --> S
+  U["MY_PACKAGE_REPLACED<br/>(app updated)"] --> R
+  K["Process killed"] -->|"START_STICKY"| S
+  S["PetService<br/>startForeground(N-01)"] --> C["catch up from the cursor"] --> L{"screen on?"}
+  L -- yes --> T["tick every 5–30 s"] --> L
+  L -- no --> W["one last tick, then wait<br/>for SCREEN_ON"] --> L
+```
+
+- `PetService` is a `LifecycleService` (`lifecycle-service`, already in the register for M5's overlay; M4 adds it to the build). Its `lifecycleScope` runs the engine coroutine (§3).
+- **Manifest:** `<service android:foregroundServiceType="specialUse" android:exported="false">` with the `android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE` property describing the use case (R-03). Permissions `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_SPECIAL_USE`, `RECEIVE_BOOT_COMPLETED`.
+- **Start points** (D-70), all through `PetService.start(context)` = `ContextCompat.startForegroundService`:
+  - S-07 Finish, and every `MainActivity.onStart` once setup is done. The app is in front, so starting is always allowed. Starting an already running service just repeats `onStartCommand`.
+  - `ServiceStartReceiver` (manifest, not exported) for `BOOT_COMPLETED` and `MY_PACKAGE_REPLACED`. It reads `setup.completed` (`goAsync` + a coroutine) and starts the service only if setup is done. Both broadcasts are on Android's list of exemptions from the background-start restriction (checked 2026-10-20, "Restrictions on starting a foreground service from the background"), and Android 15's `BOOT_COMPLETED` restriction doesn't cover `specialUse` (§10).
+  - Process death: `onStartCommand` returns `START_STICKY`, so the system recreates the service. Checked on the emulator in M4 (R-09). If that turns out not to work, the fallback in R-09 applies and becomes a CR.
+  - If a start is refused anyway (`ForegroundServiceStartNotAllowedException`, Android 12+), it's logged, never swallowed.
+- `onStartCommand` calls `ServiceCompat.startForeground(…, FOREGROUND_SERVICE_TYPE_SPECIAL_USE)` with N-01 every time. The service never stops itself in v1. Setup not done → nobody starts it.
+- **Screen on/off:** a receiver registered by the service (these two broadcasts can't be declared in the manifest) feeds a `StateFlow<Boolean>`, seeded from `PowerManager.isInteractive`. Screen on → the tick loop runs. Screen off → one last tick credits up to now, then nothing runs until the screen comes on (§4, no wake locks, no alarms).
+- **Errors:** a failing tick is logged and the loop carries on (§9). The cursor only moves when a tick's writes commit, so nothing is lost or counted twice.
+
+**Notifications** (`service/Notifications.kt`)
+
+| ID | Channel (importance) | Content | Tap |
+|---|---|---|---|
+| N-01 | `pet` "Pet is running" (low: no sound, no status-bar icon nag) | "Nyx is keeping an eye on your screen time." Ongoing | Opens the app (Home) |
+| N-03 | `alerts` "Alerts" (default) | Title "Nyx lost a permission"; text lists what stopped working, using the S-03 "without it" strings | Opens S-03 in fix mode (below) |
+
+- Channels are created in `PetApp.onCreate` (idempotent). N-02 and N-04 (M7) reuse `alerts` unless M7's LLD says otherwise.
+- Without the notifications permission the service still runs; Android just doesn't show N-01 in the shade.
+
+**How time is credited** (D-62)
+- **Source:** `UsageStatsManager.queryEvents(from, to)`, mapped to our own `UsageEvent(type, packageName, className, at)`:
+
+| Android event | Ours |
+|---|---|
+| `ACTIVITY_RESUMED` (1) | `APP_RESUMED` |
+| `ACTIVITY_PAUSED` (2), `ACTIVITY_STOPPED` (23) | `APP_PAUSED` |
+| `SCREEN_INTERACTIVE` (15) · `SCREEN_NON_INTERACTIVE` (16) | `SCREEN_ON` · `SCREEN_OFF` |
+| `DEVICE_SHUTDOWN` (26) · `DEVICE_STARTUP` (27) | `DEVICE_SHUTDOWN` · `DEVICE_STARTUP` |
+| anything else | ignored |
+
+  (Constant values checked in the API 37 `android.jar`.)
+- **Segments:** the time between two consecutive events belongs to the app in front at the start of it. "In front" = the package of the most recently resumed activity that hasn't paused yet. The tracker keeps the resumed activities as an ordered list of `package/class`, so moving between two screens of the same app, or a pause arriving after the next resume, never loses the app.
+- A segment is credited only when the screen is on and the front app is counted (exclusions below). `DEVICE_SHUTDOWN` / `STARTUP` clear the list and count as screen off.
+- **Split at day boundaries:** a segment that crosses the reset hour is split, and each part goes to its own day key (`DayClock.nextDayStart`). The day key is worked out from the moment the time happened, so a time-zone change never counts a day twice (§9).
+- **Category at that moment:** the user's choice from `app_categories`, otherwise `suggestCategory(…)` (§14.3) with Android's category from `PackageManager.getApplicationInfo` (cached per package; an app Nyx can't see → Neutral). Read at every tick, so a change made in S-05 applies from the next tick on (US-04). New apps get a suggestion the first time they're used, and nothing is stored (D-58).
+- **Exclusions** (A-20, D-69): Nyx itself, `com.android.systemui`, and every app that handles the HOME intent (the launcher and any other installed home app). The home apps are found with `queryIntentActivities(ACTION_MAIN + CATEGORY_HOME)`, which needs a second `<intent>` in `<queries>` (no permission). Read once per service start.
+- **Cursor and catch-up:** every tick commits its new totals **and** the cursor ("credited until") in one Room transaction. On start, the tracker replays events from 24 h before `min(cursor, start of today)` to rebuild who's in front and the stretch, and credits only what lies after the cursor. So time used while the service was dead (killed, rebooted, updated) is still counted, and nothing is counted twice.
+  - First start ever (no cursor): credit from the start of today, so Home's first numbers match Digital Wellbeing's.
+  - At most 7 days are caught up (Android keeps the event log for about that long); older gaps are skipped and logged.
+- **While usage access is missing**, ticks don't credit and the cursor stays put. Otherwise the last front app would keep collecting time with no events to stop it. When access comes back, catch-up fills the gap from Android's log.
+
+```mermaid
+sequenceDiagram
+  participant L as Tick loop (PetService)
+  participant T as Tracker
+  participant OS as UsageStatsManager
+  participant C as Crediting (pure)
+  participant DB as Room
+  L->>T: tick()
+  T->>OS: queryEvents(last tick, now)
+  OS-->>T: resumed, paused, screen on/off
+  T->>C: advance(state, events, now, rules)
+  C-->>T: new state + credits per (day, package, category)
+  T->>DB: transaction: add credits, cursor = now
+  T-->>L: TrackerSnapshot (day, front app, stretch)
+  L->>L: debug log · next delay
+```
+
+**Stretch** (D-65, US-09, D-27)
+- The stretch is the time spent in the `limits.stretch.categories` apps since the last break or the start of the day.
+- Time in other apps neither adds to it nor resets it. Only a break resets it: a `SCREEN_OFF` → `SCREEN_ON` gap of at least `breaks.breakMinutes`. The day reset also resets it (§9).
+- Rebuilt by the catch-up replay, so it survives a restart. M7's `stretch_reached` trigger reads it from the snapshot.
+
+**Tick interval** (H-01)
+- M4: `fastTickSeconds` when a daily limit or the stretch limit that covers the front app is less than one slow tick away from being reached, otherwise `slowTickSeconds`. A pure function, `tickDelay(snapshot, totals, effective)`.
+- M7 (active nag) and M8 (focus session) add their own "fast" conditions to the same function.
+
+**Day reset and cleanup**
+- The day key is recomputed at every tick. When it changes (and once at service start), rows older than 31 days are deleted: `day < today − 31` (A-13). ISO day keys compare correctly as text.
+- Changing the reset hour moves the boundary from the next tick on. Time already credited stays on its day.
+
+**Permission lost** (US-26, D-66)
+- Checked at every tick with `PermissionChecks` (§14.3). Required: usage access and display over other apps. Notifications and battery aren't: without notifications N-03 couldn't be shown anyway, and the battery exemption isn't something the user "loses".
+- N-03 is posted when a required permission is missing at this check but wasn't at the previous one. A service start counts as "all granted before", so a permission skipped in setup gets one N-03 per service start. It's cancelled once everything is granted again.
+- Tapping it opens `MainActivity` with a fresh task and `open=permissions`: the back stack starts as `[Home, FixPermissions]`. `FixPermissions` is S-03 with `onNext` = back to Home. M7's Settings reuses the same key.
+
+**Storage** — `AppDatabase` version 2 (debug builds wipe local data on the upgrade, §14.1; the developer's phone loses its M3 category choices once)
+
+`daily_app_usage` (D-63)
+
+| Column | Type | Notes |
+|---|---|---|
+| `day` | TEXT | ISO day key, e.g. `2026-10-21` (confirms §14.1) |
+| `package_name` | TEXT | |
+| `category` | TEXT | Kotlin enum name, as in `app_categories` |
+| `duration_ms` | INTEGER | Milliseconds, not seconds: most segments are a few seconds long, and rounding each one would drift by minutes over a day |
+| | | Primary key `(day, package_name, category)`. The key starts with `day`, so per-day reads and the cleanup use it as their index |
+
+- Adding time is one statement: `INSERT … ON CONFLICT(day, package_name, category) DO UPDATE SET duration_ms = duration_ms + excluded.duration_ms` (SQLite ≥ 3.24; Android 11 ships 3.28).
+- `tracking_cursor`: one row (`id` = 0), `credited_until_ms` INTEGER. In Room, not DataStore, so it commits in the same transaction as the totals.
+- **`events` moves to M6/M7** (D-64): nothing writes it in M4. Same rule as D-50: a table arrives with its first real use.
+- `DailyUsageDao`: `addAll(credits)` and `setCursor` in one `@Transaction`, `cursor()`, `observeDay(day): Flow<List<DailyUsage>>`, `deleteBefore(day)`.
+
+**Home (S-08) with real data** (D-68)
+- `TrackingSummaryRepository` replaces `FakeSummaryRepository` (deleted; its sample moves to the screen's preview and test).
+- Today's key comes from a small flow that re-checks the day every minute, so Home rolls over at the reset hour without a restart. Totals follow the table through Room's `Flow`, so Home updates after every tick (≤ 30 s behind; Nyx's own screens aren't counted).
+- **Total** = all counted time · **Productive** = `productive` · **Doomscrolling** = `tracking.doomscrollCategories` (A-15).
+- **Goals in M4 are the limit goals:** one row per category with a daily limit above 0, and one for the total limit if it's on. Label "Social & scrolling ≤ 1 h", built on screen from the category name, so `GoalProgress` holds a `Category?` (`null` = total) instead of a text. Positive goals come in M13.
+- **Face:** the chosen pet's face for the band containing `mood.start`, like S-04, until mood exists (M6).
+
+**Debug tools** (Track A, ROADMAP §2, D-67) — debug builds only
+- **Scenario files** in `android/app/src/debug/assets/scenarios/*.txt`, one step per line:
+
+```text
+# 65 minutes of Instagram, then the home screen
+app com.instagram.android 65m
+idle 2m
+```
+
+  - Steps: `app <package> <duration>` (that app in front) · `idle <duration>` (screen on, nothing counted in front) · `screen_off <duration>`. Durations `90s`, `65m`, `2h`. `#` starts a comment. Any other line rejects the whole file with its line number.
+  - Shipped: `instagram-65min`, `stretch-break` (Instagram 20 min → screen off 6 min → Instagram 15 min: the stretch restarts) and `app-switching` (Instagram, Chrome, YouTube, Instagram).
+- **Fast clock:** `AppContainer.clock` is an `AdjustableClock`. In release it's always the system clock. In debug it can run N× faster from the moment the speed is set; the tick loop divides its delays by the same speed.
+- **Run them over adb:** a debug-only receiver, exported but guarded by `android.permission.DUMP`, which only the shell (adb) holds:
+  - `adb shell am broadcast -n com.companionstudio.nyx/.debug.ScenarioReceiver --es scenario instagram-65min --ei speed 60` → today's tracking is cleared, the clock runs 60× and the tracker reads the scenario instead of Android's events. 65 min of Instagram takes about 65 s.
+  - `… --ez stop true` → tracking cleared, real clock, real events again.
+- Main code only has two hooks for this, both explicit in `AppContainer`: `clock` and `usageSource: MutableStateFlow<UsageSource>`. The service restarts its tracker whenever `usageSource` changes.
+
+**Files** (`android/app/src/main/java/com/companionstudio/nyx/` unless stated)
+
+| File | Responsibility |
+|---|---|
+| `service/PetService.kt` | Foreground service, screen receiver, tick loop, permission watch, N-01 |
+| `service/ServiceStartReceiver.kt` | Boot and app-update restart |
+| `service/Notifications.kt` | Channels, N-01, N-03 |
+| `service/PermissionWatch.kt` | Pure: which required permissions just went missing |
+| `tracking/UsageEvent.kt` · `UsageSource.kt` | Our event type · `UsageSource` interface + `SystemUsageSource` (`UsageStatsManager` → `UsageEvent`) |
+| `tracking/Crediting.kt` | Pure: `TrackerState`, `CreditRules`, `advance(…)` → state + credits (segments, day split, exclusions, stretch) |
+| `tracking/Tracker.kt` | Catch-up, `tick()`, category lookup, writes; returns `TrackerSnapshot` |
+| `tracking/TickDelay.kt` | Pure: the tick interval |
+| `tracking/DailyUsage.kt` · `DailyUsageDao.kt` | The two tables and their DAO |
+| `tracking/ExcludedApps.kt` | Nyx, System UI, home apps |
+| `home/TrackingSummaryRepository.kt` | Today's summary from Room + config + pet choice; `todaySummary(…)` is pure |
+| `data/DayClock.kt` | + `startOfDay(day, resetHour)`, `nextDayStart(instant, resetHour)` |
+| `data/AdjustableClock.kt` | The clock with a speed (1 outside debug tools) |
+| `data/AppDatabase.kt` | Version 2, the new entities |
+| `AppContainer.kt` · `PetApp.kt` · `MainActivity.kt` · `AppNavigation.kt` | Wiring, channels, start on open, `FixPermissions` |
+| `setup/StatsOptInScreen.kt` | Finish also starts the service |
+| `AndroidManifest.xml` | Service, receiver, permissions, HOME `<queries>` |
+| `src/debug/AndroidManifest.xml` · `src/debug/java/…/debug/` · `src/debug/assets/scenarios/` | `ScenarioReceiver`, `Scenario` parser + `ScenarioUsageSource`, scenario files |
+
+**Tests**
+
+| Test | Where | Checks |
+|---|---|---|
+| `F02_CreditingTest` | `src/test/` | App switches credit each app its own time · same-app screen changes and a late pause don't lose time · screen off isn't counted · excluded apps aren't counted · a segment over the reset hour is split onto two days · a change of category between ticks applies from then on · nothing before the cursor is credited, but replaying it still rebuilds the front app and stretch · shutdown clears the front app |
+| `US09_StretchTest` | `src/test/` | Only stretch categories add to it · other apps don't reset it · screen off ≥ break resets it, shorter doesn't · the day reset resets it |
+| `TickDelayTest` | `src/test/` | Slow by default · fast when the front app's category limit, the total or the stretch is within one slow tick · a limit of 0 (off) never makes it fast · excluded or no front app → slow |
+| `US26_PermissionWatchTest` | `src/test/` | Newly missing → notify · still missing → no repeat · granted again → cancel · missing at service start → notify once · only usage access and overlay count |
+| `US28_TrackingSummaryTest` | `src/test/` | Totals, productive and doomscrolling from rows · limit goals only for limits above 0, total included when on · user values used (effective config) · face of the chosen pet |
+| `DayClockTest` (+) | `src/test/` | `startOfDay` and `nextDayStart` with reset hours 0 and 4, and on a time-zone change |
+| `ScenarioTest` | `src/testDebug/` | Parses every shipped file · durations · events at the right times · a bad line is rejected with its number |
+| `DailyUsageDaoTest` | `src/androidTest/` | Adding twice sums · totals and cursor commit together · `deleteBefore` keeps the 31st day · `observeDay` emits on change |
+| `US04_ExcludedAppsTest` | `src/androidTest/` | On a device, the home app list isn't empty and contains the default launcher (checks the new `<queries>` entry) |
+
+- Coverage: ≥ 90% lines on `Crediting.kt`, `TickDelay.kt`, `PermissionWatch.kt` and `DayClock` (ROADMAP §2 lists "usage-event → time crediting").
+- **Checked by hand on the emulator** (adb): N-01 shows; the service runs after Finish and after an app open; `adb reboot` → running again without opening the app; `adb install -r` (update) → running again; process killed → recreated; scenarios give the expected totals on Home; revoking usage access → N-03 → tap → S-03 → grant → back to Home → catch-up fills the gap.
+- **On the Pixel 7a** (the developer): an hour of normal use vs Digital Wellbeing (± 2 min), and a reboot.
+
+**Decisions** (approved 2026-10-20)
+- **D-62:** time is credited from Android's usage event log with a stored cursor. After any restart the tracker replays the log and credits the gap (≤ 7 days). The first start credits from the start of today.
+- **D-63:** durations are stored in milliseconds (`duration_ms`). The HLD's "seconds per app per day" stays true for everything shown.
+- **D-64:** the `events` table arrives with its first writer (M6/M7), not in M4 as §14.1 said.
+- **D-65:** the stretch counts only time in the stretch categories; other apps neither add nor reset; a break or the day reset resets it.
+- **D-66:** N-03 covers usage access and overlay. It fires when one goes missing since the last check, once per service start for one that was never granted; tracking pauses meanwhile and catches up afterwards.
+- **D-67:** debug test tools: scenario files and a fast clock, run with adb through a debug-only receiver guarded by `DUMP`. Main code gets an adjustable clock (always real in release) and a swappable usage source.
+- **D-68:** Home's goals in M4 are the limit goals from the effective config; the face is the chosen pet's starting face until M6.
+- **D-69:** excluded apps are Nyx, `com.android.systemui` and every HOME handler, found through a second `<queries>` intent.
+- **D-70:** the service starts on Finish, on every app open, on boot and on app update, and is sticky after process death. M4's tick is fast only when a limit on the front app is less than one slow tick away.
+
+**Not in M4:** the pet on screen and the "Show pet" action on N-01 (→ M5), mood and the `events` table (→ M6), triggers, nags, break reminders and their fast-tick conditions (→ M7), focus (→ M8), a Home banner when usage access is missing (parking lot), Settings opening S-03/S-05 (→ M7).
