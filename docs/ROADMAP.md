@@ -148,10 +148,10 @@ Tasks:
 - [x] `shared/config.schema.json` v1 and `shared/default-config.json` (placeholder numbers from A-14, A-24; at least 2 personalities with lines for every trigger; Cat and Blob faces per band)
 - [x] `shared/fixtures/valid/` and `invalid/` (one file per validation rule)
 - [x] Gradle copies `shared/default-config.json` into app assets
-- [ ] Kotlin models (kotlinx.serialization, unknown keys ignored), validator, `ConfigManager` (base doc + user values, clamping, locked settings)
-- [ ] Tests: every fixture; clamping when a range narrows; locked settings ignore user values; invalid cache falls back to built-in
+- [x] Kotlin models (kotlinx.serialization, unknown keys ignored), validator, `ConfigManager` (base doc + user values, clamping, locked settings)
+- [x] Tests: every fixture; clamping when a range narrows; locked settings ignore user values; invalid cache falls back to built-in
 Done when:
-- [ ] The app starts on built-in config; all fixture tests pass; ≥ 90% coverage on `config/`
+- [x] The app starts on built-in config; all fixture tests pass; ≥ 90% coverage on `config/`
 Verify with: `./gradlew test`
 Not in this milestone: fetching from a server (→ M12)
 
@@ -289,7 +289,7 @@ Tasks:
 - [ ] `docker-compose.yml`: Postgres 18 + API
 - [ ] Migration runner + `001_init.sql` (`config_versions`, `daily_stats`)
 - [ ] Seed: publish `shared/default-config.json` as version 1
-- [ ] `GET /v1/config?schema=` with ETag / 304; `GET /health`
+- [ ] `GET /v1/config?schema=` with ETag / 304; `GET /health`. Serve the re-serialised document, not stored text, so `3.0` can't reach phones (D-54)
 - [ ] Shared fixtures test (same results as the phone)
 - [ ] CI: Node lint + tests
 Done when:

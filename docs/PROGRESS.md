@@ -1,7 +1,7 @@
 ## Current state
 - Phase: 5 — Build · Milestone: M2 Config (in progress, branch `feat/m2-config`)
-- Last done: Gradle copies `shared/default-config.json` into the APK's assets; unit tests get `nyx.sharedDir`
-- Next step: Kotlin config models, `ConfigParser`, `ConfigValidator`, `EffectiveConfig`, `ConfigManager` + their tests
+- Last done: Kotlin config package (models, parser, validator, layering, `ConfigManager`) + tests; all M2 tasks ticked
+- Next step: close M2 — developer pushes `feat/m2-config`, CI green on GitHub, manual QA, merge, tag `m2-done`
 - Blockers: none
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
@@ -52,3 +52,7 @@
 - Done: fixtures, 3 valid + 17 invalid. Verified with Python `jsonschema` 4.25.1 (draft-07) in a scratchpad virtualenv, not a project dependency: the schema is a valid draft-07 schema; valid files and `default-config.json` pass it; each `schema--*` file fails it for exactly its intended reason; every other invalid file passes the schema and fails exactly its own cross-field rule (checked with a throwaway reference script)
 - Done: Gradle asset copy (`copy<Variant>DefaultConfig` via `sources.assets.addGeneratedSourceDirectory`) and `nyx.sharedDir` for unit tests, with `shared/` as a test input; CI also runs on `shared/**`. Verified: debug and release APKs contain only `assets/default-config.json` from `shared/`, byte-identical to the source; the copy is up to date when unchanged and re-runs after an edit; a throwaway probe test (deleted) saw the property, was skipped when nothing changed and re-ran after a fixture edit; `assembleDebug test lint` passes
 - Learned: `shared/fixtures/*/` still hold M0's `.gitkeep`, so the fixture tests list `*.json` only
+- Done: `config/` — `NyxConfig` models, `BubbleTrigger`, `parseConfig`, `validateConfig` + `ConfigRule`, `EffectiveConfig` + `SettingPaths`, `ConfigManager`; `AppContainer(context)` builds it from assets + `filesDir`. Tests: fixtures (exact rule per invalid file), default config, validator details, US-22 layering, `ConfigManager` fallbacks (incl. unreadable cache), device test loading the real asset. Verified: 45 unit tests pass (0 skipped), `config/` coverage 98.0% lines / 95.5% branches, `assembleDebug test lint` clean, 5 device tests pass on the API 37 emulator. Mutation check: disabling `tick-order` makes the fixture test fail
+- Decided: D-54 — accept kotlinx's quoted-number/boolean leniency and its `3.0` rejection (documented, pinned by a test); M10 serves the re-serialised document
+- Renamed: rule-ID object `Rule` → `ConfigRule` (clashed with JUnit's `@Rule`)
+- Note: the app doesn't read config at startup yet — no feature uses it until M3 (as the LLD planned); the device test proves the real `AppContainer` loads the built-in asset

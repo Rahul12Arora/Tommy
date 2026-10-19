@@ -42,7 +42,7 @@ flowchart LR
         OVL["Overlay UI<br/>pet · bubble · panel"]:::pending
         NTF["Notifier"]:::pending
       end
-      CFG["ConfigManager<br/>built-in → admin → user"]:::pending
+      CFG["ConfigManager<br/>built-in → admin → user"]:::done
       STORE[("Room · DataStore<br/>config cache file")]:::pending
       NET["ConfigClient · StatsUploader<br/>week 2"]:::pending
     end
@@ -55,7 +55,7 @@ flowchart LR
     PG[("PostgreSQL")]:::pending
   end
   BROWSER["Admin's browser<br/>React console"]:::pending
-  SHARED["shared/<br/>schema · default config · fixtures"]:::pending
+  SHARED["shared/<br/>schema · default config · fixtures"]:::done
 
   TRK --> RUL
   RUL --> MOOD
@@ -619,6 +619,7 @@ Tests: every admin route is checked for `401` without a session (M11).
 | Change a number, line, pet, personality or switch for everyone | The admin console → Publish. No code. |
 | Add a new setting | `shared/config.schema.json` + `shared/default-config.json` + `android/…/config/` (model, validator) + a fixture in `shared/fixtures/` + the feature package that uses it |
 | Change the defaults the app ships with | `shared/default-config.json` |
+| Change a config validation rule | `android/…/config/ConfigValidator.kt` + a fixture in `shared/fixtures/invalid/` + the backend's `config.validation.js` (M10) |
 | Change how usage is counted, categories, stretches | `android/…/tracking/` |
 | Change when the pet nags, reminds or talks | `android/…/rules/` |
 | Change mood math | `android/…/mood/` (weights and bands are config) |
@@ -899,7 +900,7 @@ Approved 2026-10-19, with D-51 to D-53 and A-28.
 - **Pool lookup** (implemented in M6): the band pool if it exists and isn't empty, otherwise `any`. Which placeholders (`{app}`, `{minutes}`, `{limit}`, `{category}`) each trigger may use is designed in M6's LLD, together with a validator rule for it.
 
 **Validation rules**
-- Every error carries a rule ID, a JSON path and a message: `ConfigError(rule = "setting-range", path = "nags.snoozeMinutes", message = "default 40 is above max 30")`.
+- Every error carries a rule ID, a JSON path and a message: `ConfigError(rule = "setting-range", path = "nags.snoozeMinutes", message = "default 40 is not within min 5..max 30")`. Rule IDs are constants in `ConfigRule` (named so it doesn't clash with JUnit's `@Rule`).
 - The validator returns every error it finds, not just the first. The console shows them all (US-19).
 - Rule `schema` is everything JSON Schema can express. The other rules are cross-field and live in code on both the phone and the backend (§5).
 
@@ -954,7 +955,7 @@ Approved 2026-10-19, with D-51 to D-53 and A-28.
 **Layering** — base document → user values (§5, D-45)
 - **Base:** `ConfigManager.loadBase()`:
   1. `filesDir/config_cache.json` exists, parses, validates and has `schemaVersion` 1 → use it.
-  2. Otherwise → the built-in document from assets. A rejected cache is reported through `onRejected(errors)`, which `AppContainer` sends to `Log.w` with rule IDs and paths only.
+  2. Otherwise → the built-in document from assets. A rejected cache is reported through `onRejected(errors)`, which `AppContainer` sends to `Log.w` with rule IDs and paths only. A cache file that exists but can't be read is reported as `cache-unreadable` (not a validation rule).
   - Nothing writes the cache until M12. The cache file is the raw document; its ETag is `configVersion`, so no wrapper is needed (M12 confirms).
   - The built-in document can't be invalid at runtime: `DefaultConfigTest` fails the build first. If it ever is, `loadBase()` throws with the errors. That's a broken build, not a broken server, so US-21's "never crash" isn't what applies.
 - **User values:** a plain `Map<String, Int>` from setting path to stored value. M3 stores them in DataStore, one `intPreferencesKey` per path, named `config.<path>` (e.g. `config.nags.snoozeMinutes`), in a `ConfigUserValues` class in `config/`.
@@ -1006,7 +1007,7 @@ sequenceDiagram
 | `config/NyxConfig.kt` | The `@Serializable` models, `Setting`, `Category`, `SCHEMA_VERSION` |
 | `config/BubbleTrigger.kt` | The bubble triggers and their JSON names |
 | `config/ConfigParser.kt` | `parseConfig(json): ConfigResult` (`Valid(config)` / `Invalid(errors)`) and `ConfigError`. A kotlinx `SerializationException` becomes a `schema` error; it's never swallowed |
-| `config/ConfigValidator.kt` | `validate(config): List<ConfigError>`: bounds, then the cross-field rules |
+| `config/ConfigValidator.kt` | `validateConfig(config): List<ConfigError>` and the `ConfigRule` IDs: bounds, then the cross-field rules |
 | `config/EffectiveConfig.kt` | `Setting.resolve`, `EffectiveConfig`, `SettingPaths` |
 | `config/ConfigManager.kt` | `loadBase()`: cache or built-in. Takes `readBuiltIn: () -> String`, `cacheFile: File`, `onRejected` |
 | `AppContainer.kt`, `PetApp.kt` | `AppContainer(context)` builds `ConfigManager` from assets and `filesDir` |
@@ -1027,12 +1028,13 @@ sequenceDiagram
 |---|---|---|
 | `US21_ConfigFixturesTest` | `src/test/` | Every `valid/` file is accepted · every `invalid/` file is rejected with the rule ID from its file name · the fixture folders aren't empty (a wrong path can't make the test pass) |
 | `US21_DefaultConfigTest` | `src/test/` | `shared/default-config.json` is valid · ≥ 2 enabled personalities · Cat and Blob both present and enabled |
-| `ConfigValidatorTest` | `src/test/` | What fixtures don't show well: several errors reported at once, with the right paths · `nothing-enabled` for personalities as well as pets · bounds at exactly the edges pass |
+| `ConfigValidatorTest` | `src/test/` | What fixtures don't show well: several errors reported at once, with the right paths · `nothing-enabled` for personalities as well as pets · bounds at exactly the edges pass · min > max · duplicate personalities and bands · bands ending early or backwards · a pool key that's neither `any` nor a band · blank texts and bad ids · the D-54 differences, pinned |
 | `US22_EffectiveConfigTest` | `src/test/` | No user value → default · user value inside range → used · outside range → clamped · range narrowed → clamped, and the stored value is unchanged · widened again → restored · locked → default · `valueOf` for a missing setting → `null` · `settings` lists every path in `SettingPaths` |
 | `US21_ConfigManagerTest` | `src/test/` | No cache → built-in · valid cache → cache · invalid cache → built-in and `onRejected` called with the rule IDs · not-JSON cache → built-in · cache with `schemaVersion` 2 → built-in · invalid built-in → throws (uses `TemporaryFolder`) |
 | `US21_BuiltInConfigTest` | `src/androidTest/` | On a device, `AppContainer`'s `ConfigManager` loads the asset and gets `configVersion` 1, which proves the Gradle copy works |
 
-- Coverage: ≥ 90% on `config/` (ROADMAP §2).
-- **Check during the build:** kotlinx.serialization may accept a quoted number (`"60"`) for an `Int`, while JSON Schema rejects it. That would break D-39 parity. The `schema--wrong-type` fixture uses `"sixty"`; a quoted-number case is tried as a unit test. If kotlinx accepts it, the build stops for a decision (AGENTS §1); no pre-parse gets added quietly.
+- Test helper: `src/test/…/config/SharedFiles.kt` reads `shared/` through `nyx.sharedDir` (fixtures are listed as `*.json`, since the folders also hold a `.gitkeep`).
+- Coverage: ≥ 90% on `config/` (ROADMAP §2). Measured 2026-10-19: 98.0% lines, 95.5% branches.
+- **Known differences from JSON Schema (D-54):** kotlinx.serialization 1.11.0 reads `"3"` as 3 and `"true"` as true, which JSON Schema rejects, and rejects `3.0`, which JSON Schema accepts. Neither can reach a phone: the console sends JSON numbers, the backend rejects quoted values on save, and the server re-serialises the document it serves (M10). The fixtures avoid these cases, and `ConfigValidatorTest` pins the phone's behaviour.
 
 **Not in M2:** fetching and writing the cache (→ M12), storing user values and the config `StateFlow` (→ M3), reading any of these values in features (→ M3 onwards), line placeholders and pool lookup (→ M6), positive goals (→ M13).
