@@ -1,7 +1,7 @@
 ## Current state
 - Phase: 5 — Build · Milestone: M4 Service & tracking (in progress, branch `feat/m4-service-tracking`)
 - Last done: M4 built and verified on the API 37 emulator: `PetService` + N-01, tracker with catch-up, stretch, exclusions, 31-day cleanup, N-03, debug scenarios + fast clock, Home on real data
-- Next step: the developer's Pixel 7a check (Digital Wellbeing ± 2 min, reboot), then merge the PR and tag `m4-done`
+- Next step: the developer's Pixel 7a check (M4 build installed; finish setup on the phone first, then Digital Wellbeing ± 2 min and a reboot), then merge PR #8 and tag `m4-done`
 - Blockers: none
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
@@ -92,4 +92,5 @@
 - Verified on the emulator (adb): setup Finish starts the service (foreground, type specialUse, N-01); Chrome and Settings use credited per tick; app update, process kill and `adb reboot` each bring the service back without opening the app (battery exemption not granted); catch-up credits the time the service was down; screen off → one last tick, then none until screen on; scenarios: `instagram-65min` Social 3900 s and Home "1 h 5 min · over", `stretch-break` Social 2100 s with stretch 900 s, `app-switching` Social 900 / Entertainment 600 / Neutral 300; usage access revoked → no crediting, N-03 "The pet can't see your apps…" → tap → S-03 over Home → granted → Continue → Home, gap caught up, N-03 cancelled; overlay revoked → N-03 with the overlay text, cancelled when granted
 - Not verified: the Pixel 7a (Digital Wellbeing ± 2 min over an hour, reboot); Android 11–13 (the foreground type is 0 there, untested until M15's API 30 run)
 - Verified: Android CI green on `feat/m4-service-tracking` (run 39319756824); PR #8 open, not merged — waiting for the Pixel 7a check
-- Next: Pixel 7a check → merge → tag `m4-done` → M5 Pet overlay
+- Done (with the developer's OK, which covered the database wipe): installed the M4 debug build on the Pixel 7a over adb (02:19). Database v1 → v2, so the S-05 category choices on the phone are gone. Found: the phone had no settings file, so setup wasn't completed there (device tests clear it) and the service didn't start. The app was also in the stopped state, so `MY_PACKAGE_REPLACED` wasn't delivered (normal Android behaviour). Usage access is granted; overlay isn't. Then the phone disconnected from USB, so nothing else was checked on it
+- Next: the developer runs the M4 Pixel checklist (open Nyx → finish setup → Digital Wellbeing comparison → reboot) → merge PR #8 → tag `m4-done` → M5 Pet overlay
