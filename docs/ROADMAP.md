@@ -123,14 +123,14 @@ Done when:
 Verify with: `./gradlew assembleDebug test lint` · CI run on GitHub · emulator launch
 Not in this milestone: `backend/`, `admin/` (→ M10, M11)
 
-### M1 — Shell & storage            status: pending
-Goal: the app has navigation, theme, `AppContainer`, the Room database, DataStore and `DayClock`; Home shows fake numbers through a ViewModel.
+### M1 — Shell & storage            status: in-progress
+Goal: the app has navigation, theme, `AppContainer` and `DayClock`; Home shows fake numbers through a ViewModel. Room and DataStore are created in M3 (D-50).
 Depends on: M0
 Stories: US-28 (screen shell)
 Tasks:
-- [ ] LLD in ARCHITECTURE.md §14
+- [x] LLD in ARCHITECTURE.md §14
 - [ ] `PetApp`, `AppContainer`, `MainActivity`, Navigation 3 with predictive back, edge-to-edge theme
-- [ ] Room `AppDatabase` (empty schema + migration policy); DataStore
+- [ ] Room and DataStore policies written in the LLD (D-50: instances are created in M3)
 - [ ] `DayClock`: day key with reset hour, time-zone change, injectable clock
 - [ ] Home (S-08) ↔ `HomeViewModel` ↔ fake summary repository
 - [ ] Tests: `DayClock` (reset hour, midnight, time-zone change, DST-free zones); Home UI test
@@ -161,6 +161,7 @@ Depends on: M2
 Stories: US-01, US-02, US-03, US-04, US-05, US-24 (the choice only)
 Tasks:
 - [ ] LLD: screens, state, permission checks, brand detection, `<queries>` behaviour (R-10), Android category mapping
+- [ ] Room `AppDatabase` (first table `app_categories`, schema export, migration policy per ARCHITECTURE §14.1) and the `settings` DataStore (D-50)
 - [ ] S-01 Welcome, S-02 Age check (under 18 stops)
 - [ ] S-03 Permissions: usage access, overlay, notifications, battery settings; auto-tick on return; "what won't work" summary for skipped steps; brand-specific steps (Xiaomi, Samsung, Vivo, Oppo, generic)
 - [ ] S-04 Pet + personality picker with preview lines
