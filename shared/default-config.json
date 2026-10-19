@@ -1,0 +1,483 @@
+{
+  "schemaVersion": 1,
+  "configVersion": 1,
+  "features": {
+    "focus": true,
+    "breaks": true,
+    "idleLines": true,
+    "trends": true,
+    "stats": true
+  },
+  "day": {
+    "resetHour": {
+      "default": 0,
+      "min": 0,
+      "max": 6,
+      "userEditable": true
+    }
+  },
+  "tracking": {
+    "fastTickSeconds": 5,
+    "slowTickSeconds": 30,
+    "doomscrollCategories": [
+      "social"
+    ]
+  },
+  "limits": {
+    "categories": {
+      "social": {
+        "dailyMinutes": {
+          "default": 60,
+          "min": 0,
+          "max": 240,
+          "userEditable": true
+        }
+      },
+      "games": {
+        "dailyMinutes": {
+          "default": 120,
+          "min": 0,
+          "max": 480,
+          "userEditable": true
+        }
+      },
+      "entertainment": {
+        "dailyMinutes": {
+          "default": 120,
+          "min": 0,
+          "max": 480,
+          "userEditable": true
+        }
+      }
+    },
+    "totalDailyMinutes": {
+      "default": 0,
+      "min": 0,
+      "max": 960,
+      "userEditable": true
+    },
+    "stretch": {
+      "minutes": {
+        "default": 30,
+        "min": 10,
+        "max": 120,
+        "userEditable": true
+      },
+      "categories": [
+        "social",
+        "games"
+      ]
+    }
+  },
+  "nags": {
+    "repeatMinutes": {
+      "default": 10,
+      "min": 5,
+      "max": 30,
+      "userEditable": true
+    },
+    "snoozeMinutes": {
+      "default": 10,
+      "min": 5,
+      "max": 30,
+      "userEditable": true
+    },
+    "maxSnoozesPerDay": 3
+  },
+  "breaks": {
+    "afterMinutes": {
+      "default": 45,
+      "min": 20,
+      "max": 120,
+      "userEditable": true
+    },
+    "breakMinutes": 5,
+    "repeatMinutes": 10
+  },
+  "focus": {
+    "durationMinutes": {
+      "default": 25,
+      "min": 5,
+      "max": 180,
+      "userEditable": true
+    },
+    "checkinMinutes": {
+      "default": 10,
+      "min": 5,
+      "max": 30,
+      "userEditable": true
+    }
+  },
+  "bubbles": {
+    "minGapSeconds": 60,
+    "showSeconds": 8
+  },
+  "idle": {
+    "everyMinutes": 30
+  },
+  "hide": {
+    "minutes": 30
+  },
+  "mood": {
+    "start": 70,
+    "weights": {
+      "focus_completed": 15,
+      "goal_met": 10,
+      "break_taken": 5,
+      "doomscroll_10min": -3,
+      "limit_exceeded": -10,
+      "snoozed": -5
+    },
+    "bands": [
+      {
+        "id": "great",
+        "from": 85,
+        "to": 100
+      },
+      {
+        "id": "happy",
+        "from": 70,
+        "to": 84
+      },
+      {
+        "id": "ok",
+        "from": 50,
+        "to": 69
+      },
+      {
+        "id": "meh",
+        "from": 35,
+        "to": 49
+      },
+      {
+        "id": "grumpy",
+        "from": 20,
+        "to": 34
+      },
+      {
+        "id": "sad",
+        "from": 10,
+        "to": 19
+      },
+      {
+        "id": "sick",
+        "from": 1,
+        "to": 9
+      },
+      {
+        "id": "ran_away",
+        "from": 0,
+        "to": 0
+      }
+    ]
+  },
+  "pets": [
+    {
+      "id": "cat",
+      "name": "Cat",
+      "enabled": true,
+      "faces": {
+        "great": "😻",
+        "happy": "😸",
+        "ok": "😺",
+        "meh": "😼",
+        "grumpy": "😾",
+        "sad": "😿",
+        "sick": "🙀",
+        "ran_away": "🐾"
+      }
+    },
+    {
+      "id": "blob",
+      "name": "Blob",
+      "enabled": true,
+      "faces": {
+        "great": "🤩",
+        "happy": "😄",
+        "ok": "🙂",
+        "meh": "😐",
+        "grumpy": "😠",
+        "sad": "😢",
+        "sick": "🤒",
+        "ran_away": "💨"
+      }
+    }
+  ],
+  "personalities": [
+    {
+      "id": "cheerful",
+      "name": "Cheerful coach",
+      "enabled": true,
+      "previewLine": "Let's make today a good one!"
+    },
+    {
+      "id": "calm",
+      "name": "Calm friend",
+      "enabled": true,
+      "previewLine": "I'm here whenever you need a pause."
+    }
+  ],
+  "lines": {
+    "cheerful": {
+      "limit_reached": {
+        "any": [
+          "That's {limit} of {category} today. Stretch break?",
+          "Ding! {category} limit reached. Let's do something else for a bit.",
+          "You hit your {category} goal for today. Proud of you for noticing!",
+          "{limit} of {category} done. How about a glass of water?"
+        ]
+      },
+      "limit_repeat": {
+        "any": [
+          "Still here? Your {category} limit was a while ago.",
+          "Friendly reminder: we're past the {category} limit.",
+          "Okay, I'll keep nudging. Time to close {app}?",
+          "Let's wrap up {app} and do something nice for yourself."
+        ]
+      },
+      "stretch_reached": {
+        "any": [
+          "{minutes} minutes without a pause. Look away for a second?",
+          "That's a long stretch! A quick break would feel great.",
+          "You've been at it for {minutes} minutes. Up for a little walk?",
+          "Time to blink, stretch and breathe!"
+        ]
+      },
+      "break_due": {
+        "any": [
+          "Break time! Put the phone down for {minutes} minutes.",
+          "Your eyes deserve a rest. See you in a few minutes!",
+          "Let's take five. I'll be right here.",
+          "Screen break? Go on, I'll guard the phone."
+        ]
+      },
+      "break_taken": {
+        "any": [
+          "Welcome back! That break was well earned.",
+          "Refreshed? Great job taking a break!",
+          "Nice break! I feel better already.",
+          "You came back recharged. Love it!"
+        ]
+      },
+      "goal_met": {
+        "any": [
+          "Goal met! You're on a roll!",
+          "You did it! That's a goal ticked off today.",
+          "Look at you, meeting goals!",
+          "Another goal done. High five!"
+        ]
+      },
+      "focus_started": {
+        "any": [
+          "Focus mode on. You've got this!",
+          "Let's do this! I'll keep you company.",
+          "Deep breath. Time to focus.",
+          "I'm cheering for you. Go!"
+        ]
+      },
+      "focus_drift": {
+        "any": [
+          "Oops, {app} isn't part of the plan. Back we go?",
+          "Hey, we were focusing! Let's get back to it.",
+          "Little detour? Let's head back to your task.",
+          "{app} can wait. Your task is waiting too!"
+        ]
+      },
+      "focus_checkin": {
+        "any": [
+          "{minutes} minutes in. How's it going?",
+          "Check-in! You're doing great.",
+          "Still focused? Keep it up!",
+          "Quick check-in: you're making progress!"
+        ]
+      },
+      "focus_completed": {
+        "any": [
+          "Focus session done! Amazing work!",
+          "You finished! That deserves a treat.",
+          "Done and dusted. So proud of you!",
+          "Session complete. Take a bow!"
+        ]
+      },
+      "focus_broken": {
+        "any": [
+          "That session slipped away. We'll try again soon!",
+          "No worries, focus is a muscle. Next time!",
+          "The switch ended the session. Want to start a new one later?",
+          "It happens! Let's give it another go later."
+        ]
+      },
+      "idle": {
+        "any": [
+          "Just checking in. Hope your day is going well!",
+          "Have you had some water today?",
+          "I like hanging out with you.",
+          "Remember to roll your shoulders back!"
+        ],
+        "great": [
+          "Today is going so well! I'm so happy!",
+          "Best. Day. Ever."
+        ],
+        "sad": [
+          "I'm feeling a bit down. Maybe a break would cheer us both up?",
+          "Could we do something nice together?"
+        ]
+      },
+      "pet_returned": {
+        "any": [
+          "I'm back! Missed you.",
+          "Hello again! Let's have a better rest of the day.",
+          "I'm home! Thanks for taking care of things.",
+          "Back on my feet. Let's do this together."
+        ]
+      }
+    },
+    "calm": {
+      "limit_reached": {
+        "any": [
+          "You've reached {limit} of {category} today. Maybe that's enough for now.",
+          "That's your {category} time for the day.",
+          "{category} limit reached. Perhaps a pause would be nice.",
+          "You set {limit} for {category}. We're there."
+        ]
+      },
+      "limit_repeat": {
+        "any": [
+          "We're still past the {category} limit.",
+          "Just a gentle reminder about your {category} time.",
+          "Maybe it's time to put {app} down.",
+          "Your limit is still waiting for you to notice it."
+        ]
+      },
+      "stretch_reached": {
+        "any": [
+          "{minutes} minutes in a row. A short pause could help.",
+          "That's been a while. Let your eyes rest.",
+          "A quiet moment away from the screen might feel good.",
+          "You've been going for {minutes} minutes. Breathe."
+        ]
+      },
+      "break_due": {
+        "any": [
+          "It's a good moment for a break.",
+          "Maybe step away for {minutes} minutes.",
+          "Let your eyes wander somewhere far away for a bit.",
+          "A short break now will help later."
+        ]
+      },
+      "break_taken": {
+        "any": [
+          "Welcome back. That pause was good for you.",
+          "Nice to see you rested.",
+          "That break counts. Well done.",
+          "Back again, a little calmer."
+        ]
+      },
+      "goal_met": {
+        "any": [
+          "You met your goal. Well done.",
+          "That's a goal reached today.",
+          "Quietly impressive. Goal met.",
+          "A goal reached. Take a moment to enjoy it."
+        ]
+      },
+      "focus_started": {
+        "any": [
+          "Focus session started. I'll stay quiet.",
+          "Let's settle in.",
+          "One thing at a time.",
+          "I'm here. Take your time."
+        ]
+      },
+      "focus_drift": {
+        "any": [
+          "{app} isn't on the plan. Shall we return?",
+          "Your task is still waiting.",
+          "Let's come back to what you were doing.",
+          "Gently back to your task."
+        ]
+      },
+      "focus_checkin": {
+        "any": [
+          "{minutes} minutes in. Still with it?",
+          "Checking in. Steady progress.",
+          "How is it going?",
+          "Still here with you."
+        ]
+      },
+      "focus_completed": {
+        "any": [
+          "Session complete. Good work.",
+          "You finished what you set out to do.",
+          "Done. Take a breath and enjoy it.",
+          "That was time well spent."
+        ]
+      },
+      "focus_broken": {
+        "any": [
+          "The session ended early. That's alright.",
+          "Not this time. There will be another chance.",
+          "Focus is hard. You can try again later.",
+          "The session was broken. Be kind to yourself."
+        ]
+      },
+      "idle": {
+        "any": [
+          "Just here, keeping you company.",
+          "How are you feeling right now?",
+          "Remember to breathe slowly.",
+          "It's a good day to be gentle with yourself."
+        ],
+        "great": [
+          "A calm, good day.",
+          "Everything feels balanced today."
+        ],
+        "sad": [
+          "I'm feeling low. A pause might help us both.",
+          "Perhaps some time away from the screen?"
+        ]
+      },
+      "pet_returned": {
+        "any": [
+          "I'm back.",
+          "Hello again. Let's take it easy.",
+          "I've returned. Thank you.",
+          "Here again, by your side."
+        ]
+      }
+    }
+  },
+  "categoryDefaults": {
+    "com.instagram.android": "social",
+    "com.zhiliaoapp.musically": "social",
+    "com.facebook.katana": "social",
+    "com.twitter.android": "social",
+    "com.reddit.frontpage": "social",
+    "com.snapchat.android": "social",
+    "com.pinterest": "social",
+    "com.google.android.youtube": "entertainment",
+    "com.netflix.mediaclient": "entertainment",
+    "com.spotify.music": "entertainment",
+    "in.startv.hotstar": "entertainment",
+    "com.whatsapp": "neutral",
+    "org.telegram.messenger": "neutral",
+    "com.android.chrome": "neutral",
+    "com.google.android.gm": "productive",
+    "com.google.android.calendar": "productive",
+    "com.google.android.apps.docs": "productive",
+    "com.slack": "productive",
+    "com.microsoft.teams": "productive",
+    "com.supercell.clashofclans": "games",
+    "com.king.candycrushsaga": "games"
+  },
+  "androidCategoryMap": {
+    "game": "games",
+    "social": "social",
+    "video": "entertainment",
+    "audio": "entertainment",
+    "image": "neutral",
+    "news": "neutral",
+    "maps": "neutral",
+    "productivity": "productive"
+  }
+}

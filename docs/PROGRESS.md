@@ -1,7 +1,7 @@
 ## Current state
 - Phase: 5 — Build · Milestone: M2 Config (in progress, branch `feat/m2-config`)
-- Last done: M2 LLD written (ARCHITECTURE §14.2) with proposed D-51 to D-53 and A-28
-- Next step: approval of the M2 LLD → then `shared/config.schema.json` + `default-config.json`
+- Last done: `shared/config.schema.json` v1 + `shared/default-config.json` (2 pets, 2 personalities, 4+ lines per bubble trigger)
+- Next step: `shared/fixtures/valid/` and `invalid/` (one file per rule, named `<rule-id>--<what>.json`)
 - Blockers: none
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
@@ -47,3 +47,5 @@
 - Done: M1 closed — merged to `main` via PR, tagged `m1-done`
 - Next: M2 Config — branch `feat/m2-config`, LLD first
 - Started M2: branch `feat/m2-config`; LLD written (§14.2): full document shape, 9 validation rules with IDs, fixtures named by rule, layering as a pure function over user values, Gradle asset copy via `addGeneratedSourceDirectory` (checked against `gradle-api` 9.4.1). Proposed D-51 to D-53, A-28 — waiting for approval
+- Approved: M2 LLD with D-51 to D-53, A-28
+- Done: schema + default config. Checked with a throwaway Python script (not committed): the subset of draft-07 the schema uses + the cross-field rules; it also rejects a deliberately broken copy for the right reasons. No real JSON Schema validator on this Mac (no Python `jsonschema`, no Node) — a real schema run comes with the backend's Ajv tests (M10); the Kotlin validator checks the defaults from the next tasks on

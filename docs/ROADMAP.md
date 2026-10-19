@@ -144,8 +144,8 @@ Goal: the app loads, validates and layers config; built-in defaults are one shar
 Depends on: M1
 Stories: US-21 (built-in fallback), US-22 (user values within ranges), US-05 (data side)
 Tasks:
-- [ ] LLD: full schema, Kotlin models, validator rules, layering, how user values are keyed
-- [ ] `shared/config.schema.json` v1 and `shared/default-config.json` (placeholder numbers from A-14, A-24; at least 2 personalities with lines for every trigger; Cat and Blob faces per band)
+- [x] LLD: full schema, Kotlin models, validator rules, layering, how user values are keyed
+- [x] `shared/config.schema.json` v1 and `shared/default-config.json` (placeholder numbers from A-14, A-24; at least 2 personalities with lines for every trigger; Cat and Blob faces per band)
 - [ ] `shared/fixtures/valid/` and `invalid/` (one file per validation rule)
 - [ ] Gradle copies `shared/default-config.json` into app assets
 - [ ] Kotlin models (kotlinx.serialization, unknown keys ignored), validator, `ConfigManager` (base doc + user values, clamping, locked settings)

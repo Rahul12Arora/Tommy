@@ -1,0 +1,550 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Nyx config document",
+  "description": "Schema version 1. Cross-field rules (setting-range, tick-order, duplicate-id, mood-bands-coverage, pet-faces, line-references, line-coverage, nothing-enabled) are checked in code: see docs/ARCHITECTURE.md §14.2. Unknown keys are allowed on purpose (D-52).",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "configVersion",
+    "features",
+    "day",
+    "tracking",
+    "limits",
+    "nags",
+    "breaks",
+    "focus",
+    "bubbles",
+    "idle",
+    "hide",
+    "mood",
+    "pets",
+    "personalities",
+    "lines",
+    "categoryDefaults",
+    "androidCategoryMap"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "configVersion": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "features": {
+      "type": "object",
+      "required": [
+        "focus",
+        "breaks",
+        "idleLines",
+        "trends",
+        "stats"
+      ],
+      "properties": {
+        "focus": {
+          "type": "boolean"
+        },
+        "breaks": {
+          "type": "boolean"
+        },
+        "idleLines": {
+          "type": "boolean"
+        },
+        "trends": {
+          "type": "boolean"
+        },
+        "stats": {
+          "type": "boolean"
+        }
+      }
+    },
+    "day": {
+      "type": "object",
+      "required": [
+        "resetHour"
+      ],
+      "properties": {
+        "resetHour": {
+          "$ref": "#/definitions/settingResetHour"
+        }
+      }
+    },
+    "tracking": {
+      "type": "object",
+      "required": [
+        "fastTickSeconds",
+        "slowTickSeconds",
+        "doomscrollCategories"
+      ],
+      "properties": {
+        "fastTickSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 60
+        },
+        "slowTickSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 60
+        },
+        "doomscrollCategories": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/category"
+          }
+        }
+      }
+    },
+    "limits": {
+      "type": "object",
+      "required": [
+        "categories",
+        "totalDailyMinutes",
+        "stretch"
+      ],
+      "properties": {
+        "categories": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/definitions/category"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "required": [
+              "dailyMinutes"
+            ],
+            "properties": {
+              "dailyMinutes": {
+                "$ref": "#/definitions/settingLimitMinutes"
+              }
+            }
+          }
+        },
+        "totalDailyMinutes": {
+          "$ref": "#/definitions/settingLimitMinutes"
+        },
+        "stretch": {
+          "type": "object",
+          "required": [
+            "minutes",
+            "categories"
+          ],
+          "properties": {
+            "minutes": {
+              "$ref": "#/definitions/settingDayMinutes"
+            },
+            "categories": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/category"
+              }
+            }
+          }
+        }
+      }
+    },
+    "nags": {
+      "type": "object",
+      "required": [
+        "repeatMinutes",
+        "snoozeMinutes",
+        "maxSnoozesPerDay"
+      ],
+      "properties": {
+        "repeatMinutes": {
+          "$ref": "#/definitions/settingShortMinutes"
+        },
+        "snoozeMinutes": {
+          "$ref": "#/definitions/settingShortMinutes"
+        },
+        "maxSnoozesPerDay": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        }
+      }
+    },
+    "breaks": {
+      "type": "object",
+      "required": [
+        "afterMinutes",
+        "breakMinutes",
+        "repeatMinutes"
+      ],
+      "properties": {
+        "afterMinutes": {
+          "$ref": "#/definitions/settingDayMinutes"
+        },
+        "breakMinutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 60
+        },
+        "repeatMinutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 240
+        }
+      }
+    },
+    "focus": {
+      "type": "object",
+      "required": [
+        "durationMinutes",
+        "checkinMinutes"
+      ],
+      "properties": {
+        "durationMinutes": {
+          "$ref": "#/definitions/settingDayMinutes"
+        },
+        "checkinMinutes": {
+          "$ref": "#/definitions/settingShortMinutes"
+        }
+      }
+    },
+    "bubbles": {
+      "type": "object",
+      "required": [
+        "minGapSeconds",
+        "showSeconds"
+      ],
+      "properties": {
+        "minGapSeconds": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3600
+        },
+        "showSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 60
+        }
+      }
+    },
+    "idle": {
+      "type": "object",
+      "required": [
+        "everyMinutes"
+      ],
+      "properties": {
+        "everyMinutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1440
+        }
+      }
+    },
+    "hide": {
+      "type": "object",
+      "required": [
+        "minutes"
+      ],
+      "properties": {
+        "minutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1440
+        }
+      }
+    },
+    "mood": {
+      "type": "object",
+      "required": [
+        "start",
+        "weights",
+        "bands"
+      ],
+      "properties": {
+        "start": {
+          "$ref": "#/definitions/moodValue"
+        },
+        "weights": {
+          "type": "object",
+          "required": [
+            "focus_completed",
+            "goal_met",
+            "break_taken",
+            "doomscroll_10min",
+            "limit_exceeded",
+            "snoozed"
+          ],
+          "properties": {
+            "focus_completed": {
+              "$ref": "#/definitions/weight"
+            },
+            "goal_met": {
+              "$ref": "#/definitions/weight"
+            },
+            "break_taken": {
+              "$ref": "#/definitions/weight"
+            },
+            "doomscroll_10min": {
+              "$ref": "#/definitions/weight"
+            },
+            "limit_exceeded": {
+              "$ref": "#/definitions/weight"
+            },
+            "snoozed": {
+              "$ref": "#/definitions/weight"
+            }
+          }
+        },
+        "bands": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "from",
+              "to"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/definitions/id"
+              },
+              "from": {
+                "$ref": "#/definitions/moodValue"
+              },
+              "to": {
+                "$ref": "#/definitions/moodValue"
+              }
+            }
+          }
+        }
+      }
+    },
+    "pets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "enabled",
+          "faces"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/definitions/id"
+          },
+          "name": {
+            "$ref": "#/definitions/text"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "faces": {
+            "type": "object",
+            "description": "Mood band id → emoji",
+            "additionalProperties": {
+              "$ref": "#/definitions/text"
+            }
+          }
+        }
+      }
+    },
+    "personalities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "enabled",
+          "previewLine"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/definitions/id"
+          },
+          "name": {
+            "$ref": "#/definitions/text"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "previewLine": {
+            "$ref": "#/definitions/text"
+          }
+        }
+      }
+    },
+    "lines": {
+      "type": "object",
+      "description": "Personality id → trigger → mood band id or \"any\" → lines",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/text"
+            }
+          }
+        }
+      }
+    },
+    "categoryDefaults": {
+      "type": "object",
+      "description": "Package name → category",
+      "additionalProperties": {
+        "$ref": "#/definitions/category"
+      }
+    },
+    "androidCategoryMap": {
+      "type": "object",
+      "description": "Android app category → category",
+      "additionalProperties": {
+        "$ref": "#/definitions/category"
+      }
+    }
+  },
+  "definitions": {
+    "category": {
+      "type": "string",
+      "enum": [
+        "social",
+        "games",
+        "entertainment",
+        "productive",
+        "neutral"
+      ]
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+$"
+    },
+    "text": {
+      "type": "string",
+      "pattern": "\\S",
+      "description": "Must contain a non-whitespace character"
+    },
+    "settingResetHour": {
+      "type": "object",
+      "required": [
+        "default",
+        "min",
+        "max",
+        "userEditable"
+      ],
+      "properties": {
+        "default": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 23
+        },
+        "min": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 23
+        },
+        "max": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 23
+        },
+        "userEditable": {
+          "type": "boolean"
+        }
+      }
+    },
+    "settingLimitMinutes": {
+      "type": "object",
+      "required": [
+        "default",
+        "min",
+        "max",
+        "userEditable"
+      ],
+      "properties": {
+        "default": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1440
+        },
+        "min": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1440
+        },
+        "max": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1440
+        },
+        "userEditable": {
+          "type": "boolean"
+        }
+      }
+    },
+    "settingDayMinutes": {
+      "type": "object",
+      "required": [
+        "default",
+        "min",
+        "max",
+        "userEditable"
+      ],
+      "properties": {
+        "default": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1440
+        },
+        "min": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1440
+        },
+        "max": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1440
+        },
+        "userEditable": {
+          "type": "boolean"
+        }
+      }
+    },
+    "settingShortMinutes": {
+      "type": "object",
+      "required": [
+        "default",
+        "min",
+        "max",
+        "userEditable"
+      ],
+      "properties": {
+        "default": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 240
+        },
+        "min": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 240
+        },
+        "max": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 240
+        },
+        "userEditable": {
+          "type": "boolean"
+        }
+      }
+    },
+    "weight": {
+      "type": "integer",
+      "minimum": -100,
+      "maximum": 100
+    },
+    "moodValue": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    }
+  }
+}

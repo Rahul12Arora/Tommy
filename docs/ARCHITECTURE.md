@@ -685,7 +685,7 @@ Written at the start of each milestone, before code.
 |---|---|---|
 | Project setup | M0 | not needed |
 | App shell, storage, DayClock | M1 | done 2026-10-19 (§14.1) |
-| Config: schema, defaults, validator, layering | M2 | written 2026-10-19, awaiting approval (§14.2) |
+| Config: schema, defaults, validator, layering | M2 | done 2026-10-19 (§14.2) |
 | Setup flow + app categories | M3 | pending |
 | PetService + usage tracking | M4 | pending |
 | Overlay: pet, bubble, panel, hide | M5 | pending |
@@ -808,6 +808,8 @@ data class GoalProgress(val label: String, val usedSeconds: Long, val targetSeco
 **Not in M1:** Room and DataStore instances (→ M3, D-50), setup gating (→ M3), real data (→ M4), config-driven faces and reset hour (→ M2, M6).
 
 ### 14.2 M2 — Config: schema, defaults, validator, layering
+
+Approved 2026-10-19, with D-51 to D-53 and A-28.
 
 **Purpose:** the app can always produce a valid config: the last good admin document if there is one, otherwise the built-in defaults, with the user's own values layered on top. Nothing here fetches from a server (→ M12) or stores user values (→ M3). Stories: US-21, US-22, US-05 (data side).
 
