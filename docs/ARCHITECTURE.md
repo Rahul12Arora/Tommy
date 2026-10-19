@@ -1142,7 +1142,7 @@ fun suggestCategory(packageName: String, androidCategory: Int, config: NyxConfig
 | S-02 Age check | "Are you 18 or older?" Yes / No | Yes → `setup.ageConfirmed = true` → S-03. No → adults-only screen |
 | S-04 Choose pet | Enabled pets, each with the face for the band that contains `mood.start`. Enabled personalities, each with its `previewLine`. The current choice is preselected (the first enabled one if nothing is stored) | `pet.petId` and `pet.personalityId` when Continue is tapped |
 | S-05 App categories | Installed apps (icon, label, category) with a search field (case-insensitive match on the label). Tapping an app opens a menu with the five categories | One `app_categories` upsert per change, immediately |
-| S-06 Limits | One row per limit setting in `EffectiveConfig.settings` (the category daily limits, the total, the stretch), in that order. Editable → a slider within `min..max` showing the effective value, with "Off" at 0. Locked → the value with "Set by Nyx", no slider | `ConfigUserValues.set(path, value)` when the slider is released (D-61) |
+| S-06 Limits | One row per limit setting in `EffectiveConfig.settings` (the category daily limits, the total, the stretch), in that order. Editable → a slider within `min..max` showing the effective value, with "Off" at 0. Locked → the value with "Set by Nyx", no slider | `ConfigUserValues.set(path, setting, value)` when the slider is released (D-61) |
 | S-07 Stats | What's shared and what isn't (A-09), a switch that starts off, and Finish | `stats.optIn` when the switch changes. Finish → `setup.completed = true` → Home. The install ID and uploads come in M14 |
 
 - **Sliders:** steps of 5 min when the range is longer than 60 and `max − min` divides by 5, otherwise steps of 1 min. Always bounded by `min..max`, so an out-of-range value can't be entered.
@@ -1156,7 +1156,7 @@ fun suggestCategory(packageName: String, androidCategory: Int, config: NyxConfig
 | `AppContainer.kt` | Adds the DataStore, `AppDatabase`, the `…Settings` classes, `ConfigUserValues`, `effectiveConfig`, `AppCategoryRepository`, `InstalledApps`, `PermissionChecks` |
 | `AppNavigation.kt` | Setup keys and entries, gating, entry decorators, finishing |
 | `data/AppDatabase.kt` · `data/SettingsStore.kt` | Room database · DataStore factory |
-| `config/ConfigUserValues.kt` | `observe(): Flow<Map<String, Int>>` and `set(path, value)` over `config.*` keys |
+| `config/ConfigUserValues.kt` | `observe(): Flow<Map<String, Int>>` and `set(path, setting, value)` over `config.*` keys; `set` clamps to the setting's range |
 | `setup/SetupSettings.kt` · `pet/PetSettings.kt` · `stats/StatsSettings.kt` | Their keys (table above) |
 | `setup/SetupStep.kt` | The frame every step shares: heading + scrolling content |
 | `setup/WelcomeScreen.kt` · `AgeCheckScreen.kt` (with the adults-only screen) | S-01, S-02. No ViewModel; `AgeCheckRoute` stores the "yes" and then calls back |
@@ -1180,8 +1180,8 @@ fun suggestCategory(packageName: String, androidCategory: Int, config: NyxConfig
 | `US04_CategorySuggestionTest` | `src/test/` | Admin default wins over the Android category · Android category mapped when there's no admin default · unmapped or undefined Android category → Neutral · a map entry pointing at a category is used as is |
 | `US04_AppCategoriesViewModelTest` | `src/test/` | The user's choice wins over the suggestion · search filters by label, ignoring case · a change is upserted. Uses fakes for the app list and the repository |
 | `US05_LimitsViewModelTest` | `src/test/` | Only limit settings, in order · locked → read-only with the admin default · a value outside the range is clamped before it's stored · slider steps (5 vs 1) |
-| `US03_ChoosePetViewModelTest` | `src/test/` | Only enabled pets and personalities · the preview face is the `mood.start` band · nothing stored → the first enabled one is preselected |
-| `US22_ConfigUserValuesTest` | `src/test/` | Set, then observe, gives the value · non-`config.` keys are ignored · `EffectiveConfig` follows a change. DataStore on a temporary file |
+| `US03_ChoosePetViewModelTest` | `src/test/` | Only enabled pets and personalities · the preview face is the `mood.start` band · nothing stored → the first enabled one · a stored choice is selected unless it was disabled · a tap wins over what's stored · Continue stores the selection |
+| `US22_ConfigUserValuesTest` | `src/test/` | Set, then observe, gives the value · out-of-range values are clamped before storing · other features' keys are ignored · `EffectiveConfig` follows a stored value. DataStore on a temporary file |
 | `PhoneBrandTest` | `src/test/` | `Xiaomi`, `samsung`, `vivo`, `OPPO` → their brand · anything else → `OTHER` |
 | `US01_MissingPermissionsTest` | `src/test/` | `PermissionStatus.missing`: none when all are granted, all in screen order when none are, only the others when some are |
 | `US01_PermissionsScreenTest` | `src/androidTest/` | The stateless screen: granted rows say "Done ✓" and have no button · a row's button asks for that permission · all granted → Continue goes straight on · skipped → the dialog lists exactly the missing consequences; Continue anyway / Go back · brand steps and the app-settings button |

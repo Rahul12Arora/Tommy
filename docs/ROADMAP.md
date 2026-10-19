@@ -164,7 +164,7 @@ Tasks:
 - [x] Room `AppDatabase` (first table `app_categories`, schema export, migration policy per ARCHITECTURE §14.1) and the `settings` DataStore (D-50)
 - [x] S-01 Welcome, S-02 Age check (under 18 stops)
 - [x] S-03 Permissions: usage access, overlay, notifications, battery settings; auto-tick on return; "what won't work" summary for skipped steps; brand-specific steps (Xiaomi, Samsung, Vivo, Oppo, generic)
-- [ ] S-04 Pet + personality picker with preview lines
+- [x] S-04 Pet + personality picker with preview lines
 - [ ] S-05 App categories: launcher apps listed, suggested by admin default → Android category → Neutral; search; save to `app_categories`
 - [ ] S-06 Limits & goals within ranges; locked items read-only
 - [ ] S-07 Stats opt-in (stored only, default off)

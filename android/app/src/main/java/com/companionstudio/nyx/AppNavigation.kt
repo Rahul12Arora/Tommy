@@ -7,11 +7,14 @@ import androidx.compose.runtime.produceState
 import androidx.compose.ui.res.stringResource
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.companionstudio.nyx.home.HomeRoute
 import com.companionstudio.nyx.setup.AdultsOnlyScreen
 import com.companionstudio.nyx.setup.AgeCheckRoute
+import com.companionstudio.nyx.setup.ChoosePetRoute
 import com.companionstudio.nyx.setup.PermissionsRoute
 import com.companionstudio.nyx.setup.WelcomeScreen
 import com.companionstudio.nyx.ui.PlaceholderScreen
@@ -30,6 +33,7 @@ import kotlinx.serialization.Serializable
 @Serializable data object AdultsOnly : NavKey
 @Serializable data object Permissions : NavKey
 @Serializable data object ChoosePet : NavKey
+@Serializable data object AppCategories : NavKey
 
 @Composable
 fun AppNavigation(container: AppContainer) {
@@ -44,6 +48,8 @@ fun AppNavigation(container: AppContainer) {
     NavDisplay(
         backStack = backStack,
         onBack = { backStack.removeLastOrNull() },
+        // Each screen's ViewModel lives as long as its back-stack entry and is cleared when it's popped (D-55)
+        entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator(), rememberViewModelStoreNavEntryDecorator()),
         entryProvider = entryProvider {
             entry<Home> {
                 HomeRoute(
@@ -70,8 +76,11 @@ fun AppNavigation(container: AppContainer) {
             entry<Permissions> {
                 PermissionsRoute(container.permissionChecks, onNext = { backStack.add(ChoosePet) })
             }
-            // Placeholder until S-04 is built later in M3
-            entry<ChoosePet> { PlaceholderScreen(stringResource(R.string.choose_pet_title)) }
+            entry<ChoosePet> {
+                ChoosePetRoute(container.effectiveConfig, container.petSettings, onNext = { backStack.add(AppCategories) })
+            }
+            // Placeholder until S-05 is built later in M3
+            entry<AppCategories> { PlaceholderScreen(stringResource(R.string.app_categories_title)) }
         },
     )
 }

@@ -1,7 +1,7 @@
 ## Current state
 - Phase: 5 — Build · Milestone: M3 Setup flow (in progress, branch `feat/m3-setup-flow`)
-- Last done: S-03 Permissions (four rows that tick on return, brand steps, "what won't work" dialog); S-04 is a placeholder
-- Next step: S-04 Choose pet — first per-entry ViewModel, so CR-08's `lifecycle-viewmodel-navigation3` goes in with it; also `ConfigUserValues` + `effectiveConfig`
+- Last done: S-04 Choose pet, with per-entry ViewModels (CR-08) and `effectiveConfig` following the user's stored values; S-05 is a placeholder
+- Next step: S-05 App categories — `<queries>`, `InstalledApps`, `suggestCategory`, the R-10 device test
 - Blockers: none
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
@@ -70,3 +70,5 @@
 - Done: S-03 Permissions — `PermissionChecks` (usage access via app ops, overlay, notifications, battery exemption) + Settings intents with an app-details fallback; `PhoneBrand`; brand steps as string arrays (A-29); "what won't work" dialog (D-59); manifest declares `PACKAGE_USAGE_STATS`, `SYSTEM_ALERT_WINDOW`, `POST_NOTIFICATIONS`
 - Learned: with the setup flag read asynchronously, `US28_NavigationTest` failed every time under Gradle (cold start): the Home node existed before the window was shown. Not a user-visible problem. Activity-level tests now wait for their first screen (`waitUntilDisplayed`); 3 runs in a row green
 - Verified: `assembleDebug test lint` clean, 54 unit tests (+5); 19 device tests on the API 37 emulator (+6 `US01_PermissionsScreenTest`). Manually on the emulator (driven over adb): each row's button opens the right screen (Usage access list, Display over other apps list with Nyx in it, the notification permission dialog, battery optimisation list, Nyx's app info); rows tick themselves on return; all granted → Continue goes straight to S-04. Brand steps on a non-Pixel phone not checked (A-29)
+- Done: S-04 Choose pet — `ChoosePetViewModel` + pure `choosePetState` (enabled items only, face of the `mood.start` band, tapped → stored if still enabled → first enabled), radio-style cards, saved to `pet/PetSettings` on Continue. `lifecycle-viewmodel-navigation3` 2.11.0 added (CR-08) and `NavDisplay` gets the saveable-state + ViewModel-store decorators. `config/ConfigUserValues` (clamps before storing) and `AppContainer.effectiveConfig` (base read once, lazily, on IO)
+- Verified: `assembleDebug test lint` clean, 65 unit tests (+11: choose pet 6, user values 5); 19 device tests green on the API 37 emulator. On the emulator: Cat 😸 / Blob 😄 with both personalities and their preview lines; picking Blob survives a rotation; Continue opens S-05; Back returns with Blob + Calm friend selected
