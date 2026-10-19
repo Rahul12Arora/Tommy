@@ -3,7 +3,7 @@
 > Phase 4 output. Read this first if you're new to the repo: after ~10 minutes you should know how data moves through the system and where every piece lives.
 > Low-level design (LLD) for each module is added to §14 at the **start** of its milestone, before any code.
 > Rule: code and diagrams must agree. A task that changes a component, a flow or a folder updates this file in the same task.
-> Last updated: 2026-10-18
+> Last updated: 2026-10-19
 
 ---
 
@@ -684,7 +684,7 @@ Written at the start of each milestone, before code.
 | Module | Milestone | LLD status |
 |---|---|---|
 | Project setup | M0 | not needed |
-| App shell, storage, DayClock | M1 | pending |
+| App shell, storage, DayClock | M1 | done 2026-10-19 (§14.1) |
 | Config: schema, defaults, validator, layering | M2 | pending |
 | Setup flow + app categories | M3 | pending |
 | PetService + usage tracking | M4 | pending |
@@ -697,3 +697,112 @@ Written at the start of each milestone, before code.
 | App remote config | M12 | pending |
 | Trends + positive goals | M13 | pending |
 | Opt-in stats | M14 | pending |
+
+### 14.1 M1 — App shell, storage, DayClock
+
+**Purpose:** the skeleton every later milestone plugs into: the `Application` class, the manual DI container, navigation with predictive back, the theme, the day-key clock, and Home (S-08) fed from a fake repository. Story: US-28 (screen shell only).
+
+**Storage scope (D-50, approved 2026-10-19)**
+- Room refuses a database with no tables: a probe on 2026-10-19 failed with `@Database annotation must specify list of entities`. So the roadmap's "empty schema" can't be built.
+- **Decision:**
+  - `AppDatabase` is created in M3 together with its first real table (`app_categories`, filled by S-05). M4 adds `daily_app_usage` and `events`.
+  - DataStore is created in M3 together with its first keys (setup progress, age check).
+  - M1 records the policies below so M3 just follows them.
+- **Alternatives:**
+  - A placeholder entity now. Rejected: a table that exists only to make Room compile, and has to be removed later.
+  - Pull `app_categories` forward into M1. Rejected: it designs M3's data before M3's LLD.
+
+**Room policy** (applied when M3 creates `AppDatabase`)
+- One `AppDatabase` in `data/`. Entities and DAOs live in their feature packages (§3).
+- `exportSchema = true`. The schema JSON goes in `android/app/schemas/` (KSP argument `room.schemaLocation`) and is committed, so every schema change shows up in review.
+- **Until the first Play release (M15):**
+  - Every schema change bumps `version`.
+  - **Debug** builds call `fallbackToDestructiveMigration(dropAllTables = true)`, so a changed schema wipes local data instead of crashing.
+  - **Release** builds never use the destructive fallback.
+- **From `v1.0.0` on:** every schema change ships a `Migration` (or `AutoMigration`) plus a migration test. `room-testing` goes through dependency approval at that point.
+- Day keys are stored as ISO dates (`"2026-10-19"`): readable in the database inspector and they sort correctly. Confirmed in M4's LLD, where the first day-keyed table arrives.
+
+**DataStore policy** (applied when M3 creates it)
+- One Preferences DataStore named `settings`, created once in `AppContainer` (a second instance on the same file throws).
+- Each feature owns its keys in a small `…Settings` class in its package. No global keys file.
+
+**Files** (`android/app/src/main/java/com/companionstudio/nyx/`)
+
+| File | Responsibility |
+|---|---|
+| `PetApp.kt` | `Application` class; creates `AppContainer` once in `onCreate`. Set in the manifest |
+| `AppContainer.kt` | Manual DI: holds `DayClock` and `SummaryRepository` (the fake one until M4) |
+| `MainActivity.kt` | `enableEdgeToEdge()`, `NyxTheme`, `AppNavigation()`. Nothing else |
+| `AppNavigation.kt` | Navigation 3: `@Serializable` `NavKey` objects, back stack, `NavDisplay` |
+| `ui/theme/` | Theme from the wizard, kept as is (Material 3, dynamic colour on Android 12+). Unused imports and commented-out boilerplate removed |
+| `ui/PlaceholderScreen.kt` | "Not built yet" screen for destinations whose milestone hasn't happened yet |
+| `data/DayClock.kt` | Day keys (below) |
+| `home/TodaySummary.kt` | Data shown on Home: `TodaySummary`, `GoalProgress` |
+| `home/SummaryRepository.kt` | `interface SummaryRepository { fun observeToday(): Flow<TodaySummary> }` |
+| `home/FakeSummaryRepository.kt` | Fixed fake numbers. Replaced by the real repository in M4, which is the only change Home needs |
+| `home/HomeViewModel.kt` | Turns the repository flow into `StateFlow<TodaySummary?>` (`null` = loading) |
+| `home/HomeScreen.kt` | Stateless `HomeScreen(summary, onFocus, onTrends, onSettings)` + a route composable that wires in the ViewModel |
+| `home/DurationFormat.kt` | Seconds → "1 h 25 min" / "12 min" / "0 min". Also used by the summary panel in M5 |
+
+**Navigation**
+- Keys: `Home`, `FocusSetup`, `Trends`, `Settings` (`data object`s implementing `NavKey`, `@Serializable`).
+- The back stack is `rememberNavBackStack(Home)`, so it survives rotation and process death. This needs the Kotlin serialization plugin, which is already in the register; M1 applies it.
+- `FocusSetup` (M8), `Trends` (M13) and `Settings` (M7) show `PlaceholderScreen` until their milestones replace them. That gives the back gesture something to go back from in M1.
+- Back: `NavDisplay(onBack = { backStack.removeLastOrNull() })`. Predictive-back animation comes from `navigation3-ui`. Back on Home leaves the app (system default).
+- Setup gating (Home vs S-01) isn't in M1 (→ M3). The app always opens on Home for now.
+- **Heads-up, not needed in M1:** a ViewModel created inside a Navigation 3 entry is scoped to the Activity unless `androidx.lifecycle:lifecycle-viewmodel-navigation3` is added. That's fine for Home, the root screen. M3 (setup screens with their own ViewModels) will ask to add it, or explain why it isn't needed.
+
+**DayClock**
+
+```kotlin
+class DayClock(
+    private val clock: Clock = Clock.systemUTC(),            // where "now" comes from; fixed in tests
+    private val zone: () -> ZoneId = ZoneId::systemDefault,  // read on every call
+) {
+    fun dayKeyAt(instant: Instant, resetHour: Int): LocalDate
+    fun today(resetHour: Int): LocalDate = dayKeyAt(clock.instant(), resetHour)
+}
+```
+
+- **Rule:** `dayKey = LocalDateTime.ofInstant(instant, zone()).minusHours(resetHour).toLocalDate()`. Wall-clock based: with reset 04:00, 03:30 belongs to the previous day; 04:00:00 starts the new one.
+- **Why the zone is a function and not the `Clock`'s zone:** `Clock.systemDefaultZone()` fixes the zone when it's created. Android updates the process default time zone when the user changes it, so reading `ZoneId.systemDefault()` on every call follows the change.
+- **Why `resetHour` is a parameter:** the reset hour comes from config (M2) and user settings (M3). Passing it in keeps `DayClock` free of dependencies and trivial to test.
+- `require(resetHour in 0..23)`. Config limits it to 0–6 (§5). This check only catches programming errors.
+- `nextResetAt()` and anything else the day reset needs arrive in M4 together with the code that uses them.
+
+**Home (S-08) data**
+
+```kotlin
+data class TodaySummary(
+    val totalSeconds: Long,
+    val productiveSeconds: Long,
+    val doomscrollSeconds: Long,
+    val goals: List<GoalProgress>,
+    val petFace: String,     // emoji for the current mood band; comes from config + mood in M6
+)
+data class GoalProgress(val label: String, val usedSeconds: Long, val targetSeconds: Long)
+```
+
+- **Fake values:** 3 h 12 min total, 1 h 05 min productive, 47 min doomscrolling. Goals: "Social ≤ 60 min" at 47 of 60 and "Games ≤ 30 min" at 35 of 30 (over). Face 😸.
+- **Screen:**
+  - Face, total, productive vs doomscrolling, and one row per goal (text + progress bar).
+  - An over-limit goal says "over" in words, not just in colour (§9).
+  - Buttons: Start focus, Trends, Settings.
+  - Content scrolls, and handles insets through `Scaffold`, so large text works.
+  - Strings live in `strings.xml`.
+- **States:** loading (`null`) shows a progress indicator. There's no error state: the fake can't fail, and the real repository (M4) reads local Room, so an empty day is all zeros.
+
+**Tests**
+
+| Test | Where | Checks |
+|---|---|---|
+| `DayClockTest` | `src/test/` | Reset 0: 23:59:59 vs 00:00:00 · reset 4: 03:59 → previous day, 04:00 → same day · time-zone change: the same instant gives the new zone's day once the zone provider switches (Asia/Kolkata → America/New_York) · DST-free zones (Asia/Kolkata, UTC) across a reset · one DST zone (Europe/London, spring-forward day) to show wall-clock behaviour · resetHour outside 0–23 is rejected |
+| `DurationFormatTest` | `src/test/` | 0, 59 s, 60 s, 3599 s, 3600 s, 11 520 s |
+| `HomeViewModelTest` | `src/test/` | Emits `null`, then the repository's summary (coroutines-test, `Dispatchers.setMain`) |
+| `US28_HomeScreenTest` | `src/androidTest/` | Fake summary → face, total, goals and the "over" label are shown; buttons call their callbacks |
+| `US28_NavigationTest` | `src/androidTest/` | Launch `MainActivity` → Home · tap Settings → placeholder · back (through `onBackPressedDispatcher`) → Home |
+
+- The wizard's `ExampleUnitTest` and `ExampleInstrumentedTest` are deleted.
+- Coverage: `DayClock` ≥ 90% (ROADMAP §2).
+
+**Not in M1:** Room and DataStore instances (→ M3, D-50), setup gating (→ M3), real data (→ M4), config-driven faces and reset hour (→ M2, M6).

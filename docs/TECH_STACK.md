@@ -201,6 +201,7 @@ project/
 | `androidx.test:runner` | 1.7.0 | Test | Runs on-device tests | No device tests | Apache-2.0 |
 | `androidx.test.ext:junit` | 1.3.0 | Test | JUnit 4 rules for device tests | — | Apache-2.0 |
 | `androidx.compose.ui:ui-test-junit4` | via BOM | Test | Compose UI tests | No UI tests | Apache-2.0 |
+| `androidx.test.espresso:espresso-core` | 3.7.0 (CR-07) | Test | Not used directly: overrides the Espresso 3.5.0 that `ui-test-junit4` brings in, which calls `InputManager.getInstance` and fails on API 35+ (fixed in 3.7.0 per the AndroidX Test release notes) | Device tests can't run on API 35+ emulators or current phones | Apache-2.0 |
 
 ### Backend (`backend/`)
 
