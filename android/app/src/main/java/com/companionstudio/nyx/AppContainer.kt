@@ -10,6 +10,7 @@ import com.companionstudio.nyx.data.SETTINGS_STORE_NAME
 import com.companionstudio.nyx.data.createSettingsStore
 import com.companionstudio.nyx.home.FakeSummaryRepository
 import com.companionstudio.nyx.home.SummaryRepository
+import com.companionstudio.nyx.setup.PermissionChecks
 import com.companionstudio.nyx.setup.SetupSettings
 import java.io.File
 
@@ -34,6 +35,7 @@ class AppContainer(context: Context) {
         onCorrupted = { e -> Log.w(TAG, "Settings file was corrupt and has been reset", e) },
     )
     val setupSettings = SetupSettings(settingsStore)
+    val permissionChecks = PermissionChecks(context)
 
     private companion object {
         const val TAG = "Nyx"

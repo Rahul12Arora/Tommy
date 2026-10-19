@@ -8,6 +8,8 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.companionstudio.nyx.MainActivity
 import com.companionstudio.nyx.SetupStateRule
+import com.companionstudio.nyx.waitUntilDisplayed
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -21,6 +23,11 @@ class US01_SetupGatingTest {
 
     @get:Rule(order = 1)
     val composeRule = createAndroidComposeRule<MainActivity>()
+
+    @Before
+    fun waitForTheFirstScreen() {
+        composeRule.waitUntilDisplayed("Meet Nyx")
+    }
 
     @Test
     fun freshInstall_opensWelcome() {

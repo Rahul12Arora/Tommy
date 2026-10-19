@@ -22,7 +22,7 @@ class US28_NavigationTest {
 
     @Test
     fun launchShowsHome_settingsOpens_backReturnsHome() {
-        composeRule.onNodeWithText("Today: 3 h 12 min").assertIsDisplayed()
+        composeRule.waitUntilDisplayed("Today: 3 h 12 min")
 
         composeRule.onNodeWithText("Settings").performScrollTo().performClick()
         composeRule.onNodeWithText("Not built yet.").assertIsDisplayed()

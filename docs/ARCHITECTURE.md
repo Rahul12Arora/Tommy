@@ -1131,7 +1131,8 @@ fun suggestCategory(packageName: String, androidCategory: Int, config: NyxConfig
   - The step texts are our own words, written from the brands' help pages and dontkillmyapp.com. They aren't checked on those phones (A-29, R-04).
   - Cut line (ROADMAP §1): if week 1 runs late, Vivo and Oppo fall back to the generic text.
 - **"What won't work"** (D-59): Continue with any row not granted opens a dialog that lists each missing row's consequence (the "Without it" column of §10), with **Continue anyway** and **Go back**. The setup can still finish. US-01's "grant it later from Settings" is the S-03 entry in Settings (M7) and the N-03 notification (M4).
-- `setup/PermissionChecks.kt` holds the four checks behind a `PermissionStatus(usageAccess, overlay, notifications, battery)`. M4's permission-lost detection (US-26) reuses it.
+- `setup/PermissionChecks.kt` holds the four checks, the Settings intents and `SetupPermission` (the four, in screen order). `PermissionStatus(granted: Set<SetupPermission>)` also gives `missing` in screen order. M4's permission-lost detection (US-26) reuses it.
+- If a phone has no screen for a Settings intent (`ActivityNotFoundException`), the app's own details page opens instead and the gap is logged.
 
 **The other screens**
 
@@ -1182,7 +1183,8 @@ fun suggestCategory(packageName: String, androidCategory: Int, config: NyxConfig
 | `US03_ChoosePetViewModelTest` | `src/test/` | Only enabled pets and personalities · the preview face is the `mood.start` band · nothing stored → the first enabled one is preselected |
 | `US22_ConfigUserValuesTest` | `src/test/` | Set, then observe, gives the value · non-`config.` keys are ignored · `EffectiveConfig` follows a change. DataStore on a temporary file |
 | `PhoneBrandTest` | `src/test/` | `Xiaomi`, `samsung`, `vivo`, `OPPO` → their brand · anything else → `OTHER` |
-| `US01_MissingPermissionsTest` | `src/test/` | Which consequences are listed for a given `PermissionStatus` · none when all are granted |
+| `US01_MissingPermissionsTest` | `src/test/` | `PermissionStatus.missing`: none when all are granted, all in screen order when none are, only the others when some are |
+| `US01_PermissionsScreenTest` | `src/androidTest/` | The stateless screen: granted rows say "Done ✓" and have no button · a row's button asks for that permission · all granted → Continue goes straight on · skipped → the dialog lists exactly the missing consequences; Continue anyway / Go back · brand steps and the app-settings button |
 | `US01_SetupGatingTest` | `src/androidTest/` | Not completed → Welcome · completed → Home · going through every step → Home, and Back then leaves the app (the back stack is just `[Home]`) · recreating the Activity mid-setup keeps the current step |
 | `US02_AgeCheckTest` | `src/androidTest/` | No → the adults-only screen, with no way forward · Yes → S-03 |
 | `US05_LimitsScreenTest` | `src/androidTest/` | A locked setting shows "Set by Nyx" and no slider |
@@ -1190,6 +1192,7 @@ fun suggestCategory(packageName: String, androidCategory: Int, config: NyxConfig
 | `AppCategoryDaoTest` | `src/androidTest/` | In-memory Room: upsert inserts, then replaces; `observeAll` emits the change |
 
 - `US28_NavigationTest` (M1) now marks setup as completed before it launches, since a fresh install would start at Welcome.
+- Activity-level device tests wait for the first screen (`waitUntilDisplayed` in `ComposeWaits.kt`): it appears only after the setup flag is read, which Compose's idling doesn't track.
 - Device tests set DataStore values through the app's own `AppContainer` (`SetupStateRule`, which clears the `internal` `settingsStore` and can mark setup done before the Activity starts). They never touch the file under a running DataStore.
 - Coverage: screens have no target (ROADMAP §2). The suggestion rule and the ViewModels are covered by the unit tests above.
 - Permission rows depend on system Settings screens, so they're checked by hand (manual QA), not by an automated test.

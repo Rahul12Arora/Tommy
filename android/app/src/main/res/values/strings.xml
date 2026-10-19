@@ -15,6 +15,55 @@
     <string name="adults_only_body">Nyx is made for people aged 18 and over, so setup can\'t continue.</string>
     <string name="adults_only_close">Close</string>
 
+    <!-- Setup: S-03 Permissions -->
+    <string name="permissions_title">Permissions</string>
+    <string name="permissions_intro">Nyx needs a few things from your phone. Each one opens the right settings screen. You can skip any of them and come back later.</string>
+    <string name="permission_usage_title">Usage access</string>
+    <string name="permission_usage_reason">Lets Nyx see which app is open and for how long. Find Nyx in the list and turn it on.</string>
+    <string name="permission_usage_without">The pet can\'t see your apps, so it can\'t track your time or react to it.</string>
+    <string name="permission_overlay_title">Display over other apps</string>
+    <string name="permission_overlay_reason">Lets the pet sit on top of other apps. Find Nyx in the list and turn it on.</string>
+    <string name="permission_overlay_without">The pet can\'t appear on your screen.</string>
+    <string name="permission_notifications_title">Notifications</string>
+    <string name="permission_notifications_reason">For break reminders, nags while the pet is hidden, and the note that shows the pet is running.</string>
+    <string name="permission_notifications_without">No break reminders or alerts outside the pet.</string>
+    <string name="permission_battery_title">Battery</string>
+    <string name="permission_battery_reason">Makes it less likely that your phone stops the pet to save battery. In the list, show all apps, find Nyx and choose not to optimise it.</string>
+    <string name="permission_battery_without">Your phone may stop the pet in the background.</string>
+    <string name="permission_granted">Done ✓</string>
+    <string name="permission_not_granted">Not done yet</string>
+    <string name="permission_open">Open settings</string>
+    <string name="battery_brand_intro">Your phone may need a few more steps:</string>
+    <string name="battery_open_app_settings">Open Nyx\'s app settings</string>
+    <string name="permissions_continue">Continue</string>
+    <string name="permissions_missing_title">Some things won\'t work</string>
+    <string name="permissions_missing_later">You can turn these on later from Settings.</string>
+    <string name="permissions_continue_anyway">Continue anyway</string>
+    <string name="permissions_go_back">Go back</string>
+    <!-- Brand battery steps (D-60): our own words, not yet checked on these brands' phones (A-29) -->
+    <string-array name="battery_steps_xiaomi">
+        <item>Open Nyx\'s app settings below and turn on Autostart.</item>
+        <item>Under Battery saver, choose No restrictions.</item>
+        <item>In your recent apps, lock Nyx so it isn\'t cleared.</item>
+    </string-array>
+    <string-array name="battery_steps_samsung">
+        <item>Open Nyx\'s app settings below, tap Battery and choose Unrestricted.</item>
+        <item>In your phone\'s battery settings, make sure Nyx isn\'t listed as a sleeping or deep sleeping app.</item>
+    </string-array>
+    <string-array name="battery_steps_vivo">
+        <item>Open Nyx\'s app settings below and allow Autostart if you see it.</item>
+        <item>Under Battery, allow high background power use.</item>
+        <item>In your recent apps, lock Nyx so it isn\'t cleared.</item>
+    </string-array>
+    <string-array name="battery_steps_oppo">
+        <item>Open Nyx\'s app settings below and allow Auto launch if you see it.</item>
+        <item>Under Battery usage, allow background activity.</item>
+        <item>In your recent apps, lock Nyx so it isn\'t cleared.</item>
+    </string-array>
+    <string-array name="battery_steps_other">
+        <item>If the pet ever disappears on its own, open Nyx\'s app settings below and look for battery or background options that let Nyx keep running.</item>
+    </string-array>
+
     <!-- Home (S-08) -->
     <string name="home_total">Today: %1$s</string>
     <string name="home_productive">Productive: %1$s</string>
@@ -30,6 +79,6 @@
     <string name="focus_setup_title">Focus</string>
     <string name="trends_title">Trends</string>
     <string name="settings_title">Settings</string>
-    <string name="permissions_title">Permissions</string>
+    <string name="choose_pet_title">Choose your pet</string>
     <string name="placeholder_not_built">Not built yet.</string>
 </resources>

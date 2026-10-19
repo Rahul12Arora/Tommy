@@ -9,6 +9,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.companionstudio.nyx.MainActivity
 import com.companionstudio.nyx.PetApp
 import com.companionstudio.nyx.SetupStateRule
+import com.companionstudio.nyx.waitUntilDisplayed
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertFalse
@@ -31,6 +32,7 @@ class US02_AgeCheckTest {
 
     @Before
     fun openAgeCheck() {
+        composeRule.waitUntilDisplayed("Meet Nyx")
         composeRule.onNodeWithText("Get started").performScrollTo().performClick()
     }
 

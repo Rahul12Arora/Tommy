@@ -12,6 +12,7 @@ import androidx.navigation3.ui.NavDisplay
 import com.companionstudio.nyx.home.HomeRoute
 import com.companionstudio.nyx.setup.AdultsOnlyScreen
 import com.companionstudio.nyx.setup.AgeCheckRoute
+import com.companionstudio.nyx.setup.PermissionsRoute
 import com.companionstudio.nyx.setup.WelcomeScreen
 import com.companionstudio.nyx.ui.PlaceholderScreen
 import kotlinx.coroutines.flow.first
@@ -28,6 +29,7 @@ import kotlinx.serialization.Serializable
 @Serializable data object AgeCheck : NavKey
 @Serializable data object AdultsOnly : NavKey
 @Serializable data object Permissions : NavKey
+@Serializable data object ChoosePet : NavKey
 
 @Composable
 fun AppNavigation(container: AppContainer) {
@@ -65,8 +67,11 @@ fun AppNavigation(container: AppContainer) {
                 )
             }
             entry<AdultsOnly> { AdultsOnlyScreen(onClose = { activity?.finish() }) }
-            // Placeholder until S-03 is built later in M3
-            entry<Permissions> { PlaceholderScreen(stringResource(R.string.permissions_title)) }
+            entry<Permissions> {
+                PermissionsRoute(container.permissionChecks, onNext = { backStack.add(ChoosePet) })
+            }
+            // Placeholder until S-04 is built later in M3
+            entry<ChoosePet> { PlaceholderScreen(stringResource(R.string.choose_pet_title)) }
         },
     )
 }

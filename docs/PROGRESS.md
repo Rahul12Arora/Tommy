@@ -1,7 +1,7 @@
 ## Current state
 - Phase: 5 — Build · Milestone: M3 Setup flow (in progress, branch `feat/m3-setup-flow`)
-- Last done: S-01 Welcome, S-02 Age check, setup gating in `AppNavigation` (Permissions is a placeholder for now)
-- Next step: S-03 Permissions (manifest permissions, checks, brand steps, "what won't work" dialog)
+- Last done: S-03 Permissions (four rows that tick on return, brand steps, "what won't work" dialog); S-04 is a placeholder
+- Next step: S-04 Choose pet — first per-entry ViewModel, so CR-08's `lifecycle-viewmodel-navigation3` goes in with it; also `ConfigUserValues` + `effectiveConfig`
 - Blockers: none
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
@@ -67,3 +67,6 @@
 - Verified: `assembleDebug test lint` clean, 49 unit tests (+4 `SetupSettingsTest`, incl. a corrupt file); 7 device tests on the API 37 emulator (+2 `AppCategoryDaoTest`). Not run on the Pixel 7a yet
 - Done: S-01 Welcome, S-02 Age check + adults-only stop (Close finishes the Activity; "no" isn't stored, D-57), shared `SetupStep` frame; `AppNavigation` reads `setup.completed` once and starts on Welcome or Home. Device-test `SetupStateRule` resets settings before launch; `US28_NavigationTest` now starts with setup done
 - Verified: `assembleDebug test lint` clean (49 unit tests); 13 device tests on the API 37 emulator (+6: gating 3, age check 3). One gating test first failed because it pressed Back before Compose had settled; fixed by waiting for the step to show (test sequencing, not a weakened check)
+- Done: S-03 Permissions — `PermissionChecks` (usage access via app ops, overlay, notifications, battery exemption) + Settings intents with an app-details fallback; `PhoneBrand`; brand steps as string arrays (A-29); "what won't work" dialog (D-59); manifest declares `PACKAGE_USAGE_STATS`, `SYSTEM_ALERT_WINDOW`, `POST_NOTIFICATIONS`
+- Learned: with the setup flag read asynchronously, `US28_NavigationTest` failed every time under Gradle (cold start): the Home node existed before the window was shown. Not a user-visible problem. Activity-level tests now wait for their first screen (`waitUntilDisplayed`); 3 runs in a row green
+- Verified: `assembleDebug test lint` clean, 54 unit tests (+5); 19 device tests on the API 37 emulator (+6 `US01_PermissionsScreenTest`). Manually on the emulator (driven over adb): each row's button opens the right screen (Usage access list, Display over other apps list with Nyx in it, the notification permission dialog, battery optimisation list, Nyx's app info); rows tick themselves on return; all granted → Continue goes straight to S-04. Brand steps on a non-Pixel phone not checked (A-29)
