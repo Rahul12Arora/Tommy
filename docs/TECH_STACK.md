@@ -180,6 +180,7 @@ project/
 | `androidx.lifecycle:lifecycle-runtime-compose` | 2.11.0 | App | Lifecycle-aware state in Compose | Leaky collectors | Apache-2.0 |
 | `androidx.lifecycle:lifecycle-viewmodel-compose` | 2.11.0 | App | ViewModels for screens | Screen state lost on rotation | Apache-2.0 |
 | `androidx.lifecycle:lifecycle-service` | 2.11.0 | App | Lets Compose run in the overlay service | Hand-written lifecycle plumbing | Apache-2.0 |
+| `androidx.lifecycle:lifecycle-viewmodel-navigation3` | 2.11.0 (CR-08) | App | Scopes each screen's ViewModel to its back-stack entry | ViewModels live as long as the Activity: stale state, S-05's icons kept in memory | Apache-2.0 |
 | `androidx.navigation3:navigation3-runtime` | 1.2.0 | App | Back stack for 11 screens | Hand-rolled navigation | Apache-2.0 |
 | `androidx.navigation3:navigation3-ui` | 1.2.0 | App | Shows screens + predictive back | Predictive back by hand (required at target 36) | Apache-2.0 |
 | `androidx.room:room-runtime` | 2.8.5 | Data | Daily totals + event log (SQLite) with Flow support | Raw SQL boilerplate, no compile-time query checks | Apache-2.0 |

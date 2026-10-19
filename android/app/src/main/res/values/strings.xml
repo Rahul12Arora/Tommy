@@ -1,6 +1,112 @@
 <resources>
     <string name="app_name">Nyx</string>
 
+    <!-- Setup: S-01 Welcome, S-02 Age check -->
+    <string name="welcome_title">Meet Nyx</string>
+    <string name="welcome_pet">A small pet lives on your screen and keeps an eye on your screen time.</string>
+    <string name="welcome_nudges">It nudges you when you go past your limits, and cheers when you take a break or finish a focus session.</string>
+    <string name="welcome_privacy">Which apps you use never leaves this phone.</string>
+    <string name="welcome_start">Get started</string>
+    <string name="age_title">Are you 18 or older?</string>
+    <string name="age_body">Nyx is made for adults.</string>
+    <string name="age_yes">Yes, I\'m 18 or older</string>
+    <string name="age_no">No</string>
+    <string name="adults_only_title">Nyx is for adults</string>
+    <string name="adults_only_body">Nyx is made for people aged 18 and over, so setup can\'t continue.</string>
+    <string name="adults_only_close">Close</string>
+
+    <!-- Setup: S-03 Permissions -->
+    <string name="permissions_title">Permissions</string>
+    <string name="permissions_intro">Nyx needs a few things from your phone. Each one opens the right settings screen. You can skip any of them and come back later.</string>
+    <string name="permission_usage_title">Usage access</string>
+    <string name="permission_usage_reason">Lets Nyx see which app is open and for how long. Find Nyx in the list and turn it on.</string>
+    <string name="permission_usage_without">The pet can\'t see your apps, so it can\'t track your time or react to it.</string>
+    <string name="permission_overlay_title">Display over other apps</string>
+    <string name="permission_overlay_reason">Lets the pet sit on top of other apps. Find Nyx in the list and turn it on.</string>
+    <string name="permission_overlay_without">The pet can\'t appear on your screen.</string>
+    <string name="permission_notifications_title">Notifications</string>
+    <string name="permission_notifications_reason">For break reminders, nags while the pet is hidden, and the note that shows the pet is running.</string>
+    <string name="permission_notifications_without">No break reminders or alerts outside the pet.</string>
+    <string name="permission_battery_title">Battery</string>
+    <string name="permission_battery_reason">Makes it less likely that your phone stops the pet to save battery. In the list, show all apps, find Nyx and choose not to optimise it.</string>
+    <string name="permission_battery_without">Your phone may stop the pet in the background.</string>
+    <string name="permission_granted">Done ✓</string>
+    <string name="permission_not_granted">Not done yet</string>
+    <string name="permission_open">Open settings</string>
+    <string name="battery_brand_intro">Your phone may need a few more steps:</string>
+    <string name="battery_open_app_settings">Open Nyx\'s app settings</string>
+    <string name="permissions_continue">Continue</string>
+    <string name="permissions_missing_title">Some things won\'t work</string>
+    <string name="permissions_missing_later">You can turn these on later from Settings.</string>
+    <string name="permissions_continue_anyway">Continue anyway</string>
+    <string name="permissions_go_back">Go back</string>
+    <!-- Brand battery steps (D-60): our own words, not yet checked on these brands' phones (A-29) -->
+    <string-array name="battery_steps_xiaomi">
+        <item>Open Nyx\'s app settings below and turn on Autostart.</item>
+        <item>Under Battery saver, choose No restrictions.</item>
+        <item>In your recent apps, lock Nyx so it isn\'t cleared.</item>
+    </string-array>
+    <string-array name="battery_steps_samsung">
+        <item>Open Nyx\'s app settings below, tap Battery and choose Unrestricted.</item>
+        <item>In your phone\'s battery settings, make sure Nyx isn\'t listed as a sleeping or deep sleeping app.</item>
+    </string-array>
+    <string-array name="battery_steps_vivo">
+        <item>Open Nyx\'s app settings below and allow Autostart if you see it.</item>
+        <item>Under Battery, allow high background power use.</item>
+        <item>In your recent apps, lock Nyx so it isn\'t cleared.</item>
+    </string-array>
+    <string-array name="battery_steps_oppo">
+        <item>Open Nyx\'s app settings below and allow Auto launch if you see it.</item>
+        <item>Under Battery usage, allow background activity.</item>
+        <item>In your recent apps, lock Nyx so it isn\'t cleared.</item>
+    </string-array>
+    <string-array name="battery_steps_other">
+        <item>If the pet ever disappears on its own, open Nyx\'s app settings below and look for battery or background options that let Nyx keep running.</item>
+    </string-array>
+
+    <!-- Setup: S-04 Choose pet -->
+    <string name="choose_pet_title">Choose your pet</string>
+    <string name="choose_pet_pets">Pet</string>
+    <string name="choose_pet_personalities">Personality</string>
+    <string name="choose_pet_preview_line">“%1$s”</string>
+    <string name="setup_continue">Continue</string>
+
+    <!-- Setup: S-05 App categories -->
+    <string name="app_categories_title">Your apps</string>
+    <string name="app_categories_intro">Nyx has guessed a category for each app. Tap an app to fix any that are wrong.</string>
+    <string name="app_categories_search">Search apps</string>
+    <string name="app_categories_no_match">No apps match.</string>
+    <string name="app_categories_change">Change category</string>
+    <string name="app_categories_current">%1$s (current)</string>
+
+    <!-- Setup: S-06 Limits -->
+    <string name="limits_title">Limits</string>
+    <string name="limits_intro">The pet nudges you when you go past a limit. These are sensible starting points; change any you like.</string>
+    <string name="limits_category_daily">%1$s per day</string>
+    <string name="limits_total_daily">All apps per day</string>
+    <string name="limits_stretch">Without a break</string>
+    <string name="limits_stretch_covers">Continuous use of %1$s. Screen off for a few minutes counts as a break.</string>
+    <string name="limits_off">Off</string>
+    <string name="limits_locked">Set by Nyx</string>
+
+    <!-- Setup: S-07 Stats opt-in (A-09) -->
+    <string name="stats_title">Help improve Nyx</string>
+    <string name="stats_intro">You can share an anonymous summary once a day. It helps show whether Nyx actually helps people.</string>
+    <string name="stats_shared_title">What\'s shared</string>
+    <string name="stats_shared">Minutes per category, focus sessions started and finished, nags, snoozes, breaks, whether the pet was running, and the app and Android versions, with a random ID that isn\'t linked to you.</string>
+    <string name="stats_never_title">Never shared</string>
+    <string name="stats_never">Which apps you use, your name or accounts, your location, and anything that identifies you.</string>
+    <string name="stats_switch">Share anonymous daily stats</string>
+    <string name="stats_change_later">Off unless you turn it on. You can change this later in Settings.</string>
+    <string name="stats_finish">Finish</string>
+
+    <!-- Categories (D-51) -->
+    <string name="category_social">Social &amp; scrolling</string>
+    <string name="category_games">Games</string>
+    <string name="category_entertainment">Entertainment</string>
+    <string name="category_productive">Productive</string>
+    <string name="category_neutral">Neutral</string>
+
     <!-- Home (S-08) -->
     <string name="home_total">Today: %1$s</string>
     <string name="home_productive">Productive: %1$s</string>

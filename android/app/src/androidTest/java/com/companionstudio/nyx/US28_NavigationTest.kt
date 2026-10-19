@@ -13,12 +13,16 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class US28_NavigationTest {
 
-    @get:Rule
+    // A finished setup, so the launcher opens Home
+    @get:Rule(order = 0)
+    val setupState = SetupStateRule(completed = true)
+
+    @get:Rule(order = 1)
     val composeRule = createAndroidComposeRule<MainActivity>()
 
     @Test
     fun launchShowsHome_settingsOpens_backReturnsHome() {
-        composeRule.onNodeWithText("Today: 3 h 12 min").assertIsDisplayed()
+        composeRule.waitUntilDisplayed("Today: 3 h 12 min")
 
         composeRule.onNodeWithText("Settings").performScrollTo().performClick()
         composeRule.onNodeWithText("Not built yet.").assertIsDisplayed()

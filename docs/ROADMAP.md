@@ -155,21 +155,21 @@ Done when:
 Verify with: `./gradlew test`
 Not in this milestone: fetching from a server (→ M12)
 
-### M3 — Setup flow            status: pending
+### M3 — Setup flow            status: in-progress
 Goal: a fresh install walks through S-01 to S-07 and lands on Home.
 Depends on: M2
 Stories: US-01, US-02, US-03, US-04, US-05, US-24 (the choice only)
 Tasks:
-- [ ] LLD: screens, state, permission checks, brand detection, `<queries>` behaviour (R-10), Android category mapping
-- [ ] Room `AppDatabase` (first table `app_categories`, schema export, migration policy per ARCHITECTURE §14.1) and the `settings` DataStore (D-50)
-- [ ] S-01 Welcome, S-02 Age check (under 18 stops)
-- [ ] S-03 Permissions: usage access, overlay, notifications, battery settings; auto-tick on return; "what won't work" summary for skipped steps; brand-specific steps (Xiaomi, Samsung, Vivo, Oppo, generic)
-- [ ] S-04 Pet + personality picker with preview lines
-- [ ] S-05 App categories: launcher apps listed, suggested by admin default → Android category → Neutral; search; save to `app_categories`
-- [ ] S-06 Limits & goals within ranges; locked items read-only
-- [ ] S-07 Stats opt-in (stored only, default off)
-- [ ] Launcher opens setup until done, then Home
-- [ ] Tests: setup gating, under-18 stop, category suggestion order, range-bound inputs
+- [x] LLD: screens, state, permission checks, brand detection, `<queries>` behaviour (R-10), Android category mapping
+- [x] Room `AppDatabase` (first table `app_categories`, schema export, migration policy per ARCHITECTURE §14.1) and the `settings` DataStore (D-50)
+- [x] S-01 Welcome, S-02 Age check (under 18 stops)
+- [x] S-03 Permissions: usage access, overlay, notifications, battery settings; auto-tick on return; "what won't work" summary for skipped steps; brand-specific steps (Xiaomi, Samsung, Vivo, Oppo, generic)
+- [x] S-04 Pet + personality picker with preview lines
+- [x] S-05 App categories: launcher apps listed, suggested by admin default → Android category → Neutral; search; save to `app_categories`
+- [x] S-06 Limits & goals within ranges; locked items read-only
+- [x] S-07 Stats opt-in (stored only, default off)
+- [x] Launcher opens setup until done, then Home
+- [x] Tests: setup gating, under-18 stop, category suggestion order, range-bound inputs
 Done when:
 - [ ] Fresh install → all steps → Home, on the emulator and your phone; skipping a permission shows what won't work
 Verify with: `./gradlew test connectedAndroidTest` · manual QA checklist

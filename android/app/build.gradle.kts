@@ -42,6 +42,8 @@ android {
     }
     buildFeatures {
         compose = true
+        // BuildConfig.DEBUG picks the debug-only Room fallback (docs/ARCHITECTURE.md §14.1)
+        buildConfig = true
     }
     lint {
         warningsAsErrors = true
@@ -57,6 +59,11 @@ android {
             test.inputs.dir(sharedDir).withPathSensitivity(PathSensitivity.RELATIVE)
         }
     }
+}
+
+// Room writes its schema here; the files are committed so every schema change shows up in review (§14.1)
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 // The built-in config is shared/default-config.json, copied into the app's assets at build time (D-43).
@@ -96,11 +103,13 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.datastore.preferences)
     ksp(libs.androidx.room.compiler)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
