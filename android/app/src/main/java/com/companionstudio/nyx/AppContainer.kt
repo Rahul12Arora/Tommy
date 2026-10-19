@@ -15,6 +15,8 @@ import com.companionstudio.nyx.home.SummaryRepository
 import com.companionstudio.nyx.pet.PetSettings
 import com.companionstudio.nyx.setup.PermissionChecks
 import com.companionstudio.nyx.setup.SetupSettings
+import com.companionstudio.nyx.tracking.AppCategoryRepository
+import com.companionstudio.nyx.tracking.InstalledApps
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
@@ -44,6 +46,8 @@ class AppContainer(context: Context) {
     val setupSettings = SetupSettings(settingsStore)
     val permissionChecks = PermissionChecks(context)
     val petSettings = PetSettings(settingsStore)
+    val appCategories = AppCategoryRepository(database.appCategoryDao())
+    val installedApps = InstalledApps(context.packageManager, context.packageName)
     val configUserValues = ConfigUserValues(settingsStore)
 
     // Read from disk once, the first time something collects. M12 swaps this for a flow that follows the fetched document

@@ -165,7 +165,7 @@ Tasks:
 - [x] S-01 Welcome, S-02 Age check (under 18 stops)
 - [x] S-03 Permissions: usage access, overlay, notifications, battery settings; auto-tick on return; "what won't work" summary for skipped steps; brand-specific steps (Xiaomi, Samsung, Vivo, Oppo, generic)
 - [x] S-04 Pet + personality picker with preview lines
-- [ ] S-05 App categories: launcher apps listed, suggested by admin default → Android category → Neutral; search; save to `app_categories`
+- [x] S-05 App categories: launcher apps listed, suggested by admin default → Android category → Neutral; search; save to `app_categories`
 - [ ] S-06 Limits & goals within ranges; locked items read-only
 - [ ] S-07 Stats opt-in (stored only, default off)
 - [ ] Launcher opens setup until done, then Home

@@ -14,6 +14,7 @@ import androidx.navigation3.ui.NavDisplay
 import com.companionstudio.nyx.home.HomeRoute
 import com.companionstudio.nyx.setup.AdultsOnlyScreen
 import com.companionstudio.nyx.setup.AgeCheckRoute
+import com.companionstudio.nyx.setup.AppCategoriesRoute
 import com.companionstudio.nyx.setup.ChoosePetRoute
 import com.companionstudio.nyx.setup.PermissionsRoute
 import com.companionstudio.nyx.setup.WelcomeScreen
@@ -34,6 +35,7 @@ import kotlinx.serialization.Serializable
 @Serializable data object Permissions : NavKey
 @Serializable data object ChoosePet : NavKey
 @Serializable data object AppCategories : NavKey
+@Serializable data object Limits : NavKey
 
 @Composable
 fun AppNavigation(container: AppContainer) {
@@ -79,8 +81,16 @@ fun AppNavigation(container: AppContainer) {
             entry<ChoosePet> {
                 ChoosePetRoute(container.effectiveConfig, container.petSettings, onNext = { backStack.add(AppCategories) })
             }
-            // Placeholder until S-05 is built later in M3
-            entry<AppCategories> { PlaceholderScreen(stringResource(R.string.app_categories_title)) }
+            entry<AppCategories> {
+                AppCategoriesRoute(
+                    installedApps = container.installedApps,
+                    config = container.effectiveConfig,
+                    repository = container.appCategories,
+                    onNext = { backStack.add(Limits) },
+                )
+            }
+            // Placeholder until S-06 is built later in M3
+            entry<Limits> { PlaceholderScreen(stringResource(R.string.limits_title)) }
         },
     )
 }

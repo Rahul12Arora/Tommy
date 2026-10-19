@@ -1110,7 +1110,8 @@ fun suggestCategory(packageName: String, androidCategory: Int, config: NyxConfig
 **Installed apps and `<queries>`** (R-10)
 - Manifest: `<queries><intent><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent></queries>`. No `QUERY_ALL_PACKAGES`.
 - `tracking/InstalledApps.kt`: `queryIntentActivities(Intent(ACTION_MAIN).addCategory(CATEGORY_LAUNCHER), 0)` → one entry per package (package name, label, Android category), sorted by label, without Nyx itself. Runs on `Dispatchers.IO`. Icons are loaded per visible row, not up front. M8's allowed-apps picker reuses it.
-- What's known today: Android's package-visibility docs describe exactly this (`<intent>` signatures inside `<queries>`). Play's policy page only restricts the `QUERY_ALL_PACKAGES` permission. What's still unconfirmed is how it behaves on real phones, so a device test (below) checks it on the emulator and the Pixel 7a.
+- What's known: Android's package-visibility docs describe exactly this (`<intent>` signatures inside `<queries>`). Play's policy page only restricts the `QUERY_ALL_PACKAGES` permission.
+- **Confirmed on the API 37 emulator (2026-10-20):** with the entry, Nyx sees Chrome, YouTube, Maps and the other launcher apps (`dumpsys package queries`); with it removed, the list shrinks to Play Store, Settings and SIM Toolkit and the device test fails. Settings is visible either way because it runs as the system user, so the test checks for Chrome instead. Still to run on the Pixel 7a.
 - Which apps appear (A-30): every app with a launcher icon, including system apps such as Settings, Camera and Phone (they get Neutral unless mapped). Work-profile apps don't appear (A-23).
 - **Fallback** if the device test fails: list the packages seen in the last 7 days of usage events (`UsageStatsManager`, available once usage access is granted). That would be a CR, since S-05 would then depend on S-03.
 
@@ -1141,7 +1142,7 @@ fun suggestCategory(packageName: String, androidCategory: Int, config: NyxConfig
 | S-01 Welcome | What the pet does, in three short lines | Nothing |
 | S-02 Age check | "Are you 18 or older?" Yes / No | Yes → `setup.ageConfirmed = true` → S-03. No → adults-only screen |
 | S-04 Choose pet | Enabled pets, each with the face for the band that contains `mood.start`. Enabled personalities, each with its `previewLine`. The current choice is preselected (the first enabled one if nothing is stored) | `pet.petId` and `pet.personalityId` when Continue is tapped |
-| S-05 App categories | Installed apps (icon, label, category) with a search field (case-insensitive match on the label). Tapping an app opens a menu with the five categories | One `app_categories` upsert per change, immediately |
+| S-05 App categories | Installed apps (icon, label, category) with a search field (case-insensitive match on the label). Tapping an app opens a menu with the five categories, the current one marked "(current)". Its own layout, not `SetupStep`: the list scrolls by itself between the search field and Continue | One `app_categories` upsert per change, immediately |
 | S-06 Limits | One row per limit setting in `EffectiveConfig.settings` (the category daily limits, the total, the stretch), in that order. Editable → a slider within `min..max` showing the effective value, with "Off" at 0. Locked → the value with "Set by Nyx", no slider | `ConfigUserValues.set(path, setting, value)` when the slider is released (D-61) |
 | S-07 Stats | What's shared and what isn't (A-09), a switch that starts off, and Finish | `stats.optIn` when the switch changes. Finish → `setup.completed = true` → Home. The install ID and uploads come in M14 |
 
@@ -1167,6 +1168,7 @@ fun suggestCategory(packageName: String, androidCategory: Int, config: NyxConfig
 | `setup/StatsOptInScreen.kt` · `StatsOptInViewModel.kt` | S-07 and finishing |
 | `tracking/AppCategoryEntity.kt` · `AppCategoryDao.kt` · `AppCategoryRepository.kt` | The table and its access |
 | `tracking/CategorySuggestion.kt` · `InstalledApps.kt` | Suggestion rule · launcher-app list |
+| `ui/CategoryLabel.kt` | `Category.labelRes`: display names from `strings.xml` (S-05, S-06, later Settings and Home) |
 | `AndroidManifest.xml` · `res/values/strings.xml` | Permissions + `<queries>` · all setup text, including the brand steps |
 | `android/app/build.gradle.kts` | DataStore dependency, `buildConfig`, `room.schemaLocation`, `lifecycle-viewmodel-navigation3` |
 | `android/app/schemas/` | Room's exported schema (committed) |
@@ -1177,8 +1179,8 @@ fun suggestCategory(packageName: String, androidCategory: Int, config: NyxConfig
 
 | Test | Where | Checks |
 |---|---|---|
-| `US04_CategorySuggestionTest` | `src/test/` | Admin default wins over the Android category · Android category mapped when there's no admin default · unmapped or undefined Android category → Neutral · a map entry pointing at a category is used as is |
-| `US04_AppCategoriesViewModelTest` | `src/test/` | The user's choice wins over the suggestion · search filters by label, ignoring case · a change is upserted. Uses fakes for the app list and the repository |
+| `US04_CategorySuggestionTest` | `src/test/` | Admin default wins over the Android category · Android category mapped when there's no admin default · unmapped, undefined or accessibility → Neutral · a map entry pointing at Neutral is used as is · the eight Android category names match the config keys |
+| `US04_AppCategoriesViewModelTest` | `src/test/` | Suggestions with no choices · the user's choice wins · search matches anywhere in the label, ignoring case and surrounding spaces · a change is upserted and the list follows · the query filters the list. Uses a fake app list and an in-memory fake DAO |
 | `US05_LimitsViewModelTest` | `src/test/` | Only limit settings, in order · locked → read-only with the admin default · a value outside the range is clamped before it's stored · slider steps (5 vs 1) |
 | `US03_ChoosePetViewModelTest` | `src/test/` | Only enabled pets and personalities · the preview face is the `mood.start` band · nothing stored → the first enabled one · a stored choice is selected unless it was disabled · a tap wins over what's stored · Continue stores the selection |
 | `US22_ConfigUserValuesTest` | `src/test/` | Set, then observe, gives the value · out-of-range values are clamped before storing · other features' keys are ignored · `EffectiveConfig` follows a stored value. DataStore on a temporary file |
@@ -1188,7 +1190,7 @@ fun suggestCategory(packageName: String, androidCategory: Int, config: NyxConfig
 | `US01_SetupGatingTest` | `src/androidTest/` | Not completed → Welcome · completed → Home · going through every step → Home, and Back then leaves the app (the back stack is just `[Home]`) · recreating the Activity mid-setup keeps the current step |
 | `US02_AgeCheckTest` | `src/androidTest/` | No → the adults-only screen, with no way forward · Yes → S-03 |
 | `US05_LimitsScreenTest` | `src/androidTest/` | A locked setting shows "Set by Nyx" and no slider |
-| `US04_InstalledAppsTest` | `src/androidTest/` | R-10 on a real device: the list isn't empty, contains `com.android.settings`, and doesn't contain Nyx. Run on the emulator and the Pixel 7a |
+| `US04_InstalledAppsTest` | `src/androidTest/` | R-10 on a real device: the list contains Chrome (an ordinary app that's hidden without `<queries>`; Settings is visible to everyone, so it proves nothing), has no blank labels, lists each package once and doesn't contain Nyx. Run on the emulator and the Pixel 7a |
 | `AppCategoryDaoTest` | `src/androidTest/` | In-memory Room: upsert inserts, then replaces; `observeAll` emits the change |
 
 - `US28_NavigationTest` (M1) now marks setup as completed before it launches, since a fresh install would start at Welcome.

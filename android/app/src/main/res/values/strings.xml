@@ -71,6 +71,21 @@
     <string name="choose_pet_preview_line">“%1$s”</string>
     <string name="setup_continue">Continue</string>
 
+    <!-- Setup: S-05 App categories -->
+    <string name="app_categories_title">Your apps</string>
+    <string name="app_categories_intro">Nyx has guessed a category for each app. Tap an app to fix any that are wrong.</string>
+    <string name="app_categories_search">Search apps</string>
+    <string name="app_categories_no_match">No apps match.</string>
+    <string name="app_categories_change">Change category</string>
+    <string name="app_categories_current">%1$s (current)</string>
+
+    <!-- Categories (D-51) -->
+    <string name="category_social">Social &amp; scrolling</string>
+    <string name="category_games">Games</string>
+    <string name="category_entertainment">Entertainment</string>
+    <string name="category_productive">Productive</string>
+    <string name="category_neutral">Neutral</string>
+
     <!-- Home (S-08) -->
     <string name="home_total">Today: %1$s</string>
     <string name="home_productive">Productive: %1$s</string>
@@ -86,6 +101,6 @@
     <string name="focus_setup_title">Focus</string>
     <string name="trends_title">Trends</string>
     <string name="settings_title">Settings</string>
-    <string name="app_categories_title">Your apps</string>
+    <string name="limits_title">Limits</string>
     <string name="placeholder_not_built">Not built yet.</string>
 </resources>

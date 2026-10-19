@@ -1,7 +1,7 @@
 ## Current state
 - Phase: 5 — Build · Milestone: M3 Setup flow (in progress, branch `feat/m3-setup-flow`)
-- Last done: S-04 Choose pet, with per-entry ViewModels (CR-08) and `effectiveConfig` following the user's stored values; S-05 is a placeholder
-- Next step: S-05 App categories — `<queries>`, `InstalledApps`, `suggestCategory`, the R-10 device test
+- Last done: S-05 App categories; R-10 confirmed on the emulator; S-06 is a placeholder
+- Next step: S-06 Limits (sliders within ranges, locked rows read-only); also run `US04_InstalledAppsTest` on the Pixel 7a (needs the developer's OK: device tests reinstall and then uninstall Nyx there)
 - Blockers: none
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
@@ -72,3 +72,8 @@
 - Verified: `assembleDebug test lint` clean, 54 unit tests (+5); 19 device tests on the API 37 emulator (+6 `US01_PermissionsScreenTest`). Manually on the emulator (driven over adb): each row's button opens the right screen (Usage access list, Display over other apps list with Nyx in it, the notification permission dialog, battery optimisation list, Nyx's app info); rows tick themselves on return; all granted → Continue goes straight to S-04. Brand steps on a non-Pixel phone not checked (A-29)
 - Done: S-04 Choose pet — `ChoosePetViewModel` + pure `choosePetState` (enabled items only, face of the `mood.start` band, tapped → stored if still enabled → first enabled), radio-style cards, saved to `pet/PetSettings` on Continue. `lifecycle-viewmodel-navigation3` 2.11.0 added (CR-08) and `NavDisplay` gets the saveable-state + ViewModel-store decorators. `config/ConfigUserValues` (clamps before storing) and `AppContainer.effectiveConfig` (base read once, lazily, on IO)
 - Verified: `assembleDebug test lint` clean, 65 unit tests (+11: choose pet 6, user values 5); 19 device tests green on the API 37 emulator. On the emulator: Cat 😸 / Blob 😄 with both personalities and their preview lines; picking Blob survives a rotation; Continue opens S-05; Back returns with Blob + Calm friend selected
+
+### 2026-10-20
+- Done: S-05 App categories — `<queries>` for launcher apps, `tracking/InstalledApps` (one entry per package, without Nyx, sorted by label; icons loaded per visible row), `suggestCategory` + `androidCategoryName`, `AppCategoryRepository`, `AppCategoriesViewModel` (+ pure `appRows`), screen with search and a category menu, `ui/CategoryLabel`
+- Learned (R-10): Settings is visible to every app (it runs as the system user), so a test that looks for it proves nothing. The device test now looks for Chrome. Mutation check: without `<queries>` the list is only Play Store, Settings, SIM Toolkit and the test fails; with it, it passes
+- Verified: `assembleDebug test lint` clean, 75 unit tests (+10: suggestion 5, view model 5); 21 device tests on the API 37 emulator (+2). On the emulator: the list shows icons and suggestions (Calendar, Drive → Productive; YouTube → Entertainment), search "you" → YouTube only, YouTube changed to Social & scrolling, still Social after force-stopping and reopening the app. Not run on the Pixel 7a
