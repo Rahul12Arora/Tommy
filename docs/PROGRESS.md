@@ -1,7 +1,7 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M1 Shell & storage **done** (tag `m1-done`) · next: M2 Config
-- Last done: M1 closed — app shell, Navigation 3, `DayClock`, Home on fake data; unit + device tests green on the API 37 emulator; Android CI green
-- Next step: create branch `feat/m2-config`, write the M2 LLD in ARCHITECTURE.md §14 before any code
+- Phase: 5 — Build · Milestone: M2 Config (in progress, branch `feat/m2-config`)
+- Last done: M2 LLD written (ARCHITECTURE §14.2) with proposed D-51 to D-53 and A-28
+- Next step: approval of the M2 LLD → then `shared/config.schema.json` + `default-config.json`
 - Blockers: none
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
@@ -46,3 +46,4 @@
 - Verified: Android CI green on `feat/m1-shell-storage` (run 39243292782)
 - Done: M1 closed — merged to `main` via PR, tagged `m1-done`
 - Next: M2 Config — branch `feat/m2-config`, LLD first
+- Started M2: branch `feat/m2-config`; LLD written (§14.2): full document shape, 9 validation rules with IDs, fixtures named by rule, layering as a pure function over user values, Gradle asset copy via `addGeneratedSourceDirectory` (checked against `gradle-api` 9.4.1). Proposed D-51 to D-53, A-28 — waiting for approval
