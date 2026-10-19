@@ -1,7 +1,7 @@
 ## Current state
 - Phase: 5 — Build · Milestone: M0 Foundation (in progress), branch `feat/m0-foundation`
 - Last done: `android/README.md`; Android CI workflow pushed; lint + JaCoCo coverage; earlier: KSP check passed, `android/` project created by the wizard and aligned with TECH_STACK (AGP 9.4.1, Kotlin 2.4.21, BOM 2026.09.00, SDK 30/36/37); the version catalog matches the register exactly
-- Next step: green CI run → emulator launch (developer) → PR #2 for the rest of M0 → tag `m0-done`
+- Next step: emulator launch (developer) → PR #2 for the rest of M0 → tag `m0-done`
 - Blockers: none
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator + Pixel 7a
@@ -28,3 +28,4 @@
 - Done: `.github/workflows/android.yml` — on push touching `android/`: JDK 25 + `./gradlew assembleDebug test lint`. Actions pinned by SHA; Gradle cache set to `basic` (the default "enhanced" one is a commercial service). Not yet run on GitHub
 - Done: pushed `feat/m0-foundation`; the developer merged it to `main` as PR #1 (`c01419d`) before M0 closed — remaining M0 commits go to `main` through PR #2
 - Done: `android/README.md` (requirements incl. JDK 25 daemon, run, test/lint/coverage commands, versions); root README links to it. `shared/README.md` already current
+- Verified: first Android CI runs green — branch `ddd3a10` (run 39172675327) and `main` `c01419d` (run 39172872758)
