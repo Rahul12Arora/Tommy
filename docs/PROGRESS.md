@@ -1,7 +1,7 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M1 Shell & storage (in progress, branch `feat/m1-shell-storage`)
-- Last done: M1 code — app shell, Navigation 3, `DayClock`, Home on fake data; unit + device tests green on the API 37 emulator
-- Next step: manual back-gesture check on the emulator → push the branch → CI green → close M1 (merge, tag `m1-done`)
+- Phase: 5 — Build · Milestone: M1 Shell & storage **done** (tag `m1-done`) · next: M2 Config
+- Last done: M1 closed — app shell, Navigation 3, `DayClock`, Home on fake data; unit + device tests green on the API 37 emulator; Android CI green
+- Next step: create branch `feat/m2-config`, write the M2 LLD in ARCHITECTURE.md §14 before any code
 - Blockers: none
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
@@ -42,3 +42,7 @@
 - Verified: `./gradlew assembleDebug test lint connectedAndroidTest` green. 12 unit tests (DayClock 7, DurationFormat 4, HomeViewModel 1) and 4 device tests (Home screen 3, navigation + back 1) on the API 37 emulator. DayClock coverage 95% (100% branches). Screenshot: Home shows the fake totals, edge-to-edge
 - Not verified yet: the predictive back edge-swipe by hand; CI on GitHub (branch not pushed)
 - Next: manual back-gesture check → push → CI → close M1
+- Verified: the developer ran the M1 manual QA checklist on the emulator (Home, placeholders, predictive back swipe, rotation, back exits) — all fine
+- Verified: Android CI green on `feat/m1-shell-storage` (run 39243292782)
+- Done: M1 closed — merged to `main` via PR, tagged `m1-done`
+- Next: M2 Config — branch `feat/m2-config`, LLD first

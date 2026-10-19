@@ -684,7 +684,7 @@ Written at the start of each milestone, before code.
 | Module | Milestone | LLD status |
 |---|---|---|
 | Project setup | M0 | not needed |
-| App shell, storage, DayClock | M1 | approved 2026-10-19 (§14.1) |
+| App shell, storage, DayClock | M1 | done 2026-10-19 (§14.1) |
 | Config: schema, defaults, validator, layering | M2 | pending |
 | Setup flow + app categories | M3 | pending |
 | PetService + usage tracking | M4 | pending |

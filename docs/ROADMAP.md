@@ -123,7 +123,7 @@ Done when:
 Verify with: `./gradlew assembleDebug test lint` · CI run on GitHub · emulator launch
 Not in this milestone: `backend/`, `admin/` (→ M10, M11)
 
-### M1 — Shell & storage            status: in-progress
+### M1 — Shell & storage            status: done
 Goal: the app has navigation, theme, `AppContainer` and `DayClock`; Home shows fake numbers through a ViewModel. Room and DataStore are created in M3 (D-50).
 Depends on: M0
 Stories: US-28 (screen shell)
@@ -135,7 +135,7 @@ Tasks:
 - [x] Home (S-08) ↔ `HomeViewModel` ↔ fake summary repository
 - [x] Tests: `DayClock` (reset hour, midnight, time-zone change, DST-free zones); Home UI test
 Done when:
-- [ ] Home renders fake totals; back gesture works; DayClock tests pass
+- [x] Home renders fake totals; back gesture works; DayClock tests pass
 Verify with: `./gradlew test connectedAndroidTest` · emulator
 Not in this milestone: real data (→ M4), setup gating (→ M3)
 
