@@ -1,8 +1,8 @@
 ## Current state
 - Phase: 5 — Build · Milestone: M3 Setup flow (in progress, branch `feat/m3-setup-flow`)
-- Last done: S-05 App categories; R-10 confirmed on the emulator; S-06 is a placeholder
-- Next step: S-06 Limits (sliders within ranges, locked rows read-only); also run `US04_InstalledAppsTest` on the Pixel 7a (needs the developer's OK: device tests reinstall and then uninstall Nyx there)
-- Blockers: none
+- Last done: every M3 task built and verified on the emulator (S-01 to S-07, gating, full-flow test); branch pushed for CI
+- Next step: the developer runs M3 on the Pixel 7a (manual QA + `US04_InstalledAppsTest`, which reinstalls and uninstalls Nyx there), then merge the PR and tag `m3-done`
+- Blockers: M3's "done when" needs a run on the developer's Pixel 7a
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
 - Build setup: Homebrew JDK on PATH starts Gradle; daemon runs on JDK 25 (`android/README.md`)
@@ -77,3 +77,6 @@
 - Done: S-05 App categories — `<queries>` for launcher apps, `tracking/InstalledApps` (one entry per package, without Nyx, sorted by label; icons loaded per visible row), `suggestCategory` + `androidCategoryName`, `AppCategoryRepository`, `AppCategoriesViewModel` (+ pure `appRows`), screen with search and a category menu, `ui/CategoryLabel`
 - Learned (R-10): Settings is visible to every app (it runs as the system user), so a test that looks for it proves nothing. The device test now looks for Chrome. Mutation check: without `<queries>` the list is only Play Store, Settings, SIM Toolkit and the test fails; with it, it passes
 - Verified: `assembleDebug test lint` clean, 75 unit tests (+10: suggestion 5, view model 5); 21 device tests on the API 37 emulator (+2). On the emulator: the list shows icons and suggestions (Calendar, Drive → Productive; YouTube → Entertainment), search "you" → YouTube only, YouTube changed to Social & scrolling, still Social after force-stopping and reopening the app. Not run on the Pixel 7a
+- Done: S-06 Limits — `limitRows` (category daily limits that exist, total, stretch with its categories), sliders bounded by the range (5- or 1-minute steps, tick marks hidden), stored on release and clamped (D-61), locked rows read "Set by Nyx". S-07 Stats — `stats/StatsSettings` (`stats.optIn`, off by default), what's shared and never shared (A-09), Finish marks setup completed and replaces the back stack with `[Home]`
+- Learned: ViewModel unit tests were flaky in the full suite (3 of 8 runs): ViewModels left running in `viewModelScope`, waiting on DataStore's I/O threads, dispatched to Main after `resetMain` and failed the next test, or hung a test that raced a fire-and-forget write. Fixed with `MainDispatcherRule` (cancel the tracked ViewModels and wait, then reset Main) and writes that return their `Job`. Then 10 full runs in a row green
+- Verified: `assembleDebug test lint` clean; 83 unit tests (+8: limits 5, stats 3); 24 device tests (+3: full setup flow, limits screen 2), 3 runs in a row green. On the emulator, fresh install driven over adb: every step → Social limit dragged to 1 h 35 min → stats on → Finish → Home; Back leaves the app; launching again opens Home; the DataStore file holds the age, pet, personality, Social limit, opt-in and completed keys. S-05 at font scale 2.0 still shows the list with Continue in reach. Not run on the Pixel 7a

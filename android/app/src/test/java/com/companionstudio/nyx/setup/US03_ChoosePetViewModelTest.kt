@@ -1,5 +1,6 @@
 package com.companionstudio.nyx.setup
 
+import com.companionstudio.nyx.MainDispatcherRule
 import com.companionstudio.nyx.config.ConfigResult
 import com.companionstudio.nyx.config.EffectiveConfig
 import com.companionstudio.nyx.config.SharedFiles
@@ -7,19 +8,14 @@ import com.companionstudio.nyx.config.parseConfig
 import com.companionstudio.nyx.data.createSettingsStore
 import com.companionstudio.nyx.pet.PetChoice
 import com.companionstudio.nyx.pet.PetSettings
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
-import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -28,21 +24,16 @@ import org.junit.rules.TemporaryFolder
 class US03_ChoosePetViewModelTest {
 
     @get:Rule
+    val main = MainDispatcherRule()
+
+    @get:Rule
     val folder = TemporaryFolder()
 
     // Cat and Blob, Cheerful coach and Calm friend; mood starts at 70, in the "happy" band
     private val defaults = (parseConfig(SharedFiles.defaultConfig) as ConfigResult.Valid).config
     private val nothing = PetChoice(petId = null, personalityId = null)
 
-    @Before
-    fun setUp() {
-        Dispatchers.setMain(UnconfinedTestDispatcher())
-    }
 
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
-    }
 
     @Test
     fun showsEnabledPetsWithTheirStartingFace_andPersonalitiesWithPreviewLines() {
@@ -94,7 +85,7 @@ class US03_ChoosePetViewModelTest {
     @Test
     fun save_storesWhatIsSelected() = runTest {
         val petSettings = PetSettings(createSettingsStore({ folder.root.resolve("settings.preferences_pb") }, onCorrupted = {}))
-        val viewModel = ChoosePetViewModel(flowOf(EffectiveConfig(defaults, emptyMap())), petSettings)
+        val viewModel = main.track(ChoosePetViewModel(flowOf(EffectiveConfig(defaults, emptyMap())), petSettings))
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.state.collect {} }
         viewModel.state.filterNotNull().first()
 

@@ -166,10 +166,10 @@ Tasks:
 - [x] S-03 Permissions: usage access, overlay, notifications, battery settings; auto-tick on return; "what won't work" summary for skipped steps; brand-specific steps (Xiaomi, Samsung, Vivo, Oppo, generic)
 - [x] S-04 Pet + personality picker with preview lines
 - [x] S-05 App categories: launcher apps listed, suggested by admin default → Android category → Neutral; search; save to `app_categories`
-- [ ] S-06 Limits & goals within ranges; locked items read-only
-- [ ] S-07 Stats opt-in (stored only, default off)
-- [ ] Launcher opens setup until done, then Home
-- [ ] Tests: setup gating, under-18 stop, category suggestion order, range-bound inputs
+- [x] S-06 Limits & goals within ranges; locked items read-only
+- [x] S-07 Stats opt-in (stored only, default off)
+- [x] Launcher opens setup until done, then Home
+- [x] Tests: setup gating, under-18 stop, category suggestion order, range-bound inputs
 Done when:
 - [ ] Fresh install → all steps → Home, on the emulator and your phone; skipping a permission shows what won't work
 Verify with: `./gradlew test connectedAndroidTest` · manual QA checklist

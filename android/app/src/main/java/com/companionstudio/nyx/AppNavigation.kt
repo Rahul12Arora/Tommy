@@ -16,7 +16,9 @@ import com.companionstudio.nyx.setup.AdultsOnlyScreen
 import com.companionstudio.nyx.setup.AgeCheckRoute
 import com.companionstudio.nyx.setup.AppCategoriesRoute
 import com.companionstudio.nyx.setup.ChoosePetRoute
+import com.companionstudio.nyx.setup.LimitsRoute
 import com.companionstudio.nyx.setup.PermissionsRoute
+import com.companionstudio.nyx.setup.StatsOptInRoute
 import com.companionstudio.nyx.setup.WelcomeScreen
 import com.companionstudio.nyx.ui.PlaceholderScreen
 import kotlinx.coroutines.flow.first
@@ -36,6 +38,7 @@ import kotlinx.serialization.Serializable
 @Serializable data object ChoosePet : NavKey
 @Serializable data object AppCategories : NavKey
 @Serializable data object Limits : NavKey
+@Serializable data object StatsOptIn : NavKey
 
 @Composable
 fun AppNavigation(container: AppContainer) {
@@ -89,8 +92,20 @@ fun AppNavigation(container: AppContainer) {
                     onNext = { backStack.add(Limits) },
                 )
             }
-            // Placeholder until S-06 is built later in M3
-            entry<Limits> { PlaceholderScreen(stringResource(R.string.limits_title)) }
+            entry<Limits> {
+                LimitsRoute(container.effectiveConfig, container.configUserValues, onNext = { backStack.add(StatsOptIn) })
+            }
+            entry<StatsOptIn> {
+                StatsOptInRoute(
+                    statsSettings = container.statsSettings,
+                    setupSettings = container.setupSettings,
+                    // Home replaces the whole setup stack, so Back on Home leaves the app instead of going into setup
+                    onFinished = {
+                        backStack.add(Home)
+                        backStack.subList(0, backStack.size - 1).clear()
+                    },
+                )
+            }
         },
     )
 }

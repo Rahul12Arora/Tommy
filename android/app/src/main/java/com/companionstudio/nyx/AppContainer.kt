@@ -15,6 +15,7 @@ import com.companionstudio.nyx.home.SummaryRepository
 import com.companionstudio.nyx.pet.PetSettings
 import com.companionstudio.nyx.setup.PermissionChecks
 import com.companionstudio.nyx.setup.SetupSettings
+import com.companionstudio.nyx.stats.StatsSettings
 import com.companionstudio.nyx.tracking.AppCategoryRepository
 import com.companionstudio.nyx.tracking.InstalledApps
 import kotlinx.coroutines.Dispatchers
@@ -46,6 +47,7 @@ class AppContainer(context: Context) {
     val setupSettings = SetupSettings(settingsStore)
     val permissionChecks = PermissionChecks(context)
     val petSettings = PetSettings(settingsStore)
+    val statsSettings = StatsSettings(settingsStore)
     val appCategories = AppCategoryRepository(database.appCategoryDao())
     val installedApps = InstalledApps(context.packageManager, context.packageName)
     val configUserValues = ConfigUserValues(settingsStore)

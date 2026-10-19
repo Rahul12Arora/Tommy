@@ -79,6 +79,27 @@
     <string name="app_categories_change">Change category</string>
     <string name="app_categories_current">%1$s (current)</string>
 
+    <!-- Setup: S-06 Limits -->
+    <string name="limits_title">Limits</string>
+    <string name="limits_intro">The pet nudges you when you go past a limit. These are sensible starting points; change any you like.</string>
+    <string name="limits_category_daily">%1$s per day</string>
+    <string name="limits_total_daily">All apps per day</string>
+    <string name="limits_stretch">Without a break</string>
+    <string name="limits_stretch_covers">Continuous use of %1$s. Screen off for a few minutes counts as a break.</string>
+    <string name="limits_off">Off</string>
+    <string name="limits_locked">Set by Nyx</string>
+
+    <!-- Setup: S-07 Stats opt-in (A-09) -->
+    <string name="stats_title">Help improve Nyx</string>
+    <string name="stats_intro">You can share an anonymous summary once a day. It helps show whether Nyx actually helps people.</string>
+    <string name="stats_shared_title">What\'s shared</string>
+    <string name="stats_shared">Minutes per category, focus sessions started and finished, nags, snoozes, breaks, whether the pet was running, and the app and Android versions, with a random ID that isn\'t linked to you.</string>
+    <string name="stats_never_title">Never shared</string>
+    <string name="stats_never">Which apps you use, your name or accounts, your location, and anything that identifies you.</string>
+    <string name="stats_switch">Share anonymous daily stats</string>
+    <string name="stats_change_later">Off unless you turn it on. You can change this later in Settings.</string>
+    <string name="stats_finish">Finish</string>
+
     <!-- Categories (D-51) -->
     <string name="category_social">Social &amp; scrolling</string>
     <string name="category_games">Games</string>
@@ -101,6 +122,5 @@
     <string name="focus_setup_title">Focus</string>
     <string name="trends_title">Trends</string>
     <string name="settings_title">Settings</string>
-    <string name="limits_title">Limits</string>
     <string name="placeholder_not_built">Not built yet.</string>
 </resources>

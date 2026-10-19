@@ -43,7 +43,7 @@ flowchart LR
         NTF["Notifier"]:::pending
       end
       CFG["ConfigManager<br/>built-in → admin → user"]:::done
-      STORE[("Room · DataStore<br/>config cache file")]:::pending
+      STORE[("Room · DataStore<br/>config cache file")]:::done
       NET["ConfigClient · StatsUploader<br/>week 2"]:::pending
     end
     OS["Android system services<br/>usage events · overlay windows<br/>notifications · package info"]
@@ -1060,7 +1060,7 @@ flowchart LR
 - **Gating:** `AppNavigation` reads `setup.completed` once (`produceState`, initial `null`) and draws nothing until it knows. Then it creates the back stack with `Home` or `Welcome` as the start. The read is a small local file, so the blank frame is very short. Once setup is done, the flag is true for good. M3 has no way back into setup; Settings (M7) opens single steps.
 - **Each step screen takes an `onNext` callback.** In setup it pushes the next step. When Settings reuses S-03 to S-07 (M7), it pops back instead. The screens don't know which flow they're in.
 - **Back** goes to the previous step. Back on Welcome leaves the app.
-- **Finishing:** S-07's Finish writes `setup.completed = true` and replaces the whole back stack with `[Home]`, so Back on Home leaves the app instead of going back into setup.
+- **Finishing:** S-07's Finish writes `setup.completed = true` and replaces the whole back stack with `[Home]` (Home is added first, then everything before it removed, so the stack is never empty), so Back on Home leaves the app instead of going back into setup.
 - **Progress** (D-56): the only progress stored is `setup.completed`. Each step saves its own choices as soon as they're made. The back stack is saved, so rotation and process death keep the current step. A new launch partway through setup starts again at Welcome, with the earlier choices already filled in.
 - **ViewModels per entry** (CR-08, D-55): `NavDisplay` gets `entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator(), rememberViewModelStoreNavEntryDecorator())`. A screen's ViewModel then lives as long as its back-stack entry and is cleared when the entry is popped.
   - Without this, every ViewModel is scoped to the Activity. S-05's ViewModel would keep about 200 app icons in memory long after setup, and S-03 to S-07 reopened from Settings would show stale state.
@@ -1146,7 +1146,7 @@ fun suggestCategory(packageName: String, androidCategory: Int, config: NyxConfig
 | S-06 Limits | One row per limit setting in `EffectiveConfig.settings` (the category daily limits, the total, the stretch), in that order. Editable → a slider within `min..max` showing the effective value, with "Off" at 0. Locked → the value with "Set by Nyx", no slider | `ConfigUserValues.set(path, setting, value)` when the slider is released (D-61) |
 | S-07 Stats | What's shared and what isn't (A-09), a switch that starts off, and Finish | `stats.optIn` when the switch changes. Finish → `setup.completed = true` → Home. The install ID and uploads come in M14 |
 
-- **Sliders:** steps of 5 min when the range is longer than 60 and `max − min` divides by 5, otherwise steps of 1 min. Always bounded by `min..max`, so an out-of-range value can't be entered.
+- **Sliders:** steps of 5 min when the range is longer than 60 and `max − min` divides by 5, otherwise steps of 1 min. Always bounded by `min..max`, so an out-of-range value can't be entered. Tick marks are hidden: with up to ~190 steps they merge into a dotted line. The value follows the finger and is stored on release; 0 reads "Off".
 - S-06 doesn't show nag timing, breaks or the day reset hour. Those live in S-11 Settings (M7). "Add goal" (positive goals) comes in M13.
 - **Accessibility (§9):** every screen scrolls and uses `Scaffold` insets. Ticks and locks are said in words as well as icons. Sliders announce their value. All text is in `strings.xml`.
 
@@ -1165,6 +1165,7 @@ fun suggestCategory(packageName: String, androidCategory: Int, config: NyxConfig
 | `setup/ChoosePetScreen.kt` · `ChoosePetViewModel.kt` | S-04 |
 | `setup/AppCategoriesScreen.kt` · `AppCategoriesViewModel.kt` | S-05: installed apps × choices × suggestion → rows, plus search |
 | `setup/LimitsScreen.kt` · `LimitsViewModel.kt` | S-06 |
+| `setup/LimitsViewModel.kt` also holds | `LimitName`, `LimitRow`, `limitRows(effective)`, `sliderStepMinutes(setting)` |
 | `setup/StatsOptInScreen.kt` · `StatsOptInViewModel.kt` | S-07 and finishing |
 | `tracking/AppCategoryEntity.kt` · `AppCategoryDao.kt` · `AppCategoryRepository.kt` | The table and its access |
 | `tracking/CategorySuggestion.kt` · `InstalledApps.kt` | Suggestion rule · launcher-app list |
@@ -1181,7 +1182,8 @@ fun suggestCategory(packageName: String, androidCategory: Int, config: NyxConfig
 |---|---|---|
 | `US04_CategorySuggestionTest` | `src/test/` | Admin default wins over the Android category · Android category mapped when there's no admin default · unmapped, undefined or accessibility → Neutral · a map entry pointing at Neutral is used as is · the eight Android category names match the config keys |
 | `US04_AppCategoriesViewModelTest` | `src/test/` | Suggestions with no choices · the user's choice wins · search matches anywhere in the label, ignoring case and surrounding spaces · a change is upserted and the list follows · the query filters the list. Uses a fake app list and an in-memory fake DAO |
-| `US05_LimitsViewModelTest` | `src/test/` | Only limit settings, in order · locked → read-only with the admin default · a value outside the range is clamped before it's stored · slider steps (5 vs 1) |
+| `US05_LimitsViewModelTest` | `src/test/` | Only limit settings, in order, with effective values · a category without a limit has no row · locked → read-only with the admin default even if a value is stored · a value outside the range is clamped before it's stored and the rows follow · slider steps (5 vs 1, edges) |
+| `US24_StatsOptInViewModelTest` | `src/test/` | Off by default · turning it on is stored · Finish marks setup completed and leaves the opt-in alone |
 | `US03_ChoosePetViewModelTest` | `src/test/` | Only enabled pets and personalities · the preview face is the `mood.start` band · nothing stored → the first enabled one · a stored choice is selected unless it was disabled · a tap wins over what's stored · Continue stores the selection |
 | `US22_ConfigUserValuesTest` | `src/test/` | Set, then observe, gives the value · out-of-range values are clamped before storing · other features' keys are ignored · `EffectiveConfig` follows a stored value. DataStore on a temporary file |
 | `PhoneBrandTest` | `src/test/` | `Xiaomi`, `samsung`, `vivo`, `OPPO` → their brand · anything else → `OTHER` |
@@ -1189,14 +1191,15 @@ fun suggestCategory(packageName: String, androidCategory: Int, config: NyxConfig
 | `US01_PermissionsScreenTest` | `src/androidTest/` | The stateless screen: granted rows say "Done ✓" and have no button · a row's button asks for that permission · all granted → Continue goes straight on · skipped → the dialog lists exactly the missing consequences; Continue anyway / Go back · brand steps and the app-settings button |
 | `US01_SetupGatingTest` | `src/androidTest/` | Not completed → Welcome · completed → Home · going through every step → Home, and Back then leaves the app (the back stack is just `[Home]`) · recreating the Activity mid-setup keeps the current step |
 | `US02_AgeCheckTest` | `src/androidTest/` | No → the adults-only screen, with no way forward · Yes → S-03 |
-| `US05_LimitsScreenTest` | `src/androidTest/` | A locked setting shows "Set by Nyx" and no slider |
+| `US05_LimitsScreenTest` | `src/androidTest/` | A locked setting shows its value and "Set by Nyx" and no slider · 0 reads "Off" |
 | `US04_InstalledAppsTest` | `src/androidTest/` | R-10 on a real device: the list contains Chrome (an ordinary app that's hidden without `<queries>`; Settings is visible to everyone, so it proves nothing), has no blank labels, lists each package once and doesn't contain Nyx. Run on the emulator and the Pixel 7a |
 | `AppCategoryDaoTest` | `src/androidTest/` | In-memory Room: upsert inserts, then replaces; `observeAll` emits the change |
 
 - `US28_NavigationTest` (M1) now marks setup as completed before it launches, since a fresh install would start at Welcome.
 - Activity-level device tests wait for the first screen (`waitUntilDisplayed` in `ComposeWaits.kt`): it appears only after the setup flag is read, which Compose's idling doesn't track.
 - Device tests set DataStore values through the app's own `AppContainer` (`SetupStateRule`, which clears the `internal` `settingsStore` and can mark setup done before the Activity starts). They never touch the file under a running DataStore.
-- Coverage: screens have no target (ROADMAP §2). The suggestion rule and the ViewModels are covered by the unit tests above.
+- ViewModel unit tests use `MainDispatcherRule` (`src/test/`): it sets a test Main dispatcher, and at the end cancels the tracked ViewModels and waits for them before resetting Main. Their flows can be waiting on DataStore's I/O threads; without the wait, a late dispatch to Main failed whichever test ran next (seen 2026-10-20, 3 of 8 full runs). ViewModel writes return their `Job` so tests can wait for them.
+- Coverage: screens have no target (ROADMAP §2). The suggestion rule and the ViewModels are covered by the unit tests above. Measured 2026-10-20: `config/` 98.1% lines; `setup/` and `tracking/` are mostly screens and platform calls, covered by device tests and manual QA.
 - Permission rows depend on system Settings screens, so they're checked by hand (manual QA), not by an automated test.
 
 **Decisions** (approved 2026-10-19)

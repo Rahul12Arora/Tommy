@@ -1,5 +1,6 @@
 package com.companionstudio.nyx.setup
 
+import com.companionstudio.nyx.MainDispatcherRule
 import android.content.pm.ApplicationInfo
 import com.companionstudio.nyx.config.Category
 import com.companionstudio.nyx.config.EffectiveConfig
@@ -8,23 +9,22 @@ import com.companionstudio.nyx.tracking.AppCategoryDao
 import com.companionstudio.nyx.tracking.AppCategoryEntity
 import com.companionstudio.nyx.tracking.AppCategoryRepository
 import com.companionstudio.nyx.tracking.InstalledApp
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
-import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class US04_AppCategoriesViewModelTest {
+
+    @get:Rule
+    val main = MainDispatcherRule()
 
     private val document = SharedFiles.minimalConfig.copy(
         categoryDefaults = mapOf("com.instagram.android" to Category.SOCIAL),
@@ -44,15 +44,7 @@ class US04_AppCategoriesViewModelTest {
         }
     }
 
-    @Before
-    fun setUp() {
-        Dispatchers.setMain(UnconfinedTestDispatcher())
-    }
 
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
-    }
 
     @Test
     fun noChoices_everyAppShowsItsSuggestion() {
@@ -83,7 +75,7 @@ class US04_AppCategoriesViewModelTest {
     @Test
     fun choose_isStored_andTheListFollows() = runTest {
         val dao = FakeDao()
-        val viewModel = AppCategoriesViewModel({ apps }, flowOf(EffectiveConfig(document, emptyMap())), AppCategoryRepository(dao))
+        val viewModel = main.track(AppCategoriesViewModel({ apps }, flowOf(EffectiveConfig(document, emptyMap())), AppCategoryRepository(dao)))
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.rows.collect {} }
 
         viewModel.choose("com.android.settings", Category.PRODUCTIVE)
@@ -94,7 +86,7 @@ class US04_AppCategoriesViewModelTest {
 
     @Test
     fun search_filtersTheList() = runTest {
-        val viewModel = AppCategoriesViewModel({ apps }, flowOf(EffectiveConfig(document, emptyMap())), AppCategoryRepository(FakeDao()))
+        val viewModel = main.track(AppCategoriesViewModel({ apps }, flowOf(EffectiveConfig(document, emptyMap())), AppCategoryRepository(FakeDao())))
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.rows.collect {} }
 
         viewModel.search("insta")
