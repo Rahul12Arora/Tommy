@@ -129,11 +129,11 @@ Depends on: M0
 Stories: US-28 (screen shell)
 Tasks:
 - [x] LLD in ARCHITECTURE.md §14
-- [ ] `PetApp`, `AppContainer`, `MainActivity`, Navigation 3 with predictive back, edge-to-edge theme
-- [ ] Room and DataStore policies written in the LLD (D-50: instances are created in M3)
-- [ ] `DayClock`: day key with reset hour, time-zone change, injectable clock
-- [ ] Home (S-08) ↔ `HomeViewModel` ↔ fake summary repository
-- [ ] Tests: `DayClock` (reset hour, midnight, time-zone change, DST-free zones); Home UI test
+- [x] `PetApp`, `AppContainer`, `MainActivity`, Navigation 3 with predictive back, edge-to-edge theme
+- [x] Room and DataStore policies written in the LLD (D-50: instances are created in M3)
+- [x] `DayClock`: day key with reset hour, time-zone change, injectable clock
+- [x] Home (S-08) ↔ `HomeViewModel` ↔ fake summary repository
+- [x] Tests: `DayClock` (reset hour, midnight, time-zone change, DST-free zones); Home UI test
 Done when:
 - [ ] Home renders fake totals; back gesture works; DayClock tests pass
 Verify with: `./gradlew test connectedAndroidTest` · emulator

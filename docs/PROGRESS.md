@@ -1,10 +1,10 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M0 Foundation **done** (tag `m0-done`) · next: M1 Shell & storage
-- Last done: M0 closed — Android project aligned with TECH_STACK, KSP confirmed, lint + coverage, Android CI green, READMEs, placeholder screen verified on the emulator
-- Next step: create branch `feat/m1-shell-storage`, write the M1 LLD in ARCHITECTURE.md §14 before any code
+- Phase: 5 — Build · Milestone: M1 Shell & storage (in progress, branch `feat/m1-shell-storage`)
+- Last done: M1 code — app shell, Navigation 3, `DayClock`, Home on fake data; unit + device tests green on the API 37 emulator
+- Next step: manual back-gesture check on the emulator → push the branch → CI green → close M1 (merge, tag `m1-done`)
 - Blockers: none
 - Open questions: Q-04 (success-metric targets, not blocking)
-- Test devices: emulator + Pixel 7a
+- Test devices: emulator (API 37) + Pixel 7a
 - Build setup: Homebrew JDK on PATH starts Gradle; daemon runs on JDK 25 (`android/README.md`)
 
 ## Session log (append-only)
@@ -33,3 +33,12 @@
 - Verified: the developer ran the app on the emulator — placeholder screen shows "Hello Android!"
 - Done: M0 closed — remaining commits merged to `main` through PR #2, tagged `m0-done`
 - Next: M1 — LLD first (ARCHITECTURE.md §14), then `PetApp`, `AppContainer`, Navigation 3, Room `AppDatabase`, DataStore, `DayClock`, Home with fake data
+- Started M1 on branch `feat/m1-shell-storage` (PR #2 merged M0's close-out into `main`)
+- Done: M1 LLD in ARCHITECTURE §14.1, approved
+- Decided: D-50 — Room and DataStore are created in M3 with their first table and keys, not empty in M1. Probe: Room refuses a database with no entities. (First proposed as M4; corrected to M3 because S-05 already writes `app_categories`)
+- Done: `PetApp`, `AppContainer`, `MainActivity`, `AppNavigation` (Home + placeholder Focus/Trends/Settings), `DayClock`, Home ↔ `HomeViewModel` ↔ `FakeSummaryRepository`, `formatDuration`; wizard example tests deleted; theme boilerplate removed
+- Done: serialization plugin applied (back-stack keys); `kotlinx-serialization-json` added directly, since only an old core (1.7.3) arrived transitively
+- Decided: CR-07 — `espresso-core` 3.7.0 for device tests only. Compose UI tests pulled in Espresso 3.5.0, which fails on API 35+ (`NoSuchMethodException: InputManager.getInstance`)
+- Verified: `./gradlew assembleDebug test lint connectedAndroidTest` green. 12 unit tests (DayClock 7, DurationFormat 4, HomeViewModel 1) and 4 device tests (Home screen 3, navigation + back 1) on the API 37 emulator. DayClock coverage 95% (100% branches). Screenshot: Home shows the fake totals, edge-to-edge
+- Not verified yet: the predictive back edge-swipe by hand; CI on GitHub (branch not pushed)
+- Next: manual back-gesture check → push → CI → close M1

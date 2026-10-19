@@ -470,6 +470,7 @@ stateDiagram-v2
 | CR-04 | Hide the pet temporarily (default 30 min, admin-configurable); nags and break reminders arrive as notifications while hidden | Small: one overlay state + notification (N-04) + config value | Approved — REQUIREMENTS v1.1 (F-19, US-29) |
 | CR-05 | US-17: only positive goals raise mood when met; limit goals are judged at the day reset and shown as kept/missed in trends, with no mood effect (Q-14) | Small: `goal_met` fires for positive goals only; a daily "limit goal kept" flag for trends (M7, M13). No API or schema change | Approved — REQUIREMENTS v1.2 |
 | CR-06 | AGP 9.4.0 → 9.4.1 (patch release on Google Maven; Android Studio's wizard picks it by default) | None: build-only, same Gradle 9.6.0 / SDK range. TECH_STACK §1, §4, §6 updated | Approved 2026-10-19 |
+| CR-07 | Add `androidx.test.espresso:espresso-core` 3.7.0 as a device-test-only dependency | None for the app: test APK only. Compose UI tests pull in Espresso 3.5.0, which fails on API 35+ (`NoSuchMethodException: InputManager.getInstance`); 3.7.0 fixes it. TECH_STACK §6 updated | Approved 2026-10-19 |
 
 ---
 
