@@ -1,3 +1,20 @@
 <resources>
     <string name="app_name">Nyx</string>
+
+    <!-- Home (S-08) -->
+    <string name="home_total">Today: %1$s</string>
+    <string name="home_productive">Productive: %1$s</string>
+    <string name="home_doomscrolling">Doomscrolling: %1$s</string>
+    <string name="home_goals">Goals</string>
+    <string name="home_goal_progress">%1$s of %2$s</string>
+    <string name="home_goal_over">%1$s of %2$s · over</string>
+    <string name="home_start_focus">Start focus</string>
+    <string name="home_trends">Trends</string>
+    <string name="home_settings">Settings</string>
+
+    <!-- Screens not built yet -->
+    <string name="focus_setup_title">Focus</string>
+    <string name="trends_title">Trends</string>
+    <string name="settings_title">Settings</string>
+    <string name="placeholder_not_built">Not built yet.</string>
 </resources>
