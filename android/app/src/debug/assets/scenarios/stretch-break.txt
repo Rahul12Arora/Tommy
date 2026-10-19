@@ -1,0 +1,6 @@
+# A break in the middle of a stretch (D-27, D-65).
+# Expect: Social 35 min in total; the stretch restarts after the 6-minute screen-off and ends at 15 min.
+app com.instagram.android 20m
+screen_off 6m
+app com.instagram.android 15m
+idle 2m

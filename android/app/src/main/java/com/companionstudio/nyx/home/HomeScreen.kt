@@ -25,6 +25,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.companionstudio.nyx.R
+import com.companionstudio.nyx.config.Category
+import com.companionstudio.nyx.ui.labelRes
 import com.companionstudio.nyx.ui.theme.NyxTheme
 
 @Composable
@@ -88,8 +90,9 @@ fun HomeScreen(
 private fun GoalRow(goal: GoalProgress) {
     val used = formatDuration(goal.usedSeconds)
     val target = formatDuration(goal.targetSeconds)
+    val name = if (goal.category == null) stringResource(R.string.home_goal_total) else stringResource(goal.category.labelRes)
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(goal.label)
+        Text(stringResource(R.string.home_goal_label, name, target))
         // "over" is spelled out so the state never relies on colour alone (ARCHITECTURE §9)
         Text(
             if (goal.isOver) stringResource(R.string.home_goal_over, used, target)
@@ -107,6 +110,17 @@ private fun GoalRow(goal: GoalProgress) {
 @Composable
 private fun HomeScreenPreview() {
     NyxTheme {
-        HomeScreen(FakeSummaryRepository.FAKE_TODAY, onFocus = {}, onTrends = {}, onSettings = {})
+        HomeScreen(
+            TodaySummary(
+                totalSeconds = 3 * 3600 + 12 * 60,
+                productiveSeconds = 3600 + 5 * 60,
+                doomscrollSeconds = 47 * 60,
+                goals = listOf(GoalProgress(Category.SOCIAL, usedSeconds = 47 * 60, targetSeconds = 60 * 60)),
+                petFace = "😸",
+            ),
+            onFocus = {},
+            onTrends = {},
+            onSettings = {},
+        )
     }
 }

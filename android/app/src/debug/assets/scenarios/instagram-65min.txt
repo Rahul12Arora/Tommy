@@ -1,0 +1,4 @@
+# 65 minutes of Instagram (Social & scrolling), then the screen stays on with nothing counted.
+# Expect: Social 1 h 5 min, past the default 60-minute Social limit; stretch 65 min.
+app com.instagram.android 65m
+idle 2m

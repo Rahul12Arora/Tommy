@@ -20,4 +20,14 @@ class DayClock(
     }
 
     fun today(resetHour: Int): LocalDate = dayKeyAt(clock.instant(), resetHour)
+
+    /** The moment [day] starts: [resetHour]:00 local time on that date (later if a DST gap swallows that hour). */
+    fun startOfDay(day: LocalDate, resetHour: Int): Instant {
+        require(resetHour in 0..23) { "resetHour must be 0–23, was $resetHour" }
+        return day.atTime(resetHour, 0).atZone(zone()).toInstant()
+    }
+
+    /** The first moment after [instant] that belongs to the next day key. Time is split here when credited (§14.4). */
+    fun nextDayStart(instant: Instant, resetHour: Int): Instant =
+        startOfDay(dayKeyAt(instant, resetHour).plusDays(1), resetHour)
 }

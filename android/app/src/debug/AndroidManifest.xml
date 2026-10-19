@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug builds only: test tools (docs/ARCHITECTURE.md §14.4, D-67) -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!-- Exported so adb can reach it, but only senders holding DUMP can: the shell has it, apps don't -->
+        <receiver
+            android:name=".debug.ScenarioReceiver"
+            android:exported="true"
+            android:permission="android.permission.DUMP" />
+    </application>
+
+</manifest>

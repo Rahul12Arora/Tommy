@@ -1,6 +1,7 @@
 package com.companionstudio.nyx.tracking
 
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
 import android.graphics.drawable.Drawable
@@ -31,6 +32,13 @@ class InstalledApps(private val packageManager: PackageManager, private val ownP
         packageManager.getApplicationIcon(packageName)
     } catch (_: PackageManager.NameNotFoundException) {
         null // the row just shows no icon; the next list won't contain the app
+    }
+
+    /** Android's category for any app Nyx can see; `CATEGORY_UNDEFINED` (→ Neutral) for one it can't. */
+    fun androidCategory(packageName: String): Int = try {
+        packageManager.getApplicationInfo(packageName, 0).category
+    } catch (_: PackageManager.NameNotFoundException) {
+        ApplicationInfo.CATEGORY_UNDEFINED
     }
 
     private fun launcherActivities(): List<ResolveInfo> {

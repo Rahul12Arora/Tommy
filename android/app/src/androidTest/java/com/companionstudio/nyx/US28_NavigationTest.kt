@@ -22,13 +22,13 @@ class US28_NavigationTest {
 
     @Test
     fun launchShowsHome_settingsOpens_backReturnsHome() {
-        composeRule.waitUntilDisplayed("Today: 3 h 12 min")
+        composeRule.waitUntilDisplayed("Goals") // Home, whatever today's real numbers are
 
         composeRule.onNodeWithText("Settings").performScrollTo().performClick()
         composeRule.onNodeWithText("Not built yet.").assertIsDisplayed()
 
         composeRule.runOnUiThread { composeRule.activity.onBackPressedDispatcher.onBackPressed() }
-        composeRule.onNodeWithText("Today: 3 h 12 min").assertIsDisplayed()
+        composeRule.onNodeWithText("Goals").assertIsDisplayed()
         composeRule.onNodeWithText("Not built yet.").assertDoesNotExist()
     }
 }

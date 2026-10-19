@@ -37,7 +37,7 @@ class US01_SetupGatingTest {
     @Test
     fun freshInstall_opensWelcome() {
         composeRule.onNodeWithText("Meet Nyx").assertIsDisplayed()
-        composeRule.onNodeWithText("Today: 3 h 12 min").assertDoesNotExist()
+        composeRule.onNodeWithText("Goals").assertDoesNotExist() // not Home
     }
 
     @Test
@@ -75,7 +75,7 @@ class US01_SetupGatingTest {
         next(onScreen = "Limits", tap = "Continue")
         next(onScreen = "Help improve Nyx", tap = "Finish")
 
-        composeRule.waitUntilDisplayed("Today: 3 h 12 min")
+        composeRule.waitUntilDisplayed("Goals") // Home
         val container = (composeRule.activity.application as PetApp).container
         assertTrue(runBlocking { container.setupSettings.completed.first() })
 

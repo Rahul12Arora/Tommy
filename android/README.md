@@ -25,6 +25,18 @@ Run from this folder.
 | Lint | `./gradlew lint` | Warnings fail the build. Report: `app/build/reports/lint-results-debug.html` |
 | Unit-test coverage | `./gradlew createDebugUnitTestCoverageReport` | Report: `app/build/reports/coverage/test/debug/index.html`. Targets in `docs/ROADMAP.md` |
 
+## Debug scenarios (debug builds only)
+
+Scripted usage instead of real usage, optionally with time running faster, so tracking can be checked in seconds ([`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md) §14.4). Scenario files: [`app/src/debug/assets/scenarios/`](app/src/debug/assets/scenarios/). Finish setup (or open the app) first, so the pet service is running.
+
+| What | Command |
+|---|---|
+| Play a scenario at 60× | `adb shell am broadcast -n com.companionstudio.nyx/.debug.ScenarioReceiver --es scenario instagram-65min --ei speed 60` |
+| Back to real usage and time | `adb shell am broadcast -n com.companionstudio.nyx/.debug.ScenarioReceiver --ez stop true` |
+| Watch the tracker | `adb logcat -s Nyx` |
+
+Both commands clear all tracked time first. With more than one device connected, add `-s <serial>` after `adb` (and set `ANDROID_SERIAL` for Gradle's device tasks).
+
 ## Versions and dependencies
 
 All versions live in [`gradle/libs.versions.toml`](gradle/libs.versions.toml), which mirrors the dependency register in [`docs/TECH_STACK.md`](../docs/TECH_STACK.md) §6. Adding or changing a dependency needs approval first (see `AGENTS.md`).
