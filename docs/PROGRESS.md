@@ -1,7 +1,7 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M1 Shell & storage **done** (tag `m1-done`) · next: M2 Config
-- Last done: M1 closed — app shell, Navigation 3, `DayClock`, Home on fake data; unit + device tests green on the API 37 emulator; Android CI green
-- Next step: create branch `feat/m2-config`, write the M2 LLD in ARCHITECTURE.md §14 before any code
+- Phase: 5 — Build · Milestone: M2 Config (in progress, branch `feat/m2-config`)
+- Last done: Kotlin config package (models, parser, validator, layering, `ConfigManager`) + tests; all M2 tasks ticked
+- Next step: close M2 — developer pushes `feat/m2-config`, CI green on GitHub, manual QA, merge, tag `m2-done`
 - Blockers: none
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
@@ -46,3 +46,13 @@
 - Verified: Android CI green on `feat/m1-shell-storage` (run 39243292782)
 - Done: M1 closed — merged to `main` via PR, tagged `m1-done`
 - Next: M2 Config — branch `feat/m2-config`, LLD first
+- Started M2: branch `feat/m2-config`; LLD written (§14.2): full document shape, 9 validation rules with IDs, fixtures named by rule, layering as a pure function over user values, Gradle asset copy via `addGeneratedSourceDirectory` (checked against `gradle-api` 9.4.1). Proposed D-51 to D-53, A-28 — waiting for approval
+- Approved: M2 LLD with D-51 to D-53, A-28
+- Done: schema + default config. Checked with a throwaway Python script (not committed): the subset of draft-07 the schema uses + the cross-field rules; it also rejects a deliberately broken copy for the right reasons. No real JSON Schema validator on this Mac (no Python `jsonschema`, no Node) — a real schema run comes with the backend's Ajv tests (M10); the Kotlin validator checks the defaults from the next tasks on
+- Done: fixtures, 3 valid + 17 invalid. Verified with Python `jsonschema` 4.25.1 (draft-07) in a scratchpad virtualenv, not a project dependency: the schema is a valid draft-07 schema; valid files and `default-config.json` pass it; each `schema--*` file fails it for exactly its intended reason; every other invalid file passes the schema and fails exactly its own cross-field rule (checked with a throwaway reference script)
+- Done: Gradle asset copy (`copy<Variant>DefaultConfig` via `sources.assets.addGeneratedSourceDirectory`) and `nyx.sharedDir` for unit tests, with `shared/` as a test input; CI also runs on `shared/**`. Verified: debug and release APKs contain only `assets/default-config.json` from `shared/`, byte-identical to the source; the copy is up to date when unchanged and re-runs after an edit; a throwaway probe test (deleted) saw the property, was skipped when nothing changed and re-ran after a fixture edit; `assembleDebug test lint` passes
+- Learned: `shared/fixtures/*/` still hold M0's `.gitkeep`, so the fixture tests list `*.json` only
+- Done: `config/` — `NyxConfig` models, `BubbleTrigger`, `parseConfig`, `validateConfig` + `ConfigRule`, `EffectiveConfig` + `SettingPaths`, `ConfigManager`; `AppContainer(context)` builds it from assets + `filesDir`. Tests: fixtures (exact rule per invalid file), default config, validator details, US-22 layering, `ConfigManager` fallbacks (incl. unreadable cache), device test loading the real asset. Verified: 45 unit tests pass (0 skipped), `config/` coverage 98.0% lines / 95.5% branches, `assembleDebug test lint` clean, 5 device tests pass on the API 37 emulator. Mutation check: disabling `tick-order` makes the fixture test fail
+- Decided: D-54 — accept kotlinx's quoted-number/boolean leniency and its `3.0` rejection (documented, pinned by a test); M10 serves the re-serialised document
+- Renamed: rule-ID object `Rule` → `ConfigRule` (clashed with JUnit's `@Rule`)
+- Note: the app doesn't read config at startup yet — no feature uses it until M3 (as the LLD planned); the device test proves the real `AppContainer` loads the built-in asset

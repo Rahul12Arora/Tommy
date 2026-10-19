@@ -42,7 +42,7 @@ flowchart LR
         OVL["Overlay UI<br/>pet · bubble · panel"]:::pending
         NTF["Notifier"]:::pending
       end
-      CFG["ConfigManager<br/>built-in → admin → user"]:::pending
+      CFG["ConfigManager<br/>built-in → admin → user"]:::done
       STORE[("Room · DataStore<br/>config cache file")]:::pending
       NET["ConfigClient · StatsUploader<br/>week 2"]:::pending
     end
@@ -55,7 +55,7 @@ flowchart LR
     PG[("PostgreSQL")]:::pending
   end
   BROWSER["Admin's browser<br/>React console"]:::pending
-  SHARED["shared/<br/>schema · default config · fixtures"]:::pending
+  SHARED["shared/<br/>schema · default config · fixtures"]:::done
 
   TRK --> RUL
   RUL --> MOOD
@@ -619,6 +619,7 @@ Tests: every admin route is checked for `401` without a session (M11).
 | Change a number, line, pet, personality or switch for everyone | The admin console → Publish. No code. |
 | Add a new setting | `shared/config.schema.json` + `shared/default-config.json` + `android/…/config/` (model, validator) + a fixture in `shared/fixtures/` + the feature package that uses it |
 | Change the defaults the app ships with | `shared/default-config.json` |
+| Change a config validation rule | `android/…/config/ConfigValidator.kt` + a fixture in `shared/fixtures/invalid/` + the backend's `config.validation.js` (M10) |
 | Change how usage is counted, categories, stretches | `android/…/tracking/` |
 | Change when the pet nags, reminds or talks | `android/…/rules/` |
 | Change mood math | `android/…/mood/` (weights and bands are config) |
@@ -685,7 +686,7 @@ Written at the start of each milestone, before code.
 |---|---|---|
 | Project setup | M0 | not needed |
 | App shell, storage, DayClock | M1 | done 2026-10-19 (§14.1) |
-| Config: schema, defaults, validator, layering | M2 | pending |
+| Config: schema, defaults, validator, layering | M2 | done 2026-10-19 (§14.2) |
 | Setup flow + app categories | M3 | pending |
 | PetService + usage tracking | M4 | pending |
 | Overlay: pet, bubble, panel, hide | M5 | pending |
@@ -806,3 +807,234 @@ data class GoalProgress(val label: String, val usedSeconds: Long, val targetSeco
 - Coverage: `DayClock` ≥ 90% (ROADMAP §2).
 
 **Not in M1:** Room and DataStore instances (→ M3, D-50), setup gating (→ M3), real data (→ M4), config-driven faces and reset hour (→ M2, M6).
+
+### 14.2 M2 — Config: schema, defaults, validator, layering
+
+Approved 2026-10-19, with D-51 to D-53 and A-28.
+
+**Purpose:** the app can always produce a valid config: the last good admin document if there is one, otherwise the built-in defaults, with the user's own values layered on top. Nothing here fetches from a server (→ M12) or stores user values (→ M3). Stories: US-21, US-22, US-05 (data side).
+
+**The document** (`shared/config.schema.json`, `schemaVersion` 1)
+- The Kotlin models below *are* the full shape. The schema says the same thing in JSON Schema draft-07, plus the number bounds in the table further down.
+- Every field is required. A missing field is a validation error, not a silent default.
+- Unknown keys are allowed on every side (D-52). The schema doesn't set `additionalProperties: false`; the phone parses with `ignoreUnknownKeys = true`. This is what lets an additive change leave `schemaVersion` alone.
+
+```kotlin
+@Serializable data class NyxConfig(
+    val schemaVersion: Int,                    // must equal SCHEMA_VERSION (1) for this build
+    val configVersion: Int,                    // ≥ 1; the built-in document is 1
+    val features: Features,
+    val day: DayConfig,
+    val tracking: TrackingConfig,
+    val limits: LimitsConfig,
+    val nags: NagsConfig,
+    val breaks: BreaksConfig,
+    val focus: FocusConfig,
+    val bubbles: BubblesConfig,
+    val idle: IdleConfig,
+    val hide: HideConfig,
+    val mood: MoodConfig,
+    val pets: List<Pet>,
+    val personalities: List<Personality>,
+    val lines: Map<String, Map<String, Map<String, List<String>>>>, // personality → trigger → band id or "any" → lines
+    val categoryDefaults: Map<String, Category>,   // package name → category (US-04)
+    val androidCategoryMap: Map<String, Category>, // Android's app category name → ours; mapping rules in M3's LLD
+)
+
+@Serializable data class Setting(val default: Int, val min: Int, val max: Int, val userEditable: Boolean)
+
+@Serializable data class Features(val focus: Boolean, val breaks: Boolean, val idleLines: Boolean, val trends: Boolean, val stats: Boolean)
+@Serializable data class DayConfig(val resetHour: Setting)
+@Serializable data class TrackingConfig(val fastTickSeconds: Int, val slowTickSeconds: Int, val doomscrollCategories: List<Category>)
+@Serializable data class LimitsConfig(val categories: Map<Category, CategoryLimit>, val totalDailyMinutes: Setting, val stretch: StretchLimit)
+@Serializable data class CategoryLimit(val dailyMinutes: Setting)
+@Serializable data class StretchLimit(val minutes: Setting, val categories: List<Category>)
+@Serializable data class NagsConfig(val repeatMinutes: Setting, val snoozeMinutes: Setting, val maxSnoozesPerDay: Int)
+@Serializable data class BreaksConfig(val afterMinutes: Setting, val breakMinutes: Int, val repeatMinutes: Int)
+@Serializable data class FocusConfig(val durationMinutes: Setting, val checkinMinutes: Setting)
+@Serializable data class BubblesConfig(val minGapSeconds: Int, val showSeconds: Int)
+@Serializable data class IdleConfig(val everyMinutes: Int)
+@Serializable data class HideConfig(val minutes: Int)
+@Serializable data class MoodConfig(val start: Int, val weights: MoodWeights, val bands: List<MoodBand>)
+@Serializable data class MoodWeights(
+    @SerialName("focus_completed") val focusCompleted: Int,
+    @SerialName("goal_met") val goalMet: Int,
+    @SerialName("break_taken") val breakTaken: Int,
+    @SerialName("doomscroll_10min") val doomscroll10Min: Int,
+    @SerialName("limit_exceeded") val limitExceeded: Int,
+    @SerialName("snoozed") val snoozed: Int,
+)
+@Serializable data class MoodBand(val id: String, val from: Int, val to: Int)
+@Serializable data class Pet(val id: String, val name: String, val enabled: Boolean, val faces: Map<String, String>) // band id → emoji
+@Serializable data class Personality(val id: String, val name: String, val enabled: Boolean, val previewLine: String)
+
+@Serializable enum class Category {
+    @SerialName("social") SOCIAL, @SerialName("games") GAMES, @SerialName("entertainment") ENTERTAINMENT,
+    @SerialName("productive") PRODUCTIVE, @SerialName("neutral") NEUTRAL,
+}
+```
+
+- **What each block is for** (and which milestone first reads it):
+
+| Block | Used for | Read from |
+|---|---|---|
+| `day.resetHour` | `DayClock` reset hour | M3 settings, M4 |
+| `tracking` | Tick intervals (H-01); which categories count as doomscrolling | M4 |
+| `limits` | Daily limits per category and in total (0 = off); stretch limit and the categories it covers. A category with no entry has no limit and can't get one (A-14) | M7 |
+| `nags` | SM-02 repeat interval, snooze length, max snoozes per day | M7 |
+| `breaks` | SM-03: remind after X min on screen; screen off ≥ `breakMinutes` = a break (D-27, also resets stretches); remind again every `repeatMinutes` | M4, M7 |
+| `focus` | S-09 duration and check-in sliders (default + range) | M8 |
+| `bubbles` | Gap between bubbles; how long one stays up | M6 |
+| `idle`, `hide` | Idle line interval (D-26); hide duration (D-24) | M7, M5 |
+| `mood` | Start value, weights and bands (SM-01). The bands are pure data: "ran away" is mood 0 in code (SM-01), not a special band id | M6 |
+| `pets`, `personalities`, `lines` | S-04 choices and the line pools. `enabled = false` hides an item from new picks (US-20) | M3, M6 |
+| `categoryDefaults`, `androidCategoryMap` | Suggested categories (US-04) | M3 |
+
+- **Categories are fixed** (D-51): `social` (Social & scrolling), `games`, `entertainment`, `productive`, `neutral`. They're an enum in the schema and in Kotlin; Home's "productive vs doomscrolling" depends on what they mean. Adding a category is a breaking change and bumps `schemaVersion`. Display names live in `strings.xml`.
+- **Positive goals** (US-17, M13) aren't in v1 of the document. They arrive as an additive block with a Kotlin default, so `schemaVersion` stays 1.
+
+**Bubble triggers** — the trigger catalog (§4) entries that show a bubble, as `BubbleTrigger` in `config/`:
+`limit_reached`, `limit_repeat`, `stretch_reached`, `break_due`, `break_taken`, `goal_met`, `focus_started`, `focus_drift`, `focus_checkin`, `focus_completed`, `focus_broken`, `idle`, `pet_returned`.
+- `snoozed` and `doomscroll_10min` only move mood, so they have no line pool.
+- `goal_met` is required now even though positive goals come in week 2. It keeps the coverage rule simple, and costs a few lines of text.
+- **Pool lookup** (implemented in M6): the band pool if it exists and isn't empty, otherwise `any`. Which placeholders (`{app}`, `{minutes}`, `{limit}`, `{category}`) each trigger may use is designed in M6's LLD, together with a validator rule for it.
+
+**Validation rules**
+- Every error carries a rule ID, a JSON path and a message: `ConfigError(rule = "setting-range", path = "nags.snoozeMinutes", message = "default 40 is not within min 5..max 30")`. Rule IDs are constants in `ConfigRule` (named so it doesn't clash with JUnit's `@Rule`).
+- The validator returns every error it finds, not just the first. The console shows them all (US-19).
+- Rule `schema` is everything JSON Schema can express. The other rules are cross-field and live in code on both the phone and the backend (§5).
+
+| Rule ID | Rejects |
+|---|---|
+| `schema` | Not JSON · a required field missing · wrong type (`"sixty"`, `60.5`, `null`) · an unknown category · `schemaVersion` ≠ 1 · a number outside its bounds (table below) · an id not matching `^[a-z0-9_]+$` · an empty name, face, preview line or line |
+| `setting-range` | A setting where `min ≤ default ≤ max` doesn't hold |
+| `tick-order` | `fastTickSeconds` > `slowTickSeconds` |
+| `duplicate-id` | Two pets, two personalities or two mood bands with the same id |
+| `mood-bands-coverage` | Mood bands that leave a gap or overlap in 0–100, or a band with `from` > `to` |
+| `pet-faces` | A pet with no face for some mood band |
+| `line-references` | Lines for a personality that doesn't exist; a pool key that's neither `any` nor a band id |
+| `line-coverage` | A personality without a non-empty `any` pool for every bubble trigger |
+| `nothing-enabled` | No enabled pet, or no enabled personality |
+
+- **Ignored on purpose:** unknown keys anywhere, including unknown trigger names in `lines` and unknown band ids in `faces` (D-52). A newer config may carry pools for triggers an older app doesn't know yet.
+
+**Number bounds** (the `schema` rule; for a `Setting`, `default`, `min` and `max` all have to be inside them)
+
+| Field | Bounds |
+|---|---|
+| `configVersion` | ≥ 1 |
+| `day.resetHour` | 0–23 (`DayClock`'s own limit; the default document allows 0–6) |
+| `tracking.fastTickSeconds`, `tracking.slowTickSeconds` | 1–60 (the 60-second promise, §4) |
+| `limits.categories.*.dailyMinutes`, `limits.totalDailyMinutes` | 0–1440 (0 = off) |
+| `limits.stretch.minutes`, `breaks.afterMinutes`, `focus.durationMinutes`, `idle.everyMinutes`, `hide.minutes` | 1–1440 |
+| `nags.repeatMinutes`, `nags.snoozeMinutes`, `breaks.repeatMinutes`, `focus.checkinMinutes` | 1–240 |
+| `nags.maxSnoozesPerDay` | 0–100 |
+| `breaks.breakMinutes` | 1–60 |
+| `bubbles.minGapSeconds` · `bubbles.showSeconds` | 0–3600 · 1–60 |
+| `mood.start`, `mood.bands[].from`, `mood.bands[].to` | 0–100 |
+| `mood.weights.*` | −100 to 100 |
+
+**Fixtures** (`shared/fixtures/`, D-53)
+- Each invalid file is a full document with exactly one thing broken. It's named `<rule-id>--<what>.json`, e.g. `setting-range--default-above-max.json`, `schema--not-json.json`.
+- The phone test checks each invalid file is rejected **with that rule ID**, not just rejected. The backend test (M10) does the same, so both sides agree on *why* as well as *whether*.
+- The invalid set: one file per rule, and for `schema` one per bullet above (not JSON, missing field, wrong type, unknown category, wrong schema version, out of bounds, bad id, blank line). `mood-bands-coverage` has a `--gap` and an `--overlap` file.
+- **Valid:** `minimal.json` (one pet, one personality, two bands `0–0` and `1–100`, `any` pools only), `band-pools.json` (band-specific pools next to `any`), `unknown-keys.json` (extra keys at several levels, including an unknown trigger in `lines`).
+- `shared/default-config.json` is tested directly, not copied into `fixtures/valid/`.
+- Every fixture is `minimal.json` with one change. The one-off script that made them isn't committed; fixtures are edited directly as files from now on.
+
+**Default document** (`shared/default-config.json`, configVersion 1) — placeholder numbers, tuned later from the console
+- Limits (A-14): Social & scrolling 60 min (range 0–240), Games 120 (0–480), Entertainment 120 (0–480); no entry for Productive or Neutral. Total daily 0 = off (0–960). Stretch 30 min (10–120) on Social and Games. All user-editable.
+- Nags: repeat 10 (5–30) and snooze 10 (5–30), user-editable; max 3 snoozes a day, admin only (D-16).
+- Breaks: remind after 45 min (20–120), user-editable; a break is ≥ 5 min off (D-27); remind again every 10 min.
+- Focus: duration 25 min (5–180), check-in every 10 min (5–30).
+- Day reset hour 0 (0–6). Ticks 5 s / 30 s. Doomscrolling = Social. Bubbles: 60 s gap, 8 s on screen. Idle every 30 min. Hide 30 min. All features on.
+- Mood (A-24): start 70; weights +15 / +10 / +5 / −3 / −10 / −5; the 8 bands and the Cat and Blob faces of SM-01 (`great`, `happy`, `ok`, `meh`, `grumpy`, `sad`, `sick`, `ran_away`).
+- Personalities (A-28): `cheerful` "Cheerful coach" and `calm` "Calm friend". At least 4 `any` lines per bubble trigger (so "never repeat the last 3" has room), plus a few band pools for `idle` to show the mechanism. All text English.
+- `categoryDefaults`: about 20 well-known packages (Instagram, TikTok, YouTube, Netflix, WhatsApp…). `androidCategoryMap`: Android's game, social, video, audio, image, news, maps and productivity categories.
+
+**Layering** — base document → user values (§5, D-45)
+- **Base:** `ConfigManager.loadBase()`:
+  1. `filesDir/config_cache.json` exists, parses, validates and has `schemaVersion` 1 → use it.
+  2. Otherwise → the built-in document from assets. A rejected cache is reported through `onRejected(errors)`, which `AppContainer` sends to `Log.w` with rule IDs and paths only. A cache file that exists but can't be read is reported as `cache-unreadable` (not a validation rule).
+  - Nothing writes the cache until M12. The cache file is the raw document; its ETag is `configVersion`, so no wrapper is needed (M12 confirms).
+  - The built-in document can't be invalid at runtime: `DefaultConfigTest` fails the build first. If it ever is, `loadBase()` throws with the errors. That's a broken build, not a broken server, so US-21's "never crash" isn't what applies.
+- **User values:** a plain `Map<String, Int>` from setting path to stored value. M3 stores them in DataStore, one `intPreferencesKey` per path, named `config.<path>` (e.g. `config.nags.snoozeMinutes`), in a `ConfigUserValues` class in `config/`.
+- **Effective value** of a setting:
+
+```kotlin
+fun Setting.resolve(userValue: Int?): Int =
+    if (!userEditable || userValue == null) default else userValue.coerceIn(min, max)
+```
+
+  - Locked → always the admin default; the stored value is ignored but kept.
+  - Range narrowed → clamped on every read; the stored value isn't rewritten, so widening the range brings it back (§5).
+- **`EffectiveConfig(document, userValues)`** is what the rest of the app reads:
+  - `settings: Map<String, Setting>` — every tunable setting by path, in display order. S-06 and S-11 build their sliders and read-only rows from it.
+  - `valueOf(path): Int?` — the effective value; `null` when the document has no such setting (e.g. a Productive limit).
+  - Paths: `day.resetHour`, `limits.categories.<category>.dailyMinutes`, `limits.totalDailyMinutes`, `limits.stretch.minutes`, `nags.repeatMinutes`, `nags.snoozeMinutes`, `breaks.afterMinutes`, `focus.durationMinutes`, `focus.checkinMinutes`. Kept as constants in `SettingPaths`, so call sites never spell them by hand.
+- Turning `EffectiveConfig` into a `StateFlow` that follows DataStore arrives in M3 with the first user value. In M2, `AppContainer` exposes `configManager` only.
+
+```mermaid
+sequenceDiagram
+  participant C as AppContainer
+  participant M as ConfigManager
+  participant P as ConfigParser
+  participant V as ConfigValidator
+  C->>M: loadBase()
+  M->>M: read filesDir/config_cache.json
+  alt cache exists
+    M->>P: parseConfig(cache)
+    P->>V: validate(document)
+    V-->>P: errors
+    P-->>M: Valid / Invalid
+  end
+  alt no cache, or Invalid
+    M-->>C: onRejected(errors) (only if a cache was rejected)
+    M->>P: parseConfig(assets/default-config.json)
+    P-->>M: Valid
+  end
+  M-->>C: NyxConfig
+  Note over C: EffectiveConfig(base, userValues) from M3
+```
+
+**Files**
+
+| File | Responsibility |
+|---|---|
+| `shared/config.schema.json` | JSON Schema draft-07 for the document above, with the bounds table |
+| `shared/default-config.json` | The built-in defaults |
+| `shared/fixtures/valid/`, `invalid/` | As above |
+| `config/NyxConfig.kt` | The `@Serializable` models, `Setting`, `Category`, `SCHEMA_VERSION` |
+| `config/BubbleTrigger.kt` | The bubble triggers and their JSON names |
+| `config/ConfigParser.kt` | `parseConfig(json): ConfigResult` (`Valid(config)` / `Invalid(errors)`) and `ConfigError`. A kotlinx `SerializationException` becomes a `schema` error; it's never swallowed |
+| `config/ConfigValidator.kt` | `validateConfig(config): List<ConfigError>` and the `ConfigRule` IDs: bounds, then the cross-field rules |
+| `config/EffectiveConfig.kt` | `Setting.resolve`, `EffectiveConfig`, `SettingPaths` |
+| `config/ConfigManager.kt` | `loadBase()`: cache or built-in. Takes `readBuiltIn: () -> String`, `cacheFile: File`, `onRejected` |
+| `AppContainer.kt`, `PetApp.kt` | `AppContainer(context)` builds `ConfigManager` from assets and `filesDir` |
+| `android/app/build.gradle.kts` | Copy task + unit-test system property (below) |
+
+- If `NyxConfig.kt` or `ConfigValidator.kt` passes ~250 lines, it's split by block (AGENTS §4).
+
+**Build**
+- A small `CopyDefaultConfig` task (`@InputFile` → `@OutputDirectory`), registered once per variant as `copy<Variant>DefaultConfig`, copies `shared/default-config.json` into a generated assets folder. It's wired with `androidComponents.onVariants { it.sources.assets?.addGeneratedSourceDirectory(task, CopyDefaultConfig::outputDir) }` (checked against `gradle-api` 9.4.1: `Sources.getAssets(): SourceDirectories.Layered`, `addGeneratedSourceDirectory(TaskProvider, (Task) -> DirectoryProperty)`).
+  - So only that one file reaches the APK. The schema and fixtures stay out.
+  - A changed `default-config.json` triggers a rebuild; nothing is committed under `android/`.
+- Unit tests get the path to `shared/` as the system property `nyx.sharedDir`, set in `testOptions.unitTests.all`. Tests never guess relative paths. `shared/` is also a declared test input, so editing a fixture re-runs the tests.
+- CI (`.github/workflows/android.yml`) also runs on changes to `shared/**`.
+
+**Tests**
+
+| Test | Where | Checks |
+|---|---|---|
+| `US21_ConfigFixturesTest` | `src/test/` | Every `valid/` file is accepted · every `invalid/` file is rejected with the rule ID from its file name · the fixture folders aren't empty (a wrong path can't make the test pass) |
+| `US21_DefaultConfigTest` | `src/test/` | `shared/default-config.json` is valid · ≥ 2 enabled personalities · Cat and Blob both present and enabled |
+| `ConfigValidatorTest` | `src/test/` | What fixtures don't show well: several errors reported at once, with the right paths · `nothing-enabled` for personalities as well as pets · bounds at exactly the edges pass · min > max · duplicate personalities and bands · bands ending early or backwards · a pool key that's neither `any` nor a band · blank texts and bad ids · the D-54 differences, pinned |
+| `US22_EffectiveConfigTest` | `src/test/` | No user value → default · user value inside range → used · outside range → clamped · range narrowed → clamped, and the stored value is unchanged · widened again → restored · locked → default · `valueOf` for a missing setting → `null` · `settings` lists every path in `SettingPaths` |
+| `US21_ConfigManagerTest` | `src/test/` | No cache → built-in · valid cache → cache · invalid cache → built-in and `onRejected` called with the rule IDs · not-JSON cache → built-in · cache with `schemaVersion` 2 → built-in · invalid built-in → throws (uses `TemporaryFolder`) |
+| `US21_BuiltInConfigTest` | `src/androidTest/` | On a device, `AppContainer`'s `ConfigManager` loads the asset and gets `configVersion` 1, which proves the Gradle copy works |
+
+- Test helper: `src/test/…/config/SharedFiles.kt` reads `shared/` through `nyx.sharedDir` (fixtures are listed as `*.json`, since the folders also hold a `.gitkeep`).
+- Coverage: ≥ 90% on `config/` (ROADMAP §2). Measured 2026-10-19: 98.0% lines, 95.5% branches.
+- **Known differences from JSON Schema (D-54):** kotlinx.serialization 1.11.0 reads `"3"` as 3 and `"true"` as true, which JSON Schema rejects, and rejects `3.0`, which JSON Schema accepts. Neither can reach a phone: the console sends JSON numbers, the backend rejects quoted values on save, and the server re-serialises the document it serves (M10). The fixtures avoid these cases, and `ConfigValidatorTest` pins the phone's behaviour.
+
+**Not in M2:** fetching and writing the cache (→ M12), storing user values and the config `StateFlow` (→ M3), reading any of these values in features (→ M3 onwards), line placeholders and pool lookup (→ M6), positive goals (→ M13).

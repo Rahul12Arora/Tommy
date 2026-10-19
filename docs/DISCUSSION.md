@@ -371,6 +371,10 @@ stateDiagram-v2
 | D-48 | Real test phone: Pixel 7a (Q-12). Code lives in `github.com/Rahul12Arora/Tommy` (Q-13) | — | — | 2026-10-18 |
 | D-49 | App name **Nyx**; application ID `com.companionstudio.nyx` — no personal name in the ID; can't change once on Google Play (replaces D-47) | Developer's choice | `com.rahul12arora.tommy` | 2026-10-18 |
 | D-50 | Room `AppDatabase` and the DataStore are created in M3, together with their first real table (`app_categories`) and keys (setup progress, age check), not empty in M1. M1 writes the Room and DataStore policies (ARCHITECTURE §14.1) | Room refuses a database with no entities (probe 2026-10-19: `@Database annotation must specify list of entities`); an unused DataStore is dead code | Placeholder entity in M1; pulling `app_categories` into M1 | 2026-10-19 |
+| D-51 | Five fixed categories — `social`, `games`, `entertainment`, `productive`, `neutral` — as an enum in the schema and in Kotlin. Adding one bumps `schemaVersion` | Home's productive vs doomscrolling split and the limits depend on what each category means | Admin-defined categories in config | 2026-10-19 |
+| D-52 | Unknown keys are accepted on every side: the schema doesn't forbid extra properties, and the phone parses with `ignoreUnknownKeys`. This includes unknown trigger names in `lines` | Additive changes keep `schemaVersion` the same, and an older app can read a newer document; fixtures stay identical on both sides (D-39) | `additionalProperties: false` (the backend would reject what the phone accepts) | 2026-10-19 |
+| D-53 | Every validation error carries a rule ID. Each invalid fixture is named `<rule-id>--<what>.json`, and both the phone and the backend must reject it with that rule ID | The two sides then agree on why a file is rejected as well as whether | Only checking accept/reject | 2026-10-19 |
+| D-54 | Accept two known differences between the phone's parser and JSON Schema: kotlinx.serialization 1.11.0 accepts `"3"` / `"true"` for numbers and yes/no fields (the schema rejects them) and rejects `3.0` (the schema accepts it). Documented, pinned by a phone unit test; the server serves the re-serialised document (M10) | Neither can reach a phone: the console sends JSON numbers, the backend rejects quoted values on save, re-serialising turns `3.0` into `3`. Even if one did, the outcome is harmless ("3" reads as 3; `3.0` → last good config) | Strict Int/Boolean serializers on every field (full parity, ~30 lines plus a custom type everywhere); strict on quotes only | 2026-10-19 |
 
 ### D-16 — Admin / user settings split
 
@@ -419,6 +423,7 @@ stateDiagram-v2
 | A-25 | A focus session belongs to the day it started; the day reset doesn't interrupt it | Accepted |
 | A-26 | A break raises mood only when it follows a break reminder | Accepted |
 | A-27 | No staging environment in v1: config changes are protected by draft → publish and validation on all three sides; code is tested locally with the same Docker image that ships | Accepted |
+| A-28 | Default content: two personalities, `cheerful` "Cheerful coach" and `calm` "Calm friend", with at least 4 English lines per bubble trigger; the placeholder ranges in ARCHITECTURE §14.2. Tuned from the console later | Accepted |
 
 ---
 
