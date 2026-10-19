@@ -1,10 +1,11 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M0 Foundation (in progress), branch `feat/m0-foundation`
-- Last done: `android/README.md`; Android CI workflow pushed; lint + JaCoCo coverage; earlier: KSP check passed, `android/` project created by the wizard and aligned with TECH_STACK (AGP 9.4.1, Kotlin 2.4.21, BOM 2026.09.00, SDK 30/36/37); the version catalog matches the register exactly
-- Next step: emulator launch (developer) → PR #2 for the rest of M0 → tag `m0-done`
+- Phase: 5 — Build · Milestone: M0 Foundation **done** (tag `m0-done`) · next: M1 Shell & storage
+- Last done: M0 closed — Android project aligned with TECH_STACK, KSP confirmed, lint + coverage, Android CI green, READMEs, placeholder screen verified on the emulator
+- Next step: create branch `feat/m1-shell-storage`, write the M1 LLD in ARCHITECTURE.md §14 before any code
 - Blockers: none
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator + Pixel 7a
+- Build setup: Homebrew JDK on PATH starts Gradle; daemon runs on JDK 25 (`android/README.md`)
 
 ## Session log (append-only)
 
@@ -29,3 +30,6 @@
 - Done: pushed `feat/m0-foundation`; the developer merged it to `main` as PR #1 (`c01419d`) before M0 closed — remaining M0 commits go to `main` through PR #2
 - Done: `android/README.md` (requirements incl. JDK 25 daemon, run, test/lint/coverage commands, versions); root README links to it. `shared/README.md` already current
 - Verified: first Android CI runs green — branch `ddd3a10` (run 39172675327) and `main` `c01419d` (run 39172872758)
+- Verified: the developer ran the app on the emulator — placeholder screen shows "Hello Android!"
+- Done: M0 closed — remaining commits merged to `main` through PR #2, tagged `m0-done`
+- Next: M1 — LLD first (ARCHITECTURE.md §14), then `PetApp`, `AppContainer`, Navigation 3, Room `AppDatabase`, DataStore, `DayClock`, Home with fake data

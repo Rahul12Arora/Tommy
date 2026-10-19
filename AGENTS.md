@@ -11,11 +11,11 @@
 - **Project:** Nyx (`com.companionstudio.nyx`) — on-screen emoji pet for screen-time awareness, limits and focus · repo `github.com/Rahul12Arora/Tommy`
 - **Platform:** Android app (Kotlin + Compose) · Node.js backend · web admin console (React)
 - **Size tier:** standard — see §4 and `docs/TECH_STACK.md` §3
-- **Current phase:** 5 · **Current milestone:** M0 Foundation (in progress)
+- **Current phase:** 5 · **Current milestone:** M1 Shell & storage (next; M0 done 2026-10-19)
 - **Collaboration mode:** delivery
   - `delivery` → fix directly, explain briefly
   - `learning` → explain the root cause first, guide me to the fix, give the full patch only when I ask
-- **Commands** (from `docs/TECH_STACK.md` §9; live once M0 exists):
+- **Commands** (from `docs/TECH_STACK.md` §9; Android commands live since M0, backend/console from M10/M11):
   - Install: Android — Android Studio Gradle sync · `backend/`, `admin/` — `npm ci`
   - Run (dev): Android — Run ▶ or `./gradlew installDebug` (in `android/`) · backend + DB — `docker compose up` · console — `npm run dev` (in `admin/`)
   - Test: `./gradlew test` (in `android/`) · `npm test` (in `backend/`)
