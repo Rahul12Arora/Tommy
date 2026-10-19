@@ -1,7 +1,7 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M2 Config (in progress, branch `feat/m2-config`)
-- Last done: Kotlin config package (models, parser, validator, layering, `ConfigManager`) + tests; all M2 tasks ticked
-- Next step: close M2 — developer pushes `feat/m2-config`, CI green on GitHub, manual QA, merge, tag `m2-done`
+- Phase: 5 — Build · Milestone: M2 Config **done** (tag `m2-done`) · next: M3 Setup flow
+- Last done: M2 closed — config schema v1, built-in defaults, fixtures, Kotlin validator + layering + `ConfigManager`; unit + device tests green; Android CI green
+- Next step: create branch `feat/m3-setup-flow`, write the M3 LLD in ARCHITECTURE.md §14 before any code (decide on `lifecycle-viewmodel-navigation3`, §14.1)
 - Blockers: none
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
@@ -56,3 +56,8 @@
 - Decided: D-54 — accept kotlinx's quoted-number/boolean leniency and its `3.0` rejection (documented, pinned by a test); M10 serves the re-serialised document
 - Renamed: rule-ID object `Rule` → `ConfigRule` (clashed with JUnit's `@Rule`)
 - Note: the app doesn't read config at startup yet — no feature uses it until M3 (as the LLD planned); the device test proves the real `AppContainer` loads the built-in asset
+- Verified: the developer ran the M2 manual check (app opens on Home unchanged, Settings placeholder and back work) — all fine
+- Verified: Android CI green on `feat/m2-config` (run 39259762317) — first run triggered with the new `shared/**` path
+- Noted: GitHub warns `ubuntu-latest` moves to Ubuntu 26 from 2026-10-19 → parking lot (pin `ubuntu-24.04`?)
+- Done: M2 closed — merged to `main` via PR, tagged `m2-done`
+- Next: M3 Setup flow — branch `feat/m3-setup-flow`, LLD first
