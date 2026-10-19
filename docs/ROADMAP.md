@@ -115,7 +115,7 @@ Tasks:
 - [x] `shared/` with `README.md` and empty `fixtures/valid` + `fixtures/invalid` (filled in M2)
 - [x] Android Lint configured; unit-test coverage turned on
 - [ ] GitHub Actions: Android build + unit tests + lint
-- [ ] `android/README.md`, `shared/README.md`
+- [x] `android/README.md`, `shared/README.md`
 - [x] AGENTS.md Project card: name, commands; `docs/PROGRESS.md` created
 Done when:
 - [ ] `./gradlew assembleDebug test lint` passes locally and in CI

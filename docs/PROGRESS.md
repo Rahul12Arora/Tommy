@@ -1,7 +1,7 @@
 ## Current state
 - Phase: 5 — Build · Milestone: M0 Foundation (in progress), branch `feat/m0-foundation`
-- Last done: Android CI workflow written (not yet run); lint + JaCoCo coverage; earlier: KSP check passed, `android/` project created by the wizard and aligned with TECH_STACK (AGP 9.4.1, Kotlin 2.4.21, BOM 2026.09.00, SDK 30/36/37); the version catalog matches the register exactly
-- Next step: push `feat/m0-foundation` and confirm the first Android CI run is green; then `android/README.md`
+- Last done: `android/README.md`; Android CI workflow pushed; lint + JaCoCo coverage; earlier: KSP check passed, `android/` project created by the wizard and aligned with TECH_STACK (AGP 9.4.1, Kotlin 2.4.21, BOM 2026.09.00, SDK 30/36/37); the version catalog matches the register exactly
+- Next step: green CI run → emulator launch (developer) → PR #2 for the rest of M0 → tag `m0-done`
 - Blockers: none
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator + Pixel 7a
@@ -26,3 +26,5 @@
 - Done: Android Lint set to fail on warnings. Off: AndroidGradlePluginVersion, GradleDependency, NewerVersionAvailable, OldTargetApi (versions are pinned on purpose; these would fail CI whenever a new release ships). Fixed the wizard's lint warnings: deleted unused `colors.xml` (with approval) and the duplicate activity label
 - Done: unit-test coverage on for debug (`createDebugUnitTestCoverageReport`). Verified: lint passes clean, fails (exit 1) on a probe warning; `assembleDebug test lint` passes
 - Done: `.github/workflows/android.yml` — on push touching `android/`: JDK 25 + `./gradlew assembleDebug test lint`. Actions pinned by SHA; Gradle cache set to `basic` (the default "enhanced" one is a commercial service). Not yet run on GitHub
+- Done: pushed `feat/m0-foundation`; the developer merged it to `main` as PR #1 (`c01419d`) before M0 closed — remaining M0 commits go to `main` through PR #2
+- Done: `android/README.md` (requirements incl. JDK 25 daemon, run, test/lint/coverage commands, versions); root README links to it. `shared/README.md` already current
