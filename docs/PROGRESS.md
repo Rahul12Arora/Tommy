@@ -1,8 +1,8 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M3 Setup flow (in progress, branch `feat/m3-setup-flow`)
-- Last done: every M3 task built and verified on the emulator (S-01 to S-07, gating, full-flow test); branch pushed for CI
-- Next step: the developer runs M3 on the Pixel 7a (manual QA + `US04_InstalledAppsTest`, which reinstalls and uninstalls Nyx there), then merge the PR and tag `m3-done`
-- Blockers: M3's "done when" needs a run on the developer's Pixel 7a
+- Phase: 5 — Build · Milestone: M3 Setup flow **done** (tag `m3-done`) · next: M4 Service & tracking
+- Last done: M3 closed — setup S-01 to S-07, Room + DataStore, launcher gating; verified on the emulator and the Pixel 7a; merged as PR #6
+- Next step: create branch `feat/m4-service-tracking`, write the M4 LLD in ARCHITECTURE.md §14 before any code
+- Blockers: none
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
 - Build setup: Homebrew JDK on PATH starts Gradle; daemon runs on JDK 25 (`android/README.md`)
@@ -81,3 +81,6 @@
 - Learned: ViewModel unit tests were flaky in the full suite (3 of 8 runs): ViewModels left running in `viewModelScope`, waiting on DataStore's I/O threads, dispatched to Main after `resetMain` and failed the next test, or hung a test that raced a fire-and-forget write. Fixed with `MainDispatcherRule` (cancel the tracked ViewModels and wait, then reset Main) and writes that return their `Job`. Then 10 full runs in a row green
 - Verified: `assembleDebug test lint` clean; 83 unit tests (+8: limits 5, stats 3); 24 device tests (+3: full setup flow, limits screen 2), 3 runs in a row green. On the emulator, fresh install driven over adb: every step → Social limit dragged to 1 h 35 min → stats on → Finish → Home; Back leaves the app; launching again opens Home; the DataStore file holds the age, pet, personality, Social limit, opt-in and completed keys. S-05 at font scale 2.0 still shows the list with Continue in reach. Not run on the Pixel 7a
 - Verified: Android CI green on `feat/m3-setup-flow` (run 39308248268); PR opened for M3, not merged — waiting for the Pixel 7a check
+- Verified: the developer ran M3 on the Pixel 7a — manual QA checklist and `US04_InstalledAppsTest` (R-10) passed — and merged PR #6
+- Done: M3 closed — ROADMAP status done, R-10 marked confirmed on both devices, tagged `m3-done` on the PR #6 merge (`386158c`)
+- Next: M4 Service & tracking — branch `feat/m4-service-tracking`, LLD first

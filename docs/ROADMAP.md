@@ -155,7 +155,7 @@ Done when:
 Verify with: `./gradlew test`
 Not in this milestone: fetching from a server (→ M12)
 
-### M3 — Setup flow            status: in-progress
+### M3 — Setup flow            status: done
 Goal: a fresh install walks through S-01 to S-07 and lands on Home.
 Depends on: M2
 Stories: US-01, US-02, US-03, US-04, US-05, US-24 (the choice only)
@@ -171,7 +171,7 @@ Tasks:
 - [x] Launcher opens setup until done, then Home
 - [x] Tests: setup gating, under-18 stop, category suggestion order, range-bound inputs
 Done when:
-- [ ] Fresh install → all steps → Home, on the emulator and your phone; skipping a permission shows what won't work
+- [x] Fresh install → all steps → Home, on the emulator and your phone; skipping a permission shows what won't work
 Verify with: `./gradlew test connectedAndroidTest` · manual QA checklist
 Not in this milestone: the pet appearing (→ M5)
 

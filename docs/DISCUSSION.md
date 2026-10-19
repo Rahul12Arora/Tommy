@@ -470,7 +470,7 @@ stateDiagram-v2
 | R-07 | Usage polling drains the battery | Uninstalls | Battery budget (A-19); tune polling interval; measure during hardening |
 | R-08 | Review of a brand-new app usually takes a few days and can stretch past a week | Launch date slips | Submit at least a week before any public launch date; have the always-on service justification and demo video ready at submission |
 | R-09 | Restarting an overlay + "special use" service may be restricted on Android 15+ | Pet doesn't return until the app is opened | Boot path confirmed: Android 15's `BOOT_COMPLETED` restriction doesn't cover `specialUse`. Restart after an app update and after process death are verified in M4; fallback: a notification that brings the pet back on tap |
-| R-10 | Listing installed apps via a `<queries>` entry for launcher apps couldn't be confirmed from the docs today | Category setup (S-05) can't show app names | Confirmed on the API 37 emulator 2026-10-20 (device test fails without the entry); Pixel 7a run pending. Fallbacks if a phone differs: list only apps seen in usage events, or `QUERY_ALL_PACKAGES` with a Play declaration (rejection risk) |
+| R-10 | Listing installed apps via a `<queries>` entry for launcher apps couldn't be confirmed from the docs today | Category setup (S-05) can't show app names | Confirmed 2026-10-20 on the API 37 emulator (device test fails without the entry) and on the Pixel 7a (device test run by the developer). Fallbacks if a phone differs: list only apps seen in usage events, or `QUERY_ALL_PACKAGES` with a Play declaration (rejection risk) |
 
 ---
 
