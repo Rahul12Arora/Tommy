@@ -278,7 +278,7 @@ Full fields, indexes and ERDs are written in each milestone's LLD.
 | `daily_app_usage` | Seconds per app per day, with the category at the time (US-04) | `(day, package, category)` |
 | `events` | Engine event log: limit_exceeded, nag_shown, snoozed, break_due, break_taken, doomscroll_10min, goal_met, focus_*, idle_shown, ran_away… | `id`, index on `day` |
 | `focus_sessions` | Goal, allowed apps, pet mode, start/end, outcome, switch count | `id` |
-| `app_categories` | Category per package, and whether the user chose it | `package` |
+| `app_categories` | Category per package, only where the user chose one; suggestions are computed when needed (D-58) | `package_name` |
 
 **Phone — DataStore**
 - Setup progress and age confirmation.
@@ -687,7 +687,7 @@ Written at the start of each milestone, before code.
 | Project setup | M0 | not needed |
 | App shell, storage, DayClock | M1 | done 2026-10-19 (§14.1) |
 | Config: schema, defaults, validator, layering | M2 | done 2026-10-19 (§14.2) |
-| Setup flow + app categories | M3 | pending |
+| Setup flow + app categories | M3 | done 2026-10-19 (§14.3) |
 | PetService + usage tracking | M4 | pending |
 | Overlay: pet, bubble, panel, hide | M5 | pending |
 | Lines, bubble arbiter, mood | M6 | pending |
@@ -1038,3 +1038,170 @@ sequenceDiagram
 - **Known differences from JSON Schema (D-54):** kotlinx.serialization 1.11.0 reads `"3"` as 3 and `"true"` as true, which JSON Schema rejects, and rejects `3.0`, which JSON Schema accepts. Neither can reach a phone: the console sends JSON numbers, the backend rejects quoted values on save, and the server re-serialises the document it serves (M10). The fixtures avoid these cases, and `ConfigValidatorTest` pins the phone's behaviour.
 
 **Not in M2:** fetching and writing the cache (→ M12), storing user values and the config `StateFlow` (→ M3), reading any of these values in features (→ M3 onwards), line placeholders and pool lookup (→ M6), positive goals (→ M13).
+
+### 14.3 M3 — Setup flow, storage, app categories
+
+Approved 2026-10-19, with D-55 to D-61, A-29, A-30 and CR-08.
+
+**Purpose:** a fresh install walks through S-01 to S-07 and lands on Home. After that, the launcher opens Home. M3 also creates the Room database and the `settings` DataStore (D-50) and connects the user's values to `EffectiveConfig` (§14.2). Stories: US-01, US-02, US-03, US-04, US-05, US-24 (the choice only).
+
+**Flow and navigation**
+
+```mermaid
+flowchart LR
+  L[Launch] --> G{"setup.completed?"}
+  G -- yes --> H[Home]
+  G -- no --> W[S-01 Welcome] --> A[S-02 Age check]
+  A -- under 18 --> X["Adults only · Close"]
+  A -- 18+ --> P[S-03 Permissions] --> PET[S-04 Pet] --> C[S-05 Categories] --> LIM[S-06 Limits] --> ST[S-07 Stats] --> H
+```
+
+- New `NavKey`s: `Welcome`, `AgeCheck`, `AdultsOnly`, `Permissions`, `ChoosePet`, `AppCategories`, `Limits`, `StatsOptIn`. They sit in `AppNavigation.kt` with the M1 keys. If the file passes ~250 lines, the setup entries move to `setup/`.
+- **Gating:** `AppNavigation` reads `setup.completed` once (`produceState`, initial `null`) and draws nothing until it knows. Then it creates the back stack with `Home` or `Welcome` as the start. The read is a small local file, so the blank frame is very short. Once setup is done, the flag is true for good. M3 has no way back into setup; Settings (M7) opens single steps.
+- **Each step screen takes an `onNext` callback.** In setup it pushes the next step. When Settings reuses S-03 to S-07 (M7), it pops back instead. The screens don't know which flow they're in.
+- **Back** goes to the previous step. Back on Welcome leaves the app.
+- **Finishing:** S-07's Finish writes `setup.completed = true` and replaces the whole back stack with `[Home]`, so Back on Home leaves the app instead of going back into setup.
+- **Progress** (D-56): the only progress stored is `setup.completed`. Each step saves its own choices as soon as they're made. The back stack is saved, so rotation and process death keep the current step. A new launch partway through setup starts again at Welcome, with the earlier choices already filled in.
+- **ViewModels per entry** (CR-08, D-55): `NavDisplay` gets `entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator(), rememberViewModelStoreNavEntryDecorator())`. A screen's ViewModel then lives as long as its back-stack entry and is cleared when the entry is popped.
+  - Without this, every ViewModel is scoped to the Activity. S-05's ViewModel would keep about 200 app icons in memory long after setup, and S-03 to S-07 reopened from Settings would show stale state.
+  - Checked against the 2.11.0 sources: `rememberViewModelStoreNavEntryDecorator()` exists and needs the saveable-state decorator from `navigation3-runtime` 1.2.0 next to it; `NavDisplay(entryDecorators = …)` exists in `navigation3-ui` 1.2.0.
+
+**Storage** (follows the §14.1 policies)
+- `data/AppDatabase.kt`: version 1, entities `[AppCategoryEntity]`, `exportSchema = true`, KSP argument `room.schemaLocation` → `android/app/schemas/` (committed). File name `nyx.db`. Debug builds use `fallbackToDestructiveMigration(dropAllTables = true)`, release builds don't. Build types are told apart with `BuildConfig.DEBUG`, so `buildFeatures.buildConfig = true` (M12's backend URL needs it too).
+- `data/SettingsStore.kt`: the one Preferences DataStore, file `settings`, built once in `AppContainer` with `PreferenceDataStoreFactory`.
+- **Keys:** each feature's own `…Settings` class (§14.1).
+
+| Class (package) | Key | Type | Default |
+|---|---|---|---|
+| `SetupSettings` (`setup/`) | `setup.completed` | Boolean | false |
+| | `setup.ageConfirmed` | Boolean | false |
+| `PetSettings` (`pet/`) | `pet.petId`, `pet.personalityId` | String | not set → the first enabled one |
+| `StatsSettings` (`stats/`) | `stats.optIn` | Boolean | false |
+| `ConfigUserValues` (`config/`) | `config.<path>` (§14.2) | Int | not set → the admin default |
+
+- **Under 18** (D-57): the answer isn't stored. The adults-only screen has only Close, which finishes the Activity. The next launch asks again. The age is self-declared (A-06), so storing a "no" protects nobody. It would only lock out someone who tapped the wrong button, until they clear the app's data.
+- **User values** (D-61): stored only when the user moves a slider. A setting the user never touched has no stored value, so it follows the admin default, including later changes from the console. Values are clamped to `min..max` before they're stored (and again on every read, §14.2).
+- **Effective config:** `AppContainer.effectiveConfig: Flow<EffectiveConfig>` = `configUserValues.observe()` mapped to `EffectiveConfig(base, values)`, on `Dispatchers.IO`. `base` is `configManager.loadBase()`, read once (`lazy`) the first time something collects. M12 swaps `base` for a flow that follows the fetched document.
+
+**`app_categories`** (D-58)
+
+| Column | Type | Notes |
+|---|---|---|
+| `package_name` | TEXT, primary key | The property is `packageName`: `package` is a Kotlin keyword |
+| `category` | TEXT, not null | Room's built-in enum support stores the Kotlin name (`SOCIAL`). Renaming a `Category` constant therefore needs a migration |
+
+- The table holds **only the categories the user chose**. Suggestions aren't stored. They're worked out when needed, so a better admin default reaches every app the user never touched. M4's tracker uses the same rule for new apps (US-04).
+- This replaces the "whether the user chose it" column the HLD had in §6: every row is a user choice.
+- A row for an app that was later uninstalled stays, which is harmless. The list only shows installed apps.
+- `AppCategoryDao`: `observeAll(): Flow<List<AppCategoryEntity>>`, `@Upsert suspend fun upsert(entity)`.
+
+**Category suggestion** (`tracking/CategorySuggestion.kt`, a pure function so it's easy to test)
+
+```kotlin
+fun suggestCategory(packageName: String, androidCategory: Int, config: NyxConfig): Category =
+    config.categoryDefaults[packageName]
+        ?: androidCategoryName(androidCategory)?.let { config.androidCategoryMap[it] }
+        ?: Category.NEUTRAL
+```
+
+- `androidCategoryName` maps `ApplicationInfo.category` to the keys used in `androidCategoryMap`: `CATEGORY_GAME` → `game`, `AUDIO` → `audio`, `VIDEO` → `video`, `IMAGE` → `image`, `SOCIAL` → `social`, `NEWS` → `news`, `MAPS` → `maps`, `PRODUCTIVITY` → `productivity`. Anything else (`CATEGORY_UNDEFINED`, `CATEGORY_ACCESSIBILITY`, new values) → `null` → Neutral.
+- What a row on S-05 shows: the user's choice from `app_categories` if there is one, otherwise the suggestion.
+
+**Installed apps and `<queries>`** (R-10)
+- Manifest: `<queries><intent><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent></queries>`. No `QUERY_ALL_PACKAGES`.
+- `tracking/InstalledApps.kt`: `queryIntentActivities(Intent(ACTION_MAIN).addCategory(CATEGORY_LAUNCHER), 0)` → one entry per package (package name, label, Android category), sorted by label, without Nyx itself. Runs on `Dispatchers.IO`. Icons are loaded per visible row, not up front. M8's allowed-apps picker reuses it.
+- What's known today: Android's package-visibility docs describe exactly this (`<intent>` signatures inside `<queries>`). Play's policy page only restricts the `QUERY_ALL_PACKAGES` permission. What's still unconfirmed is how it behaves on real phones, so a device test (below) checks it on the emulator and the Pixel 7a.
+- Which apps appear (A-30): every app with a launcher icon, including system apps such as Settings, Camera and Phone (they get Neutral unless mapped). Work-profile apps don't appear (A-23).
+- **Fallback** if the device test fails: list the packages seen in the last 7 days of usage events (`UsageStatsManager`, available once usage access is granted). That would be a CR, since S-05 would then depend on S-03.
+
+**Permissions (S-03)** — one screen with four rows. Each row has a one-line reason, a button and a tick. Every row is re-checked on `ON_RESUME` (`LifecycleResumeEffect`), so a row ticks itself when the user comes back from Settings.
+
+| Row | Granted when | Button opens |
+|---|---|---|
+| Usage access | `AppOpsManager.unsafeCheckOpNoThrow(OPSTR_GET_USAGE_STATS, myUid, packageName)` is `MODE_ALLOWED`. On `MODE_DEFAULT`, `checkSelfPermission(PACKAGE_USAGE_STATS)` decides | `Settings.ACTION_USAGE_ACCESS_SETTINGS` (the user picks Nyx from the list) |
+| Display over other apps | `Settings.canDrawOverlays(context)` | `Settings.ACTION_MANAGE_OVERLAY_PERMISSION`. Since Android 11 this always opens the app list and ignores a `package:` URI (Android 11 permissions changes page), so the reason text tells the user to pick Nyx |
+| Notifications | `NotificationManagerCompat.areNotificationsEnabled()` | Android 13+: the runtime `POST_NOTIFICATIONS` request. If the request comes back denied (the system stops showing the dialog after two denials), the button opens `Settings.ACTION_APP_NOTIFICATION_SETTINGS` instead. Android 11–12: always that settings screen |
+| Battery | `PowerManager.isIgnoringBatteryOptimizations(packageName)` | `Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS` (§10: not the one-tap request dialog) |
+
+- **Manifest additions:** `PACKAGE_USAGE_STATS` (with `tools:ignore="ProtectedPermissions"`), `SYSTEM_ALERT_WINDOW` and `POST_NOTIFICATIONS`. Nyx only shows up in the Usage access and Display over other apps lists if it declares these permissions.
+- **Brand steps** (D-60): `setup/PhoneBrand.kt` maps `Build.MANUFACTURER` (lowercased) to `XIAOMI`, `SAMSUNG`, `VIVO`, `OPPO` or `OTHER`. Only those exact names; other brands get the generic text.
+  - Under the battery row: 2–4 short steps for that brand, and an "Open app settings" button (`ACTION_APPLICATION_DETAILS_SETTINGS` with `package:`), the screen where these brands keep autostart and per-app battery options.
+  - No brand-private Settings intents: their component names aren't documented and change between OS versions.
+  - These extra steps can't be detected, so they have no tick. The battery tick is the system exemption only.
+  - The step texts are our own words, written from the brands' help pages and dontkillmyapp.com. They aren't checked on those phones (A-29, R-04).
+  - Cut line (ROADMAP §1): if week 1 runs late, Vivo and Oppo fall back to the generic text.
+- **"What won't work"** (D-59): Continue with any row not granted opens a dialog that lists each missing row's consequence (the "Without it" column of §10), with **Continue anyway** and **Go back**. The setup can still finish. US-01's "grant it later from Settings" is the S-03 entry in Settings (M7) and the N-03 notification (M4).
+- `setup/PermissionChecks.kt` holds the four checks behind a `PermissionStatus(usageAccess, overlay, notifications, battery)`. M4's permission-lost detection (US-26) reuses it.
+
+**The other screens**
+
+| Screen | Shows | Saves |
+|---|---|---|
+| S-01 Welcome | What the pet does, in three short lines | Nothing |
+| S-02 Age check | "Are you 18 or older?" Yes / No | Yes → `setup.ageConfirmed = true` → S-03. No → adults-only screen |
+| S-04 Choose pet | Enabled pets, each with the face for the band that contains `mood.start`. Enabled personalities, each with its `previewLine`. The current choice is preselected (the first enabled one if nothing is stored) | `pet.petId` and `pet.personalityId` when Continue is tapped |
+| S-05 App categories | Installed apps (icon, label, category) with a search field (case-insensitive match on the label). Tapping an app opens a menu with the five categories | One `app_categories` upsert per change, immediately |
+| S-06 Limits | One row per limit setting in `EffectiveConfig.settings` (the category daily limits, the total, the stretch), in that order. Editable → a slider within `min..max` showing the effective value, with "Off" at 0. Locked → the value with "Set by Nyx", no slider | `ConfigUserValues.set(path, value)` when the slider is released (D-61) |
+| S-07 Stats | What's shared and what isn't (A-09), a switch that starts off, and Finish | `stats.optIn` when the switch changes. Finish → `setup.completed = true` → Home. The install ID and uploads come in M14 |
+
+- **Sliders:** steps of 5 min when the range is longer than 60 and `max − min` divides by 5, otherwise steps of 1 min. Always bounded by `min..max`, so an out-of-range value can't be entered.
+- S-06 doesn't show nag timing, breaks or the day reset hour. Those live in S-11 Settings (M7). "Add goal" (positive goals) comes in M13.
+- **Accessibility (§9):** every screen scrolls and uses `Scaffold` insets. Ticks and locks are said in words as well as icons. Sliders announce their value. All text is in `strings.xml`.
+
+**Files** (`android/app/src/main/java/com/companionstudio/nyx/`)
+
+| File | Responsibility |
+|---|---|
+| `AppContainer.kt` | Adds the DataStore, `AppDatabase`, the `…Settings` classes, `ConfigUserValues`, `effectiveConfig`, `AppCategoryRepository`, `InstalledApps`, `PermissionChecks` |
+| `AppNavigation.kt` | Setup keys and entries, gating, entry decorators, finishing |
+| `data/AppDatabase.kt` · `data/SettingsStore.kt` | Room database · DataStore factory |
+| `config/ConfigUserValues.kt` | `observe(): Flow<Map<String, Int>>` and `set(path, value)` over `config.*` keys |
+| `setup/SetupSettings.kt` · `pet/PetSettings.kt` · `stats/StatsSettings.kt` | Their keys (table above) |
+| `setup/WelcomeScreen.kt` · `AgeCheckScreen.kt` (with the adults-only screen) | S-01, S-02. No ViewModel; they only call back |
+| `setup/PermissionsScreen.kt` · `PermissionChecks.kt` · `PhoneBrand.kt` | S-03. State is the `PermissionStatus` re-read on resume, so no ViewModel |
+| `setup/ChoosePetScreen.kt` · `ChoosePetViewModel.kt` | S-04 |
+| `setup/AppCategoriesScreen.kt` · `AppCategoriesViewModel.kt` | S-05: installed apps × choices × suggestion → rows, plus search |
+| `setup/LimitsScreen.kt` · `LimitsViewModel.kt` | S-06 |
+| `setup/StatsOptInScreen.kt` · `StatsOptInViewModel.kt` | S-07 and finishing |
+| `tracking/AppCategoryEntity.kt` · `AppCategoryDao.kt` · `AppCategoryRepository.kt` | The table and its access |
+| `tracking/CategorySuggestion.kt` · `InstalledApps.kt` | Suggestion rule · launcher-app list |
+| `AndroidManifest.xml` · `res/values/strings.xml` | Permissions + `<queries>` · all setup text, including the brand steps |
+| `android/app/build.gradle.kts` | DataStore dependency, `buildConfig`, `room.schemaLocation`, `lifecycle-viewmodel-navigation3` |
+| `android/app/schemas/` | Room's exported schema (committed) |
+
+- ViewModels take their dependencies in the constructor and are created with `viewModel { … }`, like `HomeViewModel`.
+
+**Tests**
+
+| Test | Where | Checks |
+|---|---|---|
+| `US04_CategorySuggestionTest` | `src/test/` | Admin default wins over the Android category · Android category mapped when there's no admin default · unmapped or undefined Android category → Neutral · a map entry pointing at a category is used as is |
+| `US04_AppCategoriesViewModelTest` | `src/test/` | The user's choice wins over the suggestion · search filters by label, ignoring case · a change is upserted. Uses fakes for the app list and the repository |
+| `US05_LimitsViewModelTest` | `src/test/` | Only limit settings, in order · locked → read-only with the admin default · a value outside the range is clamped before it's stored · slider steps (5 vs 1) |
+| `US03_ChoosePetViewModelTest` | `src/test/` | Only enabled pets and personalities · the preview face is the `mood.start` band · nothing stored → the first enabled one is preselected |
+| `US22_ConfigUserValuesTest` | `src/test/` | Set, then observe, gives the value · non-`config.` keys are ignored · `EffectiveConfig` follows a change. DataStore on a temporary file |
+| `PhoneBrandTest` | `src/test/` | `Xiaomi`, `samsung`, `vivo`, `OPPO` → their brand · anything else → `OTHER` |
+| `US01_MissingPermissionsTest` | `src/test/` | Which consequences are listed for a given `PermissionStatus` · none when all are granted |
+| `US01_SetupGatingTest` | `src/androidTest/` | Not completed → Welcome · completed → Home · going through every step → Home, and Back then leaves the app (the back stack is just `[Home]`) · recreating the Activity mid-setup keeps the current step |
+| `US02_AgeCheckTest` | `src/androidTest/` | No → the adults-only screen, with no way forward · Yes → S-03 |
+| `US05_LimitsScreenTest` | `src/androidTest/` | A locked setting shows "Set by Nyx" and no slider |
+| `US04_InstalledAppsTest` | `src/androidTest/` | R-10 on a real device: the list isn't empty, contains `com.android.settings`, and doesn't contain Nyx. Run on the emulator and the Pixel 7a |
+| `AppCategoryDaoTest` | `src/androidTest/` | In-memory Room: upsert inserts, then replaces; `observeAll` emits the change |
+
+- `US28_NavigationTest` (M1) now marks setup as completed before it launches, since a fresh install would start at Welcome.
+- Device tests set DataStore values through the app's own `AppContainer`. They never touch the file under a running DataStore.
+- Coverage: screens have no target (ROADMAP §2). The suggestion rule and the ViewModels are covered by the unit tests above.
+- Permission rows depend on system Settings screens, so they're checked by hand (manual QA), not by an automated test.
+
+**Decisions** (approved 2026-10-19)
+- **D-55 / CR-08:** add `androidx.lifecycle:lifecycle-viewmodel-navigation3` 2.11.0 (Apache-2.0). It scopes each ViewModel to its back-stack entry. It only pulls in what's already there: lifecycle 2.11.0 artifacts, `navigation3-runtime` ≥ 1.0.1 (we have 1.2.0), Compose runtime. Cost without it: ViewModels scoped to the Activity (stale state, icons kept in memory), or about 40 lines that copy what the library does. Also adds `datastore-preferences` to the build, which is already in the register.
+- **D-56:** setup progress is one flag. Each step saves as it goes; no current step is stored.
+- **D-57:** an under-18 answer isn't stored. The next launch asks again.
+- **D-58:** `app_categories` stores only the user's choices, and suggestions are computed when needed. (Changes §6.)
+- **D-59:** the "what won't work" list appears on S-03 when the user continues with rows not granted.
+- **D-60:** brand steps are instructions plus the app-details screen. No brand-private intents; the extra steps aren't tracked.
+- **D-61:** a user value is stored only when the user moves a slider, clamped first.
+- **A-29:** the brand step texts aren't checked on Xiaomi, Samsung, Vivo or Oppo phones until one is borrowed (R-04).
+- **A-30:** S-05 lists every app with a launcher icon, system apps included, except Nyx.
+
+**Not in M3:** the pet appearing and the service starting after setup (→ M4, M5), new-app suggestions while tracking (→ M4), Settings opening single steps (→ M7), positive goals (→ M13), the install ID and uploads (→ M14), an emoji font for the faces on S-04 (→ M5, F-15).

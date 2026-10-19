@@ -1,8 +1,8 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M2 Config **done** (tag `m2-done`) · next: M3 Setup flow
-- Last done: M2 closed — config schema v1, built-in defaults, fixtures, Kotlin validator + layering + `ConfigManager`; unit + device tests green; Android CI green
-- Next step: create branch `feat/m3-setup-flow`, write the M3 LLD in ARCHITECTURE.md §14 before any code (decide on `lifecycle-viewmodel-navigation3`, §14.1)
-- Blockers: none
+- Phase: 5 — Build · Milestone: M3 Setup flow (in progress, branch `feat/m3-setup-flow`)
+- Last done: M3 LLD written (ARCHITECTURE §14.3), with D-55 to D-61, A-29, A-30 and CR-08 proposed
+- Next step: approval of the M3 LLD, then Room `AppDatabase` + `settings` DataStore
+- Blockers: waiting for LLD approval
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
 - Build setup: Homebrew JDK on PATH starts Gradle; daemon runs on JDK 25 (`android/README.md`)
@@ -61,3 +61,5 @@
 - Noted: GitHub warns `ubuntu-latest` moves to Ubuntu 26 from 2026-10-19 → parking lot (pin `ubuntu-24.04`?)
 - Done: M2 closed — merged to `main` via PR, tagged `m2-done`
 - Next: M3 Setup flow — branch `feat/m3-setup-flow`, LLD first
+- Started M3: branch `feat/m3-setup-flow`; LLD written (§14.3). Checked against published artifacts and docs: `lifecycle-viewmodel-navigation3` 2.11.0 exists on Google Maven (Apache-2.0, needs `navigation3-runtime` ≥ 1.0.1) and provides `rememberViewModelStoreNavEntryDecorator()`; `rememberSaveableStateHolderNavEntryDecorator()` and `NavDisplay(entryDecorators)` exist in Navigation 3 1.2.0; since Android 11 the overlay settings intent ignores `package:`; Android docs describe launcher `<intent>` entries in `<queries>`, and Play's policy only restricts `QUERY_ALL_PACKAGES` (device behaviour still checked by a test, R-10). Proposed D-55 to D-61, A-29, A-30, CR-08 — waiting for approval
+- Approved: M3 LLD with D-55 to D-61, A-29, A-30, CR-08 (TECH_STACK §6 row added; ARCHITECTURE §6 `app_categories` updated)

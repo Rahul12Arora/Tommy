@@ -155,12 +155,12 @@ Done when:
 Verify with: `./gradlew test`
 Not in this milestone: fetching from a server (→ M12)
 
-### M3 — Setup flow            status: pending
+### M3 — Setup flow            status: in-progress
 Goal: a fresh install walks through S-01 to S-07 and lands on Home.
 Depends on: M2
 Stories: US-01, US-02, US-03, US-04, US-05, US-24 (the choice only)
 Tasks:
-- [ ] LLD: screens, state, permission checks, brand detection, `<queries>` behaviour (R-10), Android category mapping
+- [x] LLD: screens, state, permission checks, brand detection, `<queries>` behaviour (R-10), Android category mapping
 - [ ] Room `AppDatabase` (first table `app_categories`, schema export, migration policy per ARCHITECTURE §14.1) and the `settings` DataStore (D-50)
 - [ ] S-01 Welcome, S-02 Age check (under 18 stops)
 - [ ] S-03 Permissions: usage access, overlay, notifications, battery settings; auto-tick on return; "what won't work" summary for skipped steps; brand-specific steps (Xiaomi, Samsung, Vivo, Oppo, generic)

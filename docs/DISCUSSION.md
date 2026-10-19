@@ -1,7 +1,7 @@
 # Discussion
 
 > Phases 1–4 complete — 2026-10-18. Phase 5 (build) started with M0. Decisions from all phases are in the logs further down.
-> Last updated: 2026-10-18
+> Last updated: 2026-10-19
 
 ---
 
@@ -375,6 +375,13 @@ stateDiagram-v2
 | D-52 | Unknown keys are accepted on every side: the schema doesn't forbid extra properties, and the phone parses with `ignoreUnknownKeys`. This includes unknown trigger names in `lines` | Additive changes keep `schemaVersion` the same, and an older app can read a newer document; fixtures stay identical on both sides (D-39) | `additionalProperties: false` (the backend would reject what the phone accepts) | 2026-10-19 |
 | D-53 | Every validation error carries a rule ID. Each invalid fixture is named `<rule-id>--<what>.json`, and both the phone and the backend must reject it with that rule ID | The two sides then agree on why a file is rejected as well as whether | Only checking accept/reject | 2026-10-19 |
 | D-54 | Accept two known differences between the phone's parser and JSON Schema: kotlinx.serialization 1.11.0 accepts `"3"` / `"true"` for numbers and yes/no fields (the schema rejects them) and rejects `3.0` (the schema accepts it). Documented, pinned by a phone unit test; the server serves the re-serialised document (M10) | Neither can reach a phone: the console sends JSON numbers, the backend rejects quoted values on save, re-serialising turns `3.0` into `3`. Even if one did, the outcome is harmless ("3" reads as 3; `3.0` → last good config) | Strict Int/Boolean serializers on every field (full parity, ~30 lines plus a custom type everywhere); strict on quotes only | 2026-10-19 |
+| D-55 | Add `lifecycle-viewmodel-navigation3` 2.11.0 so each screen's ViewModel lives as long as its back-stack entry (CR-08) | Activity-scoped ViewModels would keep S-05's app icons in memory after setup and show stale state when Settings reopens a step | Activity-scoped ViewModels; ~40 lines copying the library | 2026-10-19 |
+| D-56 | Setup progress is one flag, `setup.completed`; each step saves its own choices as it goes | Nothing to keep in sync; the saved back stack already covers rotation and process death | Storing the current step | 2026-10-19 |
+| D-57 | An under-18 answer isn't stored; the next launch asks again | Age is self-declared (A-06); storing "no" only locks out a mis-tap | Store it and block until data is cleared | 2026-10-19 |
+| D-58 | `app_categories` stores only the user's choices; suggestions are computed when needed (ARCHITECTURE §6, §14.3) | A better admin default reaches every app the user never touched; no stale snapshots | Store every listed app with a "user chose it" flag (the HLD) | 2026-10-19 |
+| D-59 | The "what won't work" list shows on S-03 when the user continues with permissions not granted | Feedback at the moment of skipping; setup can still finish | A summary at the end of setup | 2026-10-19 |
+| D-60 | Brand battery steps are written instructions plus the app-details settings screen; no brand-private Settings intents, and the extra steps have no tick | Brand component names aren't documented and change between OS versions | Brand-specific intents | 2026-10-19 |
+| D-61 | A user value is stored only when the user moves a slider, clamped to the range first | Untouched settings keep following the admin default, including later changes | Store every value shown on S-06 | 2026-10-19 |
 
 ### D-16 — Admin / user settings split
 
@@ -424,6 +431,8 @@ stateDiagram-v2
 | A-26 | A break raises mood only when it follows a break reminder | Accepted |
 | A-27 | No staging environment in v1: config changes are protected by draft → publish and validation on all three sides; code is tested locally with the same Docker image that ships | Accepted |
 | A-28 | Default content: two personalities, `cheerful` "Cheerful coach" and `calm` "Calm friend", with at least 4 English lines per bubble trigger; the placeholder ranges in ARCHITECTURE §14.2. Tuned from the console later | Accepted |
+| A-29 | The brand battery steps (Xiaomi, Samsung, Vivo, Oppo) are our own words from the brands' help pages and dontkillmyapp.com, not checked on those phones until one is borrowed (R-04) | Accepted |
+| A-30 | S-05 lists every app with a launcher icon, system apps included, except Nyx | Accepted |
 
 ---
 
@@ -476,6 +485,7 @@ stateDiagram-v2
 | CR-05 | US-17: only positive goals raise mood when met; limit goals are judged at the day reset and shown as kept/missed in trends, with no mood effect (Q-14) | Small: `goal_met` fires for positive goals only; a daily "limit goal kept" flag for trends (M7, M13). No API or schema change | Approved — REQUIREMENTS v1.2 |
 | CR-06 | AGP 9.4.0 → 9.4.1 (patch release on Google Maven; Android Studio's wizard picks it by default) | None: build-only, same Gradle 9.6.0 / SDK range. TECH_STACK §1, §4, §6 updated | Approved 2026-10-19 |
 | CR-07 | Add `androidx.test.espresso:espresso-core` 3.7.0 as a device-test-only dependency | None for the app: test APK only. Compose UI tests pull in Espresso 3.5.0, which fails on API 35+ (`NoSuchMethodException: InputManager.getInstance`); 3.7.0 fixes it. TECH_STACK §6 updated | Approved 2026-10-19 |
+| CR-08 | Add `androidx.lifecycle:lifecycle-viewmodel-navigation3` 2.11.0 (Apache-2.0): each screen's ViewModel lives as long as its back-stack entry (ARCHITECTURE §14.3, D-55) | Small: one runtime library, in the lifecycle version we already use; it only pulls in artifacts that are already there. TECH_STACK §6 gets one row | Approved 2026-10-19 |
 
 ---
 
