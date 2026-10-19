@@ -139,7 +139,7 @@ Done when:
 Verify with: `./gradlew test connectedAndroidTest` · emulator
 Not in this milestone: real data (→ M4), setup gating (→ M3)
 
-### M2 — Config            status: in-progress
+### M2 — Config            status: done
 Goal: the app loads, validates and layers config; built-in defaults are one shared file.
 Depends on: M1
 Stories: US-21 (built-in fallback), US-22 (user values within ranges), US-05 (data side)

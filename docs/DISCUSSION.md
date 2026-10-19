@@ -488,3 +488,4 @@ stateDiagram-v2
 - Config version history, staged rollout and rollback in the console (F-16)
 - Optional app blocking
 - More languages
+- Pin the CI runner to `ubuntu-24.04` instead of `ubuntu-latest`: GitHub moves `ubuntu-latest` to Ubuntu 26 from 2026-10-19, and a new image can break a build with no change on our side (noticed on M2's CI run)
