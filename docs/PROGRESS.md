@@ -1,11 +1,11 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M3 Setup flow **done** (tag `m3-done`) · next: M4 Service & tracking
-- Last done: M3 closed — setup S-01 to S-07, Room + DataStore, launcher gating; verified on the emulator and the Pixel 7a; merged as PR #6
-- Next step: create branch `feat/m4-service-tracking`, write the M4 LLD in ARCHITECTURE.md §14 before any code
+- Phase: 5 — Build · Milestone: M4 Service & tracking (in progress, branch `feat/m4-service-tracking`)
+- Last done: M4 built and verified on the API 37 emulator: `PetService` + N-01, tracker with catch-up, stretch, exclusions, 31-day cleanup, N-03, debug scenarios + fast clock, Home on real data
+- Next step: the developer's Pixel 7a check (Digital Wellbeing ± 2 min, reboot), then merge the PR and tag `m4-done`
 - Blockers: none
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
-- Build setup: Homebrew JDK on PATH starts Gradle; daemon runs on JDK 25 (`android/README.md`)
+- Build setup: Homebrew JDK on PATH starts Gradle; daemon runs on JDK 25 (`android/README.md`). With the phone plugged in, set `ANDROID_SERIAL` for device tasks
 
 ## Session log (append-only)
 
@@ -84,3 +84,11 @@
 - Verified: the developer ran M3 on the Pixel 7a — manual QA checklist and `US04_InstalledAppsTest` (R-10) passed — and merged PR #6
 - Done: M3 closed — ROADMAP status done, R-10 marked confirmed on both devices, tagged `m3-done` on the PR #6 merge (`386158c`)
 - Next: M4 Service & tracking — branch `feat/m4-service-tracking`, LLD first
+- Started M4: branch `feat/m4-service-tracking`; LLD written (§14.4) and approved with D-62 to D-70 (no new dependencies; `lifecycle-service` from the register added to the build)
+- Done: `data/` — `DayClock.startOfDay`/`nextDayStart`, `AdjustableClock`; Room v2 with `daily_app_usage` (ms) + `tracking_cursor`, `DailyUsageDao.record` (totals + cursor in one transaction). `tracking/` — `UsageEvent`/`SystemUsageSource`, pure `advance` (segments, day split, exclusions, stretch, cursor clipping), `Tracker` (catch-up replay, category lookup, cleanup), `tickDelaySeconds`, `excludedPackages`. `service/` — `PetService` (special-use FGS, screen receiver, engine on `Dispatchers.Default`), `ServiceStartReceiver` (boot, app update), `Notifications` (N-01, N-03), `permissionAlert`. Home on `TrackingSummaryRepository` (limit goals, starting face); `FakeSummaryRepository` deleted. `FixPermissions` key; N-03 opens `[Home, FixPermissions]`. Debug: `ScenarioReceiver` (guarded by `DUMP`), parser, 3 scenario files
+- Learned: the HOME query also returns `com.android.settings/.FallbackHome` (priority −1000) on the emulator and the Pixel 7a, so only priority ≥ 0 handlers are excluded (D-69 updated). The Pixel has a second launcher installed (a minimalist one), which the HOME `<queries>` entry makes visible. Without that entry only FallbackHome resolves (mutation check: `US04_ExcludedAppsTest` fails)
+- Learned: ticks on the fast clock lost ~1 s per 65 min to sub-millisecond truncation; tick times are now whole milliseconds and the scenario totals are exact
+- Verified: `assembleDebug assembleRelease test lint` clean; 133 unit tests (+50); 30 device tests on the API 37 emulator, 3 runs green; coverage `Crediting.kt` 100% lines / 90.5% branches, `TickDelay.kt` 100%, `PermissionWatch.kt` 100%, `DayClock.kt` 100%. Release APK has no scenario files
+- Verified on the emulator (adb): setup Finish starts the service (foreground, type specialUse, N-01); Chrome and Settings use credited per tick; app update, process kill and `adb reboot` each bring the service back without opening the app (battery exemption not granted); catch-up credits the time the service was down; screen off → one last tick, then none until screen on; scenarios: `instagram-65min` Social 3900 s and Home "1 h 5 min · over", `stretch-break` Social 2100 s with stretch 900 s, `app-switching` Social 900 / Entertainment 600 / Neutral 300; usage access revoked → no crediting, N-03 "The pet can't see your apps…" → tap → S-03 over Home → granted → Continue → Home, gap caught up, N-03 cancelled; overlay revoked → N-03 with the overlay text, cancelled when granted
+- Not verified: the Pixel 7a (Digital Wellbeing ± 2 min over an hour, reboot); Android 11–13 (the foreground type is 0 there, untested until M15's API 30 run)
+- Next: Pixel 7a check → merge → tag `m4-done` → M5 Pet overlay

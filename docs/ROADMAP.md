@@ -181,13 +181,13 @@ Depends on: M3
 Stories: US-06 (restart after reboot), US-26, US-28 (real numbers), F-02
 Tasks:
 - [x] LLD: service lifecycle, restart paths (boot, app update, process death — R-09), tick loop, event → seconds crediting, stretches, exclusions (A-20), screen on/off
-- [ ] `PetService`: special-use foreground service + persistent notification N-01; started after setup and from boot
-- [ ] Tracker: adaptive tick, foreground app, credit `(day, package, category)`, stretch counter, new-app category suggestion
-- [ ] Day reset; 31-day cleanup
-- [ ] Permission-lost detection → N-03 → opens S-03 (US-26)
-- [ ] Debug fake usage source + fast clock + scenario files
-- [ ] Home shows real totals
-- [ ] Tests: crediting across app switches, screen off, day reset, category change mid-day, exclusions
+- [x] `PetService`: special-use foreground service + persistent notification N-01; started after setup and from boot
+- [x] Tracker: adaptive tick, foreground app, credit `(day, package, category)`, stretch counter, new-app category suggestion
+- [x] Day reset; 31-day cleanup
+- [x] Permission-lost detection → N-03 → opens S-03 (US-26)
+- [x] Debug fake usage source + fast clock + scenario files
+- [x] Home shows real totals
+- [x] Tests: crediting across app switches, screen off, day reset, category change mid-day, exclusions
 Done when:
 - [ ] On your phone: an hour of normal use shows matching totals on Home (± 2 min vs Android's Digital Wellbeing); the pet service is back after a reboot
 Verify with: unit tests · fake scenario "65 min Instagram" · reboot test on your phone

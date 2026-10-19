@@ -35,7 +35,7 @@ flowchart LR
     subgraph APP["Our app — one process"]
       SCR["App screens<br/>MainActivity + Compose<br/>setup · home · focus · trends · settings"]:::pending
       subgraph SVC["PetService — always-on foreground service"]
-        TRK["Usage tracker"]:::pending
+        TRK["Usage tracker"]:::done
         RUL["Rules engine<br/>limits · nags · breaks · focus · idle"]:::pending
         MOOD["Mood"]:::pending
         BUB["Bubble arbiter + line picker"]:::pending
@@ -1236,12 +1236,13 @@ flowchart LR
   L -- no --> W["one last tick, then wait<br/>for SCREEN_ON"] --> L
 ```
 
-- `PetService` is a `LifecycleService` (`lifecycle-service`, already in the register for M5's overlay; M4 adds it to the build). Its `lifecycleScope` runs the engine coroutine (§3).
+- `PetService` is a `LifecycleService` (`lifecycle-service`, already in the register for M5's overlay; M4 adds it to the build). Its `lifecycleScope` runs the engine coroutine (§3) on `Dispatchers.Default`: reading the event log and package info are blocking calls, and the app's screens share the process. It's still one coroutine, so engine state has one owner.
 - **Manifest:** `<service android:foregroundServiceType="specialUse" android:exported="false">` with the `android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE` property describing the use case (R-03). Permissions `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_SPECIAL_USE`, `RECEIVE_BOOT_COMPLETED`.
 - **Start points** (D-70), all through `PetService.start(context)` = `ContextCompat.startForegroundService`:
   - S-07 Finish, and every `MainActivity.onStart` once setup is done. The app is in front, so starting is always allowed. Starting an already running service just repeats `onStartCommand`.
   - `ServiceStartReceiver` (manifest, not exported) for `BOOT_COMPLETED` and `MY_PACKAGE_REPLACED`. It reads `setup.completed` (`goAsync` + a coroutine) and starts the service only if setup is done. Both broadcasts are on Android's list of exemptions from the background-start restriction (checked 2026-10-20, "Restrictions on starting a foreground service from the background"), and Android 15's `BOOT_COMPLETED` restriction doesn't cover `specialUse` (§10).
-  - Process death: `onStartCommand` returns `START_STICKY`, so the system recreates the service. Checked on the emulator in M4 (R-09). If that turns out not to work, the fallback in R-09 applies and becomes a CR.
+  - Process death: `onStartCommand` returns `START_STICKY`, so the system recreates the service.
+  - **Checked on the API 37 emulator (2026-10-20):** app update (`installDebug` over the running app) → the receiver starts it (`Background started FGS: Allowed … code:PACKAGE_REPLACED`); process killed (`run-as … kill -9`) → recreated within 5 s; `adb reboot` → running again without opening the app. All three with the battery exemption *not* granted. The R-09 fallback isn't needed on stock Android; other brands stay R-04.
   - If a start is refused anyway (`ForegroundServiceStartNotAllowedException`, Android 12+), it's logged, never swallowed.
 - `onStartCommand` calls `ServiceCompat.startForeground(…, FOREGROUND_SERVICE_TYPE_SPECIAL_USE)` with N-01 every time. The service never stops itself in v1. Setup not done → nobody starts it.
 - **Screen on/off:** a receiver registered by the service (these two broadcasts can't be declared in the manifest) feeds a `StateFlow<Boolean>`, seeded from `PowerManager.isInteractive`. Screen on → the tick loop runs. Screen off → one last tick credits up to now, then nothing runs until the screen comes on (§4, no wake locks, no alarms).
@@ -1269,11 +1270,14 @@ flowchart LR
 | anything else | ignored |
 
   (Constant values checked in the API 37 `android.jar`.)
-- **Segments:** the time between two consecutive events belongs to the app in front at the start of it. "In front" = the package of the most recently resumed activity that hasn't paused yet. The tracker keeps the resumed activities as an ordered list of `package/class`, so moving between two screens of the same app, or a pause arriving after the next resume, never loses the app.
-- A segment is credited only when the screen is on and the front app is counted (exclusions below). `DEVICE_SHUTDOWN` / `STARTUP` clear the list and count as screen off.
+- **Segments:** the time between two consecutive events belongs to the app in front at the start of it. "In front" = the most recently resumed activity (`package/class`), until that same activity pauses. A pause from another activity changes nothing, so moving between two screens of the same app, or a pause arriving after the next resume, never loses the app. (Tracking one activity instead of a list means a crashed app that never reports its pause can't come back to the front later.)
+- A segment is credited only when the screen is on and the front app is counted (exclusions below). `DEVICE_SHUTDOWN` clears the front app and counts as screen off; `DEVICE_STARTUP` clears it and counts as screen on (on the emulator, Android logs `SCREEN_INTERACTIVE` together with `DEVICE_STARTUP`).
+- Tick times are cut to whole milliseconds, like the event log and the cursor, so nothing is lost between ticks.
 - **Split at day boundaries:** a segment that crosses the reset hour is split, and each part goes to its own day key (`DayClock.nextDayStart`). The day key is worked out from the moment the time happened, so a time-zone change never counts a day twice (§9).
 - **Category at that moment:** the user's choice from `app_categories`, otherwise `suggestCategory(…)` (§14.3) with Android's category from `PackageManager.getApplicationInfo` (cached per package; an app Nyx can't see → Neutral). Read at every tick, so a change made in S-05 applies from the next tick on (US-04). New apps get a suggestion the first time they're used, and nothing is stored (D-58).
 - **Exclusions** (A-20, D-69): Nyx itself, `com.android.systemui`, and every app that handles the HOME intent (the launcher and any other installed home app). The home apps are found with `queryIntentActivities(ACTION_MAIN + CATEGORY_HOME)`, which needs a second `<intent>` in `<queries>` (no permission). Read once per service start.
+  - Android's fallback home screen is left out: it's `com.android.settings/.FallbackHome` (priority −1000), seen on the API 37 emulator and the Pixel 7a, and Settings time should count. So only home handlers with priority ≥ 0 are excluded.
+  - Without the `<queries>` entry the launcher is invisible and only `FallbackHome` resolves (mutation check, 2026-10-20: `US04_ExcludedAppsTest` fails).
 - **Cursor and catch-up:** every tick commits its new totals **and** the cursor ("credited until") in one Room transaction. On start, the tracker replays events from 24 h before `min(cursor, start of today)` to rebuild who's in front and the stretch, and credits only what lies after the cursor. So time used while the service was dead (killed, rebooted, updated) is still counted, and nothing is counted twice.
   - First start ever (no cursor): credit from the start of today, so Home's first numbers match Digital Wellbeing's.
   - At most 7 days are caught up (Android keeps the event log for about that long); older gaps are skipped and logged.
@@ -1404,7 +1408,7 @@ idle 2m
 - **D-66:** N-03 covers usage access and overlay. It fires when one goes missing since the last check, once per service start for one that was never granted; tracking pauses meanwhile and catches up afterwards.
 - **D-67:** debug test tools: scenario files and a fast clock, run with adb through a debug-only receiver guarded by `DUMP`. Main code gets an adjustable clock (always real in release) and a swappable usage source.
 - **D-68:** Home's goals in M4 are the limit goals from the effective config; the face is the chosen pet's starting face until M6.
-- **D-69:** excluded apps are Nyx, `com.android.systemui` and every HOME handler, found through a second `<queries>` intent.
+- **D-69:** excluded apps are Nyx, `com.android.systemui` and every HOME handler with priority ≥ 0 (not Settings' fallback home), found through a second `<queries>` intent.
 - **D-70:** the service starts on Finish, on every app open, on boot and on app update, and is sticky after process death. M4's tick is fast only when a limit on the front app is less than one slow tick away.
 
 **Not in M4:** the pet on screen and the "Show pet" action on N-01 (→ M5), mood and the `events` table (→ M6), triggers, nags, break reminders and their fast-tick conditions (→ M7), focus (→ M8), a Home banner when usage access is missing (parking lot), Settings opening S-03/S-05 (→ M7).
