@@ -1,6 +1,20 @@
 <resources>
     <string name="app_name">Nyx</string>
 
+    <!-- Setup: S-01 Welcome, S-02 Age check -->
+    <string name="welcome_title">Meet Nyx</string>
+    <string name="welcome_pet">A small pet lives on your screen and keeps an eye on your screen time.</string>
+    <string name="welcome_nudges">It nudges you when you go past your limits, and cheers when you take a break or finish a focus session.</string>
+    <string name="welcome_privacy">Which apps you use never leaves this phone.</string>
+    <string name="welcome_start">Get started</string>
+    <string name="age_title">Are you 18 or older?</string>
+    <string name="age_body">Nyx is made for adults.</string>
+    <string name="age_yes">Yes, I\'m 18 or older</string>
+    <string name="age_no">No</string>
+    <string name="adults_only_title">Nyx is for adults</string>
+    <string name="adults_only_body">Nyx is made for people aged 18 and over, so setup can\'t continue.</string>
+    <string name="adults_only_close">Close</string>
+
     <!-- Home (S-08) -->
     <string name="home_total">Today: %1$s</string>
     <string name="home_productive">Productive: %1$s</string>
@@ -16,5 +30,6 @@
     <string name="focus_setup_title">Focus</string>
     <string name="trends_title">Trends</string>
     <string name="settings_title">Settings</string>
+    <string name="permissions_title">Permissions</string>
     <string name="placeholder_not_built">Not built yet.</string>
 </resources>

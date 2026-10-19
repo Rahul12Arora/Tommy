@@ -1,7 +1,7 @@
 ## Current state
 - Phase: 5 — Build · Milestone: M3 Setup flow (in progress, branch `feat/m3-setup-flow`)
-- Last done: M3 LLD approved; Room `AppDatabase` (`app_categories`) + `settings` DataStore with setup keys
-- Next step: S-01 Welcome + S-02 Age check, with setup gating in `AppNavigation`
+- Last done: S-01 Welcome, S-02 Age check, setup gating in `AppNavigation` (Permissions is a placeholder for now)
+- Next step: S-03 Permissions (manifest permissions, checks, brand steps, "what won't work" dialog)
 - Blockers: none
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
@@ -65,3 +65,5 @@
 - Approved: M3 LLD with D-55 to D-61, A-29, A-30, CR-08 (TECH_STACK §6 row added; ARCHITECTURE §6 `app_categories` updated)
 - Done: `data/AppDatabase` (v1, `app_categories` entity + DAO in `tracking/`, schema exported to `android/app/schemas/` via the KSP `room.schemaLocation` argument, debug-only destructive fallback through `BuildConfig.DEBUG`); `data/SettingsStore` (one Preferences DataStore, corrupt file → empty + logged); `setup/SetupSettings` (`setup.completed`, `setup.ageConfirmed`). `datastore-preferences` now in the build; `buildConfig` on
 - Verified: `assembleDebug test lint` clean, 49 unit tests (+4 `SetupSettingsTest`, incl. a corrupt file); 7 device tests on the API 37 emulator (+2 `AppCategoryDaoTest`). Not run on the Pixel 7a yet
+- Done: S-01 Welcome, S-02 Age check + adults-only stop (Close finishes the Activity; "no" isn't stored, D-57), shared `SetupStep` frame; `AppNavigation` reads `setup.completed` once and starts on Welcome or Home. Device-test `SetupStateRule` resets settings before launch; `US28_NavigationTest` now starts with setup done
+- Verified: `assembleDebug test lint` clean (49 unit tests); 13 device tests on the API 37 emulator (+6: gating 3, age check 3). One gating test first failed because it pressed Back before Compose had settled; fixed by waiting for the step to show (test sequencing, not a weakened check)

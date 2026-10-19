@@ -162,7 +162,7 @@ Stories: US-01, US-02, US-03, US-04, US-05, US-24 (the choice only)
 Tasks:
 - [x] LLD: screens, state, permission checks, brand detection, `<queries>` behaviour (R-10), Android category mapping
 - [x] Room `AppDatabase` (first table `app_categories`, schema export, migration policy per ARCHITECTURE §14.1) and the `settings` DataStore (D-50)
-- [ ] S-01 Welcome, S-02 Age check (under 18 stops)
+- [x] S-01 Welcome, S-02 Age check (under 18 stops)
 - [ ] S-03 Permissions: usage access, overlay, notifications, battery settings; auto-tick on return; "what won't work" summary for skipped steps; brand-specific steps (Xiaomi, Samsung, Vivo, Oppo, generic)
 - [ ] S-04 Pet + personality picker with preview lines
 - [ ] S-05 App categories: launcher apps listed, suggested by admin default → Android category → Neutral; search; save to `app_categories`

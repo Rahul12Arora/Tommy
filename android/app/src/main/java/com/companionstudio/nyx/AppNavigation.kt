@@ -1,13 +1,20 @@
 package com.companionstudio.nyx
 
+import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.res.stringResource
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import com.companionstudio.nyx.home.HomeRoute
+import com.companionstudio.nyx.setup.AdultsOnlyScreen
+import com.companionstudio.nyx.setup.AgeCheckRoute
+import com.companionstudio.nyx.setup.WelcomeScreen
 import com.companionstudio.nyx.ui.PlaceholderScreen
+import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
 
 // Keys are @Serializable so the back stack survives rotation and process death
@@ -16,9 +23,22 @@ import kotlinx.serialization.Serializable
 @Serializable data object Trends : NavKey
 @Serializable data object Settings : NavKey
 
+// Setup, S-01 to S-07 (docs/ARCHITECTURE.md §14.3)
+@Serializable data object Welcome : NavKey
+@Serializable data object AgeCheck : NavKey
+@Serializable data object AdultsOnly : NavKey
+@Serializable data object Permissions : NavKey
+
 @Composable
 fun AppNavigation(container: AppContainer) {
-    val backStack = rememberNavBackStack(Home)
+    // Read once: setup is either still to do or done for good. Nothing is drawn for the moment this takes
+    val setupCompleted by produceState<Boolean?>(initialValue = null) {
+        value = container.setupSettings.completed.first()
+    }
+    val completed = setupCompleted ?: return
+
+    val backStack = rememberNavBackStack(if (completed) Home else Welcome)
+    val activity = LocalActivity.current
     NavDisplay(
         backStack = backStack,
         onBack = { backStack.removeLastOrNull() },
@@ -35,6 +55,18 @@ fun AppNavigation(container: AppContainer) {
             entry<FocusSetup> { PlaceholderScreen(stringResource(R.string.focus_setup_title)) }
             entry<Trends> { PlaceholderScreen(stringResource(R.string.trends_title)) }
             entry<Settings> { PlaceholderScreen(stringResource(R.string.settings_title)) }
+
+            entry<Welcome> { WelcomeScreen(onStart = { backStack.add(AgeCheck) }) }
+            entry<AgeCheck> {
+                AgeCheckRoute(
+                    setupSettings = container.setupSettings,
+                    onAdult = { backStack.add(Permissions) },
+                    onUnder18 = { backStack.add(AdultsOnly) },
+                )
+            }
+            entry<AdultsOnly> { AdultsOnlyScreen(onClose = { activity?.finish() }) }
+            // Placeholder until S-03 is built later in M3
+            entry<Permissions> { PlaceholderScreen(stringResource(R.string.permissions_title)) }
         },
     )
 }

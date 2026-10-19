@@ -13,7 +13,11 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class US28_NavigationTest {
 
-    @get:Rule
+    // A finished setup, so the launcher opens Home
+    @get:Rule(order = 0)
+    val setupState = SetupStateRule(completed = true)
+
+    @get:Rule(order = 1)
     val composeRule = createAndroidComposeRule<MainActivity>()
 
     @Test

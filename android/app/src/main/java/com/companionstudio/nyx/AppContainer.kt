@@ -28,7 +28,8 @@ class AppContainer(context: Context) {
     // Opened lazily by Room on the first query, so creating it here costs nothing at startup
     val database = AppDatabase.create(context)
 
-    private val settingsStore = createSettingsStore(
+    // Internal so device tests can reset it (SetupStateRule); features use their own …Settings classes
+    internal val settingsStore = createSettingsStore(
         produceFile = { context.preferencesDataStoreFile(SETTINGS_STORE_NAME) },
         onCorrupted = { e -> Log.w(TAG, "Settings file was corrupt and has been reset", e) },
     )

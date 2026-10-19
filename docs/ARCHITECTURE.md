@@ -1157,7 +1157,8 @@ fun suggestCategory(packageName: String, androidCategory: Int, config: NyxConfig
 | `data/AppDatabase.kt` · `data/SettingsStore.kt` | Room database · DataStore factory |
 | `config/ConfigUserValues.kt` | `observe(): Flow<Map<String, Int>>` and `set(path, value)` over `config.*` keys |
 | `setup/SetupSettings.kt` · `pet/PetSettings.kt` · `stats/StatsSettings.kt` | Their keys (table above) |
-| `setup/WelcomeScreen.kt` · `AgeCheckScreen.kt` (with the adults-only screen) | S-01, S-02. No ViewModel; they only call back |
+| `setup/SetupStep.kt` | The frame every step shares: heading + scrolling content |
+| `setup/WelcomeScreen.kt` · `AgeCheckScreen.kt` (with the adults-only screen) | S-01, S-02. No ViewModel; `AgeCheckRoute` stores the "yes" and then calls back |
 | `setup/PermissionsScreen.kt` · `PermissionChecks.kt` · `PhoneBrand.kt` | S-03. State is the `PermissionStatus` re-read on resume, so no ViewModel |
 | `setup/ChoosePetScreen.kt` · `ChoosePetViewModel.kt` | S-04 |
 | `setup/AppCategoriesScreen.kt` · `AppCategoriesViewModel.kt` | S-05: installed apps × choices × suggestion → rows, plus search |
@@ -1189,7 +1190,7 @@ fun suggestCategory(packageName: String, androidCategory: Int, config: NyxConfig
 | `AppCategoryDaoTest` | `src/androidTest/` | In-memory Room: upsert inserts, then replaces; `observeAll` emits the change |
 
 - `US28_NavigationTest` (M1) now marks setup as completed before it launches, since a fresh install would start at Welcome.
-- Device tests set DataStore values through the app's own `AppContainer`. They never touch the file under a running DataStore.
+- Device tests set DataStore values through the app's own `AppContainer` (`SetupStateRule`, which clears the `internal` `settingsStore` and can mark setup done before the Activity starts). They never touch the file under a running DataStore.
 - Coverage: screens have no target (ROADMAP §2). The suggestion rule and the ViewModels are covered by the unit tests above.
 - Permission rows depend on system Settings screens, so they're checked by hand (manual QA), not by an automated test.
 
