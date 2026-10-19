@@ -1,0 +1,221 @@
+{
+  "schemaVersion": 1,
+  "configVersion": 1,
+  "features": {
+    "focus": true,
+    "breaks": true,
+    "idleLines": true,
+    "trends": true,
+    "stats": true
+  },
+  "day": {
+    "resetHour": {
+      "default": 0,
+      "min": 0,
+      "max": 6,
+      "userEditable": true
+    }
+  },
+  "tracking": {
+    "fastTickSeconds": 5,
+    "slowTickSeconds": 30,
+    "doomscrollCategories": [
+      "social"
+    ]
+  },
+  "limits": {
+    "categories": {
+      "social": {
+        "dailyMinutes": {
+          "default": 60,
+          "min": 0,
+          "max": 240,
+          "userEditable": true
+        }
+      }
+    },
+    "totalDailyMinutes": {
+      "default": 0,
+      "min": 0,
+      "max": 960,
+      "userEditable": true
+    },
+    "stretch": {
+      "minutes": {
+        "default": 30,
+        "min": 10,
+        "max": 120,
+        "userEditable": true
+      },
+      "categories": [
+        "social"
+      ]
+    }
+  },
+  "nags": {
+    "repeatMinutes": {
+      "default": 10,
+      "min": 5,
+      "max": 30,
+      "userEditable": true
+    },
+    "snoozeMinutes": {
+      "default": 40,
+      "min": 5,
+      "max": 30,
+      "userEditable": true
+    },
+    "maxSnoozesPerDay": 3
+  },
+  "breaks": {
+    "afterMinutes": {
+      "default": 45,
+      "min": 20,
+      "max": 120,
+      "userEditable": true
+    },
+    "breakMinutes": 5,
+    "repeatMinutes": 10
+  },
+  "focus": {
+    "durationMinutes": {
+      "default": 25,
+      "min": 5,
+      "max": 180,
+      "userEditable": true
+    },
+    "checkinMinutes": {
+      "default": 10,
+      "min": 5,
+      "max": 30,
+      "userEditable": true
+    }
+  },
+  "bubbles": {
+    "minGapSeconds": 60,
+    "showSeconds": 8
+  },
+  "idle": {
+    "everyMinutes": 30
+  },
+  "hide": {
+    "minutes": 30
+  },
+  "mood": {
+    "start": 70,
+    "weights": {
+      "focus_completed": 15,
+      "goal_met": 10,
+      "break_taken": 5,
+      "doomscroll_10min": -3,
+      "limit_exceeded": -10,
+      "snoozed": -5
+    },
+    "bands": [
+      {
+        "id": "ran_away",
+        "from": 0,
+        "to": 0
+      },
+      {
+        "id": "fine",
+        "from": 1,
+        "to": 100
+      }
+    ]
+  },
+  "pets": [
+    {
+      "id": "cat",
+      "name": "Cat",
+      "enabled": true,
+      "faces": {
+        "ran_away": "🐾",
+        "fine": "😺"
+      }
+    }
+  ],
+  "personalities": [
+    {
+      "id": "plain",
+      "name": "Plain",
+      "enabled": true,
+      "previewLine": "Hello."
+    }
+  ],
+  "lines": {
+    "plain": {
+      "limit_reached": {
+        "any": [
+          "Line for limit_reached."
+        ]
+      },
+      "limit_repeat": {
+        "any": [
+          "Line for limit_repeat."
+        ]
+      },
+      "stretch_reached": {
+        "any": [
+          "Line for stretch_reached."
+        ]
+      },
+      "break_due": {
+        "any": [
+          "Line for break_due."
+        ]
+      },
+      "break_taken": {
+        "any": [
+          "Line for break_taken."
+        ]
+      },
+      "goal_met": {
+        "any": [
+          "Line for goal_met."
+        ]
+      },
+      "focus_started": {
+        "any": [
+          "Line for focus_started."
+        ]
+      },
+      "focus_drift": {
+        "any": [
+          "Line for focus_drift."
+        ]
+      },
+      "focus_checkin": {
+        "any": [
+          "Line for focus_checkin."
+        ]
+      },
+      "focus_completed": {
+        "any": [
+          "Line for focus_completed."
+        ]
+      },
+      "focus_broken": {
+        "any": [
+          "Line for focus_broken."
+        ]
+      },
+      "idle": {
+        "any": [
+          "Line for idle."
+        ]
+      },
+      "pet_returned": {
+        "any": [
+          "Line for pet_returned."
+        ]
+      }
+    }
+  },
+  "categoryDefaults": {
+    "com.example.social": "social"
+  },
+  "androidCategoryMap": {
+    "social": "social"
+  }
+}

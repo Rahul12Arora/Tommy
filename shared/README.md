@@ -9,7 +9,7 @@ The contract between the Android app, the backend and the admin console. **No bu
 | `config.schema.json` | JSON Schema (draft-07) for the one config document (M2) | Backend (validates drafts), admin console (generates the form) |
 | `default-config.json` | The built-in defaults (M2, D-43) | Copied into the app's assets at build time; seeded as the server's first published config |
 | `fixtures/valid/*.json` | Configs that must be **accepted** | Phone tests (Kotlin validator) and backend tests (schema + cross-field rules) |
-| `fixtures/invalid/*.json` | Configs that must be **rejected**, one broken rule per file; the file name says which rule | Same tests |
+| `fixtures/invalid/*.json` | Configs that must be **rejected**, one broken rule per file, named `<rule-id>--<what>.json`. Each side must reject it **with that rule ID** (D-53); rule IDs are listed in `docs/ARCHITECTURE.md` §14.2 | Same tests |
 
 ## Rules
 

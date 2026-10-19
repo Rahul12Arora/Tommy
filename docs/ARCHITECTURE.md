@@ -939,7 +939,7 @@ Approved 2026-10-19, with D-51 to D-53 and A-28.
 - The invalid set: one file per rule, and for `schema` one per bullet above (not JSON, missing field, wrong type, unknown category, wrong schema version, out of bounds, bad id, blank line). `mood-bands-coverage` has a `--gap` and an `--overlap` file.
 - **Valid:** `minimal.json` (one pet, one personality, two bands `0–0` and `1–100`, `any` pools only), `band-pools.json` (band-specific pools next to `any`), `unknown-keys.json` (extra keys at several levels, including an unknown trigger in `lines`).
 - `shared/default-config.json` is tested directly, not copied into `fixtures/valid/`.
-- The fixtures are written by hand from `minimal.json`; no generator script is committed.
+- Every fixture is `minimal.json` with one change. The one-off script that made them isn't committed; fixtures are edited directly as files from now on.
 
 **Default document** (`shared/default-config.json`, configVersion 1) — placeholder numbers, tuned later from the console
 - Limits (A-14): Social & scrolling 60 min (range 0–240), Games 120 (0–480), Entertainment 120 (0–480); no entry for Productive or Neutral. Total daily 0 = off (0–960). Stretch 30 min (10–120) on Social and Games. All user-editable.
