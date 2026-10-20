@@ -175,7 +175,7 @@ Done when:
 Verify with: `./gradlew test connectedAndroidTest` · manual QA checklist
 Not in this milestone: the pet appearing (→ M5)
 
-### M4 — Service & tracking            status: in-progress
+### M4 — Service & tracking            status: done
 Goal: an always-on service tracks real usage into per-app/category daily totals and survives reboots.
 Depends on: M3
 Stories: US-06 (restart after reboot), US-26, US-28 (real numbers), F-02
@@ -189,7 +189,7 @@ Tasks:
 - [x] Home shows real totals
 - [x] Tests: crediting across app switches, screen off, day reset, category change mid-day, exclusions
 Done when:
-- [ ] On your phone: an hour of normal use shows matching totals on Home (± 2 min vs Android's Digital Wellbeing); the pet service is back after a reboot
+- [x] On your phone: an hour of normal use shows matching totals on Home (± 2 min vs Android's Digital Wellbeing); the pet service is back after a reboot
 Verify with: unit tests · fake scenario "65 min Instagram" · reboot test on your phone
 Not in this milestone: the pet on screen (→ M5)
 
