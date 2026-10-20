@@ -3,7 +3,7 @@
 > Phase 4 output. Read this first if you're new to the repo: after ~10 minutes you should know how data moves through the system and where every piece lives.
 > Low-level design (LLD) for each module is added to §14 at the **start** of its milestone, before any code.
 > Rule: code and diagrams must agree. A task that changes a component, a flow or a folder updates this file in the same task.
-> Last updated: 2026-10-21
+> Last updated: 2026-10-21 (M6 LLD §14.6)
 
 ---
 
@@ -37,9 +37,9 @@ flowchart LR
       subgraph SVC["PetService — always-on foreground service"]
         TRK["Usage tracker"]:::done
         RUL["Rules engine<br/>limits · nags · breaks · focus · idle"]:::pending
-        MOOD["Mood"]:::pending
-        BUB["Bubble arbiter + line picker"]:::pending
-        OVL["Overlay UI<br/>pet · bubble · panel"]:::pending
+        MOOD["Mood"]:::done
+        BUB["Bubble arbiter + line picker"]:::done
+        OVL["Overlay UI<br/>pet · bubble · panel"]:::done
         NTF["Notifier"]:::pending
       end
       CFG["ConfigManager<br/>built-in → admin → user"]:::done
@@ -277,7 +277,7 @@ Full fields, indexes and ERDs are written in each milestone's LLD.
 |---|---|---|
 | `daily_app_usage` | Time per app per day (stored in milliseconds, D-63), with the category at the time (US-04) | `(day, package, category)` |
 | `tracking_cursor` | One row: the moment usage has been credited up to (D-62) | `id` = 0 |
-| `events` (from M6/M7, D-64) | Engine event log: limit_exceeded, nag_shown, snoozed, break_due, break_taken, doomscroll_10min, goal_met, focus_*, idle_shown, ran_away… | `id`, index on `day` |
+| `events` (M6, §14.6, D-64) | Engine event log in log order: doomscroll_10min, ran_away, pet_returned (M6); limit_exceeded, snoozed, break_taken… (M7 on). Mood is recomputed from it | `id`, index on `day` |
 | `focus_sessions` | Goal, allowed apps, pet mode, start/end, outcome, switch count | `id` |
 | `app_categories` | Category per package, only where the user chose one; suggestions are computed when needed (D-58) | `package_name` |
 
@@ -691,7 +691,7 @@ Written at the start of each milestone, before code.
 | Setup flow + app categories | M3 | done 2026-10-19 (§14.3) |
 | PetService + usage tracking | M4 | done 2026-10-20 (§14.4) |
 | Overlay: pet, bubble, panel, hide | M5 | done 2026-10-21 (§14.5) |
-| Lines, bubble arbiter, mood | M6 | pending |
+| Lines, bubble arbiter, mood | M6 | written 2026-10-21 (§14.6), waiting for approval |
 | Limits, nags, breaks, idle lines | M7 | pending |
 | Focus sessions | M8 | pending |
 | Backend foundation + config API | M10 | pending |
@@ -1551,3 +1551,172 @@ flowchart LR
 - **D-78:** overlay windows use a window context; Compose's lifecycle and saved state come from a small `OverlayOwner` (no new dependency).
 
 **Not in M5:** what the pet says, the bubble window and mood faces (→ M6), glow, nags, N-04 and the hidden-pet notification rules (→ M7), the focus timer badge and S-09 (→ M8), Trends from the panel (→ M13).
+
+### 14.6 M6 — Event log, mood, bubble arbiter, line picker
+
+Written 2026-10-21 and built in the same session at the developer's request; D-79 to D-86 are proposed, waiting for approval.
+
+**Purpose:** the pet gets a mood that its face shows, runs away at 0 and comes back, and speaks through a speech bubble beside it. The bubble arbiter and the line picker are built for every trigger, but in M6 only `pet_returned` asks for a bubble: limits, nags, breaks and idle lines come in M7, focus in M8. Stories: US-15 (mood), US-16 (low point, ran away, return), US-03 (lines in the chosen personality).
+
+**Per tick** — after the tracker (§14.4), on the same engine coroutine (§3)
+
+```mermaid
+sequenceDiagram
+  participant L as Tick loop (PetService)
+  participant T as Tracker
+  participant R as Reactions
+  participant DB as Room events
+  participant A as Arbiter + line picker (pure)
+  participant O as Pet overlay
+  L->>T: tick()
+  T-->>L: snapshot (day, today's totals by category)
+  L->>R: afterTick(snapshot, config, personality, pet on screen?)
+  R->>DB: today's events
+  R->>R: missing doomscroll_10min events · mood · ran away / returned
+  R->>DB: insert the new events
+  R->>A: offered requests (pet_returned)
+  A-->>R: at most one bubble
+  R-->>L: mood, line or nothing
+  L->>O: showBubble(line)
+  Note over DB,O: Home, the panel and the pet's face follow the events table through Room's Flow
+```
+
+- `Reactions` (`rules/`) holds what the engine remembers between ticks that isn't stored: the arbiter's state and the recent lines. One instance per engine run, like `Tracker`; a service restart starts it fresh (D-83).
+
+**Event log** — table `events` (D-64), Room version 3
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | INTEGER | Primary key, auto-increment: the order events were logged in |
+| `day` | TEXT | ISO day key of the moment it was logged (§9); indexed |
+| `at_ms` | INTEGER | Epoch ms, from the app clock (fast in debug scenarios, D-67). For stats and debugging; not used for ordering |
+| `type` | TEXT | `PetEventType` by Kotlin name, like `Category` |
+
+- **Types in M6:** the six that carry a mood weight — `DOOMSCROLL_10MIN`, `LIMIT_EXCEEDED`, `SNOOZED`, `BREAK_TAKEN`, `GOAL_MET`, `FOCUS_COMPLETED` — plus `RAN_AWAY` and `PET_RETURNED` (weight 0). Only `DOOMSCROLL_10MIN`, `RAN_AWAY` and `PET_RETURNED` are written in M6; the others are declared so the mood maths is complete and tested now, and M7, M8 and M13 write them. M7 adds what it needs to log nags (e.g. which limit an event is about) with its own migration.
+- `PetEventDao` (interface, so unit tests can fake it): `insertAll`, `eventsOn(day)` and `observeDay(day)` in log order (`id`, not time: found on the emulator, where events logged after the debug fast clock stopped sorted before the sped-up ones and changed the mood; a phone clock set back would do the same), `deleteBefore(day)` (31 days, A-13, at the first tick of a new day, like the tracker), `clearAll()` (debug scenarios only).
+- **Migration** (D-85): an `AutoMigration(from = 2, to = 3)` generated by Room from the exported schemas. Adding a table is what auto-migrations handle without a spec, so a debug build installed over M5 keeps the S-05 categories and today's totals instead of wiping them (§14.1's destructive fallback stays for anything else). No migration test yet: `room-testing` goes through approval at v1.0.0 (§14.1). Checked by hand: install over the M5 build.
+
+**`doomscroll_10min`** (D-81, `rules/Doomscroll.kt`, pure)
+- Due events = ⌊doomscrolling ms today ÷ 10 min⌋ − the `DOOMSCROLL_10MIN` events already logged today, never below 0. Doomscrolling = the `tracking.doomscrollCategories` totals, as on Home (A-15).
+- Logged at the tick that notices, with that tick's time. Derived from the stored totals, so a restart, a catch-up or a missed tick neither loses nor repeats one.
+- Time caught up for an earlier day (§14.4) isn't turned into events: that day's mood no longer shows anywhere.
+
+**Mood** (SM-01, US-15, D-79, `mood/Mood.kt`, pure)
+
+```kotlin
+fun moodOf(events: List<PetEventType>, mood: MoodConfig): Int =
+    events.fold(mood.start) { value, event -> (value + weightOf(event, mood.weights)).coerceIn(0, 100) }
+```
+
+- Today's events in log order, with the weights of the config in force now (H-03: an admin change of weights applies at once). The day reset gives an empty log, so mood is back to `mood.start`.
+- **Clamped after every event, not once at the end.** With a single clamp, a pet that had fallen to "−40" would need +45 before it came back, and a break (+5) wouldn't bring it back as US-16 promises. Likewise, gains above 100 aren't banked.
+- **Face:** the chosen pet's face for the band that contains the mood (`MoodConfig.bandAt`, also used by S-04 and Home now). The validator guarantees every value 0–100 has a band and every pet has a face for it. "Ran away" is mood 0, not a band id (§14.2); with the default bands, 0 is the `ran_away` band, so the face is 🐾 (Cat) or 💨 (Blob).
+- **Where mood is computed:** `todaySummary(…)` computes it from the events table, so Home's face, the pet's face and the panel follow the log through Room's `Flow` (D-44). `Reactions` computes it with the same function for the band of a line and the ran-away check. Nothing stores a mood number.
+
+**Ran away and back** (US-16, A-11, D-80, `mood/Mood.kt`, pure)
+- `presenceChange(events, mood)`: `RAN_AWAY` when the mood is 0 and the last of today's `RAN_AWAY`/`PET_RETURNED` events isn't `RAN_AWAY`; `PET_RETURNED` when the mood is above 0 and it is. Otherwise nothing.
+- Logged like any event, so a restart doesn't announce a return twice. Logging `PET_RETURNED` offers a `pet_returned` bubble.
+- The day reset brings the pet back silently: the new day's log is empty, so there's nothing to return from (SM-01).
+- Only a positive event can lift mood above 0: a break after a reminder (M7, A-26), a completed focus session (M8) or a met positive goal (M13).
+
+**Bubble arbiter** (bubble rules in DISCUSSION, A-21, D-82, `rules/BubbleArbiter.kt`, pure)
+
+| Tier (highest first) | Triggers | Gap applies | While hidden |
+|---|---|---|---|
+| Focus | `focus_drift`, `focus_started`, `focus_checkin`, `focus_broken` | yes, except `focus_drift` | skipped |
+| Stretch nag | `stretch_reached` | yes | notification (N-04, M7) |
+| Daily-limit nag | `limit_reached`, `limit_repeat` | yes | notification (N-04, M7) |
+| Break reminder | `break_due` | yes | notification (N-02, M7) |
+| Reward | `goal_met`, `focus_completed`, `break_taken`, `pet_returned` | yes | skipped |
+| Idle | `idle` | yes | skipped |
+
+- **Input per tick:** the requests offered this tick (`BubbleRequest(trigger, values, key)`; `key` defaults to the trigger, M7 uses one per limit), whether the pet is on screen, whether a focus session runs (always no until M8), `bubbles.minGapSeconds` and the clock.
+- **Pending:** a request that can't show yet waits in the arbiter's state; a newer request with the same key replaces it, so the list never grows past one per key.
+- **Pet on screen** = shown (not hidden, §14.5) and the overlay permission granted. Not on screen → nag and break requests come back as notifications (delivered from M7) and the others are dropped (D-24).
+- **Focus session** (from M8) → only the focus tier can show; nags, breaks and rewards stay pending until it ends (D-25); idle requests are dropped (D-26). Focus beats hidden: held requests stay held.
+- **Otherwise** the highest tier wins (earliest offered within a tier). It shows if no bubble has appeared in the last `minGapSeconds`, or if it's `focus_drift`; the rest keep waiting. At most one bubble per tick.
+- **The gap runs from when the previous bubble appeared** (D-82), not from when it closed. The arbiter needs no message back from the window, and with the default 60 s gap and 8 s on screen there's still 52 s of quiet. If an admin sets the gap below `showSeconds`, a new bubble replaces the one showing: still one at a time.
+
+**Line picker** (§4, D-83, `rules/LinePicker.kt`)
+- **Pool:** `lines[personality][trigger]`, the current mood band's pool if it exists and isn't empty, otherwise `any` (which the validator guarantees). The personality is the user's choice if it's still enabled, otherwise the first enabled one, like the pet (§14.4).
+- **No repeats:** random from the pool minus the last 3 lines shown for that trigger (fewer when the pool is small: at most pool size − 1 are left out, so a 1-line pool still works). The history lives in memory, per trigger; after a service restart a recent line can come back once.
+- **Placeholders** are filled from the request's values. Which trigger may use which is fixed in code (`BubbleTrigger.placeholders`) and checked by a new validator rule, `line-placeholders`:
+
+| Trigger | May use | Filled with (by the milestone that offers it) |
+|---|---|---|
+| `limit_reached`, `limit_repeat` | `{app}` `{category}` `{limit}` | Front app's label, category name, the limit as on Home ("1 h") — M7 |
+| `stretch_reached` | `{app}` `{minutes}` | Front app's label, the stretch limit in minutes — M7 |
+| `break_due` | `{minutes}` | `breaks.breakMinutes` — M7 |
+| `focus_drift` | `{app}` | The app that isn't allowed — M8 |
+| `focus_checkin` | `{minutes}` | Minutes into the session — M8 |
+| every other trigger | none | — |
+
+  - `line-placeholders` rejects any `{…}` in a line of a known trigger that isn't in its list, including typos such as `{App}`. Unknown triggers are still ignored (D-52). New fixture: `line-placeholders--not-allowed-for-trigger.json`. The backend implements the same rule in M10 (D-53). The default config already passes it.
+  - A placeholder without a value is left as written; each milestone's tests check that its requests fill every placeholder their trigger allows.
+
+**Bubble window** (O-02, D-75, D-84)
+- The bubble shows **in the pet's window, in the panel's place**: away from the pet's edge, below the pet in the top half and above it in the bottom half, with the panel's maximum height. The window is anchored as in D-71, so the pet doesn't move when the bubble appears.
+- The panel wins: while it's open, the bubble waits behind it and appears if the panel closes before the bubble's time is up.
+- Shown for `bubbles.showSeconds`, then removed. Always real seconds, even under the debug fast clock (D-67): it's time to read the line, not usage time. (First built divided by the speed, like the engine's waits; at 60× the bubble vanished after 0.13 s on the emulator.) **Dismiss** removes it at once. Starting a drag removes it too, so the pet doesn't jump inside a window that changes size under the finger. Snooze arrives with nags in M7.
+- While the bubble shows, the window is the bounding box of pet + bubble, so the transparent corner beside the pet catches taps for those few seconds. Accepted: at most `showSeconds` (8 s), and the alternative — a second window kept next to the pet during drags and rotations — is much more code.
+- TalkBack reads a new bubble (polite live region).
+- The engine hands the line to `PetOverlay.showBubble(line)`, which switches to the main thread itself. The arbiter only delivers a bubble when the pet is on screen, so there's no window to wait for.
+
+**Debug tools** (D-67, D-86)
+- New scenario `instagram-4h`: four hours of Instagram. With the default weights, 4 h walks the Cat from 😸 70 down every band to 🐾 0 (−3 every 10 min reaches 0 after 240 min); at `--ei speed 60` that's 4 minutes.
+- New extra on `ScenarioReceiver`: `--es event break_taken` logs one event of that type now (any `PetEventType`, case-insensitive), without clearing anything. It stands in for the positive events M7, M8 and M13 will write, so a ran-away pet's return can be checked now.
+- Starting a scenario (or `--ez stop true`) also clears the event log, like the tracking tables.
+
+**Files** (`android/app/src/main/java/com/companionstudio/nyx/` unless stated)
+
+| File | Responsibility |
+|---|---|
+| `rules/PetEvent.kt` · `rules/PetEventDao.kt` | `events` entity, `PetEventType`, DAO |
+| `rules/Doomscroll.kt` | Pure: `doomscroll_10min` events due |
+| `rules/BubbleArbiter.kt` | Pure: tiers, `BubbleRequest`, `arbitrate(…)` |
+| `rules/LinePicker.kt` | Pool lookup, no-repeat pick, placeholder fill |
+| `rules/Reactions.kt` | Per tick: log events, mood, ran away/back, arbiter, line |
+| `mood/Mood.kt` | Pure: `moodOf`, weights, `bandAt`, `presenceChange` |
+| `config/BubbleTrigger.kt` · `ConfigValidator.kt` | Placeholders per trigger; rule `line-placeholders` |
+| `data/AppDatabase.kt` | Version 3, `events`, auto-migration 2 → 3 |
+| `data/DayClock.kt` | `RETENTION_DAYS` (A-13), now shared by tracker and event log |
+| `home/TrackingSummaryRepository.kt` | Face from today's mood |
+| `setup/ChoosePetViewModel.kt` | Uses `bandAt` |
+| `pet/PetWindow.kt` · `SpeechBubble.kt` · `PetOverlay.kt` | What sits beside the pet (panel or bubble); bubble timing and dismissal |
+| `service/PetService.kt` · `AppContainer.kt` | "Pet on screen" flow, `Reactions` per engine run, wiring |
+| `src/debug/…/ScenarioReceiver.kt` · `src/debug/assets/scenarios/instagram-4h.txt` | Event extra, clearing the log, the 4 h scenario |
+| `shared/fixtures/invalid/line-placeholders--not-allowed-for-trigger.json` · `shared/config.schema.json` (description) | The new rule |
+
+**Tests**
+
+| Test | Where | Checks |
+|---|---|---|
+| `US15_MoodTest` | `src/test/` | Starts at `mood.start` · every weight moves it by its configured amount · clamped at 100 and at 0 after each event, so a rise after hitting 0 starts from 0 · `RAN_AWAY`/`PET_RETURNED` weigh nothing · every value maps to its band · weights from the config in force |
+| `US16_PresenceTest` | `src/test/` | Mood 0 → `RAN_AWAY` once · still 0 → nothing · above 0 after running away → `PET_RETURNED` once · a second run-away and return in a day · a fresh day starting above 0 → nothing |
+| `DoomscrollTest` | `src/test/` | 9 min 59 s → 0, 10 min → 1 · only the doomscroll categories count · already logged → only the missing ones · fewer due than logged (categories changed) → 0 |
+| `BubbleArbiterTest` | `src/test/` | Tier order · earliest first within a tier · the gap holds a bubble back, then lets it show · `focus_drift` ignores the gap · one bubble per tick · same key replaces · hidden → nag and break as notifications, others dropped · focus → focus tier only, others held, idle dropped · focus + hidden → held stay held |
+| `LinePickerTest` | `src/test/` | Band pool first · empty or missing band pool → `any` · no repeat of the last 3 over many seeded picks · pools of 1 and 2 · placeholders filled, a missing value left as written |
+| `ReactionsTest` | `src/test/` (fake DAO) | Doomscroll events logged once · walking to 0 logs `RAN_AWAY` · a positive event → `PET_RETURNED` + a `pet_returned` line in the chosen personality · pet not on screen → no bubble, event still logged · a disabled personality → the first enabled one · old days cleaned up once per day |
+| `US28_TrackingSummaryTest` (+) | `src/test/` | The face follows today's events; mood 0 → 🐾 / 💨 |
+| `ConfigValidatorTest` (+) · `US21_ConfigFixturesTest` (+) | `src/test/` | `line-placeholders`: a placeholder another trigger allows, an unknown one, a typo; unknown triggers ignored; the default config passes; the new fixture is rejected with exactly that rule |
+| `PetEventDaoTest` | `src/androidTest/` | Insert and read back in log order · `observeDay` emits on insert · `deleteBefore` keeps the 31st day · `clearAll` |
+| `PetWindowBubbleTest` | `src/androidTest/` | The bubble shows beside the pet without Snooze · Dismiss calls back · the panel replaces it while open |
+| `US07_SummaryPanelTest` (changed) | `src/androidTest/` | Same checks with the new `PetWindow` signature |
+
+- Coverage: ≥ 90% lines on `rules/` and `mood/` (ROADMAP §2).
+- **To check by hand** (adb, fast clock): install over the M5 build keeps categories and totals; `instagram-4h` at 60× walks the face down every band to 🐾 on the pet, the panel and Home; `--es event break_taken` → 🙀 (mood 5) and a "pet_returned" bubble in the chosen personality; Dismiss; the bubble disappears after 8 s; the bubble opens below the pet in the top half and above it in the bottom half; a drag removes it; hidden → no bubble. Start the 4 h scenario before 20:00 at 60× (or with more speed), or it crosses midnight and the day reset puts the mood back to 70.
+- **Checked on the API 37 emulator** (2026-10-21): installing over the M5 build moved the database from version 2 to 3 and kept today's totals (207 min); the service came back on its own and logged mood 70. `instagram-4h` at 60×: mood 52 at 68 min, 😼 at 70 min, 😾 mid-way, mood 1 at 238 min, 0 and 🐾 at 240 min, with `RAN_AWAY` logged once. `--es event break_taken` → mood 5, 🙀, and the tick logged a `pet_returned` line ("I'm home! Thanks for taking care of things."). A `goal_met` from 0 → 😿 (mood 10) with the bubble below the pet in the top half, the pet not moving; after a drag to the bottom half the next bubble opened above it, with a different line; Dismiss removed it; it timed out after 8 real seconds; a drag removed one at once. Hidden (Hide for 30 min) and brought back from 0 → no bubble, no pet window, `PET_RETURNED` still logged; Home showed 😿 and "Show pet". After an emulator reboot, 3 device-test runs in a row were green.
+  - Two bugs found this way and fixed: the bubble's time was first divided by the debug clock's speed, so at 60× it vanished after 0.13 s (it's reading time, so it's real seconds now); and the log was first ordered by `at_ms`, so events logged after the fast clock stopped sorted before the sped-up ones and gave the wrong mood (it's ordered by `id` now, which a clock set back can't disturb either).
+- Not checked yet: TalkBack reading the bubble; the Pixel 7a.
+
+**Decisions** (proposed 2026-10-21, waiting for approval)
+- **D-79:** mood is today's events folded from `mood.start` in log order with today's weights, clamped to 0–100 after every event; nothing stores a mood number.
+- **D-80:** running away and coming back are logged events (`RAN_AWAY`, `PET_RETURNED`, weight 0); logging `PET_RETURNED` offers the `pet_returned` bubble; the day reset brings the pet back without a line.
+- **D-81:** `doomscroll_10min` events are derived from today's doomscroll total: one per full 10 min, minus those already logged, logged at the tick that notices.
+- **D-82:** the arbiter uses the six tiers above; pending requests wait (one per key); the gap runs from the previous bubble's appearance, `focus_drift` ignores it; not on screen → nags and breaks become notifications (from M7), others are dropped; during focus only focus bubbles show, others wait, idle is dropped.
+- **D-83:** lines come from the band pool, else `any`; never one of the last 3 lines of that trigger (kept in memory); placeholders per trigger are fixed in code and enforced by the new `line-placeholders` validator rule (backend in M10).
+- **D-84:** the bubble shows in the pet's window in the panel's place; the panel wins; it lasts `showSeconds`, Dismiss or a drag removes it; its window corner may catch taps for those seconds.
+- **D-85:** Room version 3 adds `events` through an auto-migration from version 2, so debug installs keep their data; still no migration tests before v1.0.0.
+- **D-86:** M6's "done when" uses a 4 h scenario instead of 2 h (2 h of Instagram only reaches 34 😾 with the default weights), and the return is checked with a debug-logged `break_taken`: a real break raises mood only after a reminder (A-26), which arrives in M7. M7's "done when" adds the real path.
+
+**Not in M6:** limit, stretch, snooze and break events and their bubbles, N-02/N-04 and the glow (→ M7); idle lines (→ M7); focus requests and the focus hold's input (→ M8); `goal_met` (→ M13); a mood number or band name on Home and in TalkBack's description of the pet (parking lot).

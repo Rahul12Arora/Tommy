@@ -1,7 +1,7 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M6 Lines, bubbles, mood (next)
-- Last done: M5 Pet overlay done 2026-10-21 — verified on the API 37 emulator and the Pixel 7a, D-71 to D-78 approved, PR #10 merged, tagged `m5-done`
-- Next step: M6 Lines, bubbles, mood — branch `feat/m6-lines-mood`, LLD first (the bubble window, D-75, lands here)
+- Phase: 5 — Build · Milestone: M6 Lines, bubbles, mood (in progress, built — waiting for approval and the Pixel check)
+- Last done: M6 LLD (§14.6) written and built on `feat/m6-lines-mood`: event log, mood, ran away/back, bubble arbiter, line picker, bubble window. 194 unit + 42 device tests green; checked on the API 37 emulator
+- Next step: the developer approves D-79 to D-86 and runs the M6 check on the Pixel 7a → push, CI, PR → close M6 → M7
 - Blockers: none
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
@@ -113,3 +113,10 @@
 - Learned: next time, put the previous milestone's close-out on the new branch only (not also in a separate PR), or branch from `main` after that PR merges
 - Next: M6 Lines, bubbles, mood — branch `feat/m6-lines-mood`, LLD first
 - Done: PR #10 merged by the developer (`d3161e0`), tagged `m5-done`; Android CI green on `main` (run 39504090039)
+- Started M6 on `feat/m6-lines-mood` (already holding the M5 tag/CI note commit). The developer asked to work through M6 without stopping, so the LLD (§14.6) was written and built in one go; D-79 to D-86 are proposed, waiting for approval
+- Done: `rules/` — `PetEvent` + `PetEventDao` (table `events`, Room v3 through an auto-migration, D-85), `doomscrollEventsDue` (D-81), `arbitrate` (D-82), `LinePicker` (D-83), `Reactions` (per tick after the tracker). `mood/Mood.kt` — `moodOf` (clamped after every event, D-79), `bandAt`, `presenceChange` (D-80). `BubbleTrigger.placeholders` + validator rule `line-placeholders` + fixture. The bubble shows in the pet's window in the panel's place (D-84). Home, the panel and the pet's face follow today's mood. `RETENTION_DAYS` shared. Debug: `instagram-4h` scenario, `--es event <type>` extra, scenarios clear the event log
+- Found: with default weights 2 h of Instagram only reaches 34 😾, and a real break can't raise mood until M7's reminders (A-26), so M6's "done when" uses 4 h and a debug-logged break (D-86); M7's "done when" gained the real path
+- Bugs found on the emulator and fixed: bubble time divided by the debug speed (gone in 0.13 s at 60×) → real seconds; log ordered by time → events logged after the fast clock stopped sorted first and gave the wrong mood → ordered by id
+- Verified: `assembleDebug assembleRelease test lint` clean; 194 unit tests (+42), 0 skipped; coverage `rules/` 90/91 lines hand-written (Room's generated `PetEventDao_Impl` excluded, covered by device tests), `mood/` 17/17; 42 device tests (+5) 3 runs in a row after an emulator reboot. Before the reboot `US02_AgeCheckTest` failed twice (two different tests) on an emulator that had been up for hours with System UI ANRs and swap in use — an existing race, parked. By hand: see §14.6 "Checked on the API 37 emulator" — migration kept data, 4 h walk to 🐾, return with bubble, placement top/bottom, Dismiss, timeout, drag, hidden
+- Not verified: the Pixel 7a; TalkBack reading the bubble; CI (branch not pushed)
+- Next: developer approval of D-79 to D-86 + Pixel 7a check → push → CI → PR → `m6-done`

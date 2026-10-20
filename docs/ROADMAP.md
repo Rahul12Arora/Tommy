@@ -3,7 +3,7 @@
 > Phase 4 output. One milestone at a time; each is a vertical slice that can be verified on its own.
 > Every milestone starts by writing its LLD in `ARCHITECTURE.md` §14, before code.
 > Status values: `pending` · `in-progress` · `done`. Tick tasks as they finish.
-> Last updated: 2026-10-18
+> Last updated: 2026-10-21
 
 ---
 
@@ -210,20 +210,21 @@ Done when:
 Verify with: emulator + phone · manual QA checklist
 Not in this milestone: what the pet says (→ M6)
 
-### M6 — Lines, bubbles, mood            status: pending
+### M6 — Lines, bubbles, mood            status: in-progress
 Goal: the pet has a personality and a mood that its face shows.
 Depends on: M5
 Stories: US-15, US-16, US-03 (lines in use)
 Tasks:
-- [ ] LLD: event log schema, mood calculation, bands → faces, ran-away/return, bubble arbiter (priority, gap, focus hold, hidden), line picker (no repeat of last 3, placeholders)
-- [ ] Event log; mood recomputed from today's events; day reset
-- [ ] Bubble arbiter + line picker
-- [ ] Ran away (🐾 / 💨) and `pet_returned`
-- [ ] `doomscroll_10min` events from tracking
-- [ ] Tests: mood math for every weight, clamping 0–100, ran away at 0, return above 0, arbiter priority and gap
+- [x] LLD: event log schema, mood calculation, bands → faces, ran-away/return, bubble arbiter (priority, gap, focus hold, hidden), line picker (no repeat of last 3, placeholders) (§14.6; D-79 to D-86 proposed, waiting for approval)
+- [x] Event log; mood recomputed from today's events; day reset
+- [x] Bubble arbiter + line picker (+ the bubble window, D-75, and the `line-placeholders` validator rule)
+- [x] Ran away (🐾 / 💨) and `pet_returned`
+- [x] `doomscroll_10min` events from tracking
+- [x] Tests: mood math for every weight, clamping 0–100, ran away at 0, return above 0, arbiter priority and gap
 Done when:
-- [ ] Fake scenario "2 h Instagram" walks the cat's face down the bands to 🐾; a break brings it back
-Verify with: `./gradlew test` · fake scenarios on the emulator
+- [x] Fake scenario "4 h Instagram" walks the cat's face down the bands to 🐾; a logged break brings it back with a `pet_returned` bubble — emulator, 2026-10-21 (D-86: 2 h only reaches 34 😾 with the default weights, and a real break raises mood only after a reminder, A-26, which is M7's)
+- [ ] The developer's check on the Pixel 7a
+Verify with: `./gradlew test` · fake scenarios on the emulator (`instagram-4h`, `--es event break_taken`)
 Not in this milestone: limits and breaks triggering lines (→ M7)
 
 ### M7 — Limits, nags, breaks, idle lines            status: pending
@@ -241,6 +242,7 @@ Tasks:
 - [ ] Tests: every SM-02 and SM-03 transition, snooze isolation, max snoozes, stretch reset, held while hidden
 Done when:
 - [ ] Fake "65 min Instagram": glow + bubble within 60 s, repeats, snooze works; fake "50 min screen-on": break reminder bubble + notification
+- [ ] A pet that ran away comes back after a real break that follows a reminder (D-86)
 Verify with: `./gradlew test` · fake scenarios · manual QA checklist
 Not in this milestone: positive goals (→ M13)
 

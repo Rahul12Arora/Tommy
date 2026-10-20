@@ -1,7 +1,7 @@
 # Discussion
 
 > Phases 1–4 complete — 2026-10-18. Phase 5 (build) started with M0. Decisions from all phases are in the logs further down.
-> Last updated: 2026-10-19
+> Last updated: 2026-10-21
 
 ---
 
@@ -399,6 +399,14 @@ stateDiagram-v2
 | D-76 | the app initialises emoji2 itself with replace-all and removes the library's startup initializer | The default initializer waits for an Activity, so after a reboot the overlay would draw system emoji | The default initializer; `EmojiSupportMatch.All` per text style | 2026-10-21 |
 | D-77 | opening the panel forces a tick through a conflated channel the engine loop waits on; the panel shows stored numbers at once and updates after that tick | Numbers ≤ 1 min old within 1 s, still one engine coroutine (§3) | Wait for the tick before showing the panel | 2026-10-21 |
 | D-78 | overlay windows use a window context; Compose's lifecycle and saved state come from a small `OverlayOwner` (no new dependency: `androidx.savedstate` is part of `activity`'s API) | What Compose needs outside an Activity, with the context Android expects for UI | Service context + `LifecycleService` as the owner (its lifecycle is already past the point a saved-state registry can attach) | 2026-10-21 |
+| D-79 | *Proposed.* Mood is today's events folded from `mood.start` in log order with the weights in force, clamped to 0–100 after every event; no mood number is stored (ARCHITECTURE §14.6) | With one clamp at the end, a pet far below 0 couldn't come back after a break (US-16); recomputing keeps H-03's "admin changes apply at once" | Clamp once at the end; a stored running counter (H-03 b) | 2026-10-21 |
+| D-80 | *Proposed.* Running away and coming back are logged events (`RAN_AWAY`, `PET_RETURNED`, weight 0); logging `PET_RETURNED` offers the `pet_returned` bubble; the day reset brings the pet back without a line | A restart can't announce a return twice; the log says what happened | Compare with the previous tick's mood in memory | 2026-10-21 |
+| D-81 | *Proposed.* `doomscroll_10min` events are derived from today's doomscroll total: one per full 10 minutes, minus those already logged | A restart, catch-up or missed tick neither loses nor repeats one | A timer in the engine | 2026-10-21 |
+| D-82 | *Proposed.* Bubble arbiter: six tiers (focus > stretch nag > limit nag > break > reward > idle); requests wait, one per key; the gap runs from the previous bubble's appearance and `focus_drift` ignores it; pet not on screen → nags and breaks become notifications (from M7), others dropped; during focus only focus bubbles, others wait, idle dropped | Pure and testable; no message back from the window is needed | Gap from when a bubble closes; dropping requests the gap blocks | 2026-10-21 |
+| D-83 | *Proposed.* Lines come from the band pool, else `any`, never one of the last 3 lines of that trigger (kept in memory); placeholders per trigger are fixed in code and enforced by a new validator rule `line-placeholders` (backend in M10) | A typo such as `{App}` is caught in the console, not shown to users | Storing shown lines in the log; leaving placeholders unchecked | 2026-10-21 |
+| D-84 | *Proposed.* The bubble shows in the pet's window, in the panel's place; the panel wins; it lasts `showSeconds` real seconds; Dismiss or a drag removes it; the window's transparent corner may catch taps for those seconds | Reuses D-71's anchoring, no second window to keep beside the pet | A separate bubble window | 2026-10-21 |
+| D-85 | *Proposed.* Room version 3 adds `events` through an auto-migration from version 2, so debug installs keep their data; still no migration tests before v1.0.0 (`room-testing` not added) | The developer's phone keeps its categories and today's totals; no new dependency | The destructive fallback (§14.1), which would wipe them again | 2026-10-21 |
+| D-86 | *Proposed.* M6's "done when" uses a 4 h scenario (2 h only reaches 34 😾 with the default weights) and checks the return with a debug-logged `break_taken` (a real break raises mood only after a reminder, A-26, M7); M7's "done when" adds the real path | Keeps the default weights and A-26 as approved | Steeper default weights; letting any break raise mood | 2026-10-21 |
 
 ### D-16 — Admin / user settings split
 
@@ -518,4 +526,6 @@ stateDiagram-v2
 - Home banner when usage access is missing: today Home just shows zeros while N-03 explains it (noticed in M4's LLD)
 - Pet shadow is clipped at the screen edge: the window is exactly the pet's size, so the shadow outside the circle isn't drawn. A few dp of padding inside the window would fix it, with the placement maths adjusted (noticed in M5)
 - N-01 sits on the low-importance channel, so "Show pet" only shows once the notification is expanded; consider a second channel for the hidden state if users miss it (noticed in M5)
+- TalkBack: the pet's description is always "Nyx, your pet"; it could add the mood band or "ran away", which today only the emoji shows (noticed in M6)
+- `US02_AgeCheckTest` can race on a slow emulator: the age choice is saved before navigating, which Compose's idling doesn't wait for. Seen twice on an emulator that had been up for hours (memory swapping, System UI ANR); green 3 runs in a row after a reboot. A `waitUntilDisplayed` would make it robust (noticed in M6)
 - Pin the CI runner to `ubuntu-24.04` instead of `ubuntu-latest`: GitHub moves `ubuntu-latest` to Ubuntu 26 from 2026-10-19, and a new image can break a build with no change on our side (noticed on M2's CI run)
