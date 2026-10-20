@@ -1398,7 +1398,7 @@ idle 2m
 
 - Coverage: ≥ 90% lines on `Crediting.kt`, `TickDelay.kt`, `PermissionWatch.kt` and `DayClock` (ROADMAP §2 lists "usage-event → time crediting").
 - **Checked by hand on the emulator** (adb): N-01 shows; the service runs after Finish and after an app open; `adb reboot` → running again without opening the app; `adb install -r` (update) → running again; process killed → recreated; scenarios give the expected totals on Home; revoking usage access → N-03 → tap → S-03 → grant → back to Home → catch-up fills the gap.
-- **On the Pixel 7a** (the developer): an hour of normal use vs Digital Wellbeing (± 2 min), and a reboot.
+- **On the Pixel 7a** (the developer): an hour of normal use vs Digital Wellbeing (± 2 min), and a reboot. Passed 2026-10-21.
 
 **Decisions** (approved 2026-10-20)
 - **D-62:** time is credited from Android's usage event log with a stored cursor. After any restart the tracker replays the log and credits the gap (≤ 7 days). The first start credits from the start of today.
