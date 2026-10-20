@@ -1,7 +1,7 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M4 Service & tracking (in progress, branch `feat/m4-service-tracking`)
-- Last done: M4 built and verified on the API 37 emulator: `PetService` + N-01, tracker with catch-up, stretch, exclusions, 31-day cleanup, N-03, debug scenarios + fast clock, Home on real data
-- Next step: the developer's Pixel 7a check (M4 build installed; finish setup on the phone first, then Digital Wellbeing ± 2 min and a reboot), then merge PR #8 and tag `m4-done`
+- Phase: 5 — Build · Milestone: M5 Pet overlay (next)
+- Last done: M4 Service & tracking done 2026-10-21 — verified on the API 37 emulator and the Pixel 7a, PR #8 merged, tagged `m4-done`
+- Next step: M5 Pet overlay — branch `feat/m5-pet-overlay`, LLD first
 - Blockers: none
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
@@ -94,3 +94,8 @@
 - Verified: Android CI green on `feat/m4-service-tracking` (run 39319756824); PR #8 open, not merged — waiting for the Pixel 7a check
 - Done (with the developer's OK, which covered the database wipe): installed the M4 debug build on the Pixel 7a over adb (02:19). Database v1 → v2, so the S-05 category choices on the phone are gone. Found: the phone had no settings file, so setup wasn't completed there (device tests clear it) and the service didn't start. The app was also in the stopped state, so `MY_PACKAGE_REPLACED` wasn't delivered (normal Android behaviour). Usage access is granted; overlay isn't. Then the phone disconnected from USB, so nothing else was checked on it
 - Next: the developer runs the M4 Pixel checklist (open Nyx → finish setup → Digital Wellbeing comparison → reboot) → merge PR #8 → tag `m4-done` → M5 Pet overlay
+
+### 2026-10-21
+- Verified: the developer ran the M4 checklist on the Pixel 7a — Home totals match Digital Wellbeing (± 2 min) and the service comes back after a reboot — and merged PR #8
+- Done: M4 closed — ROADMAP status done, R-09 reboot path marked confirmed on the Pixel 7a, tagged `m4-done` on the PR #8 merge (`0ab4ed5`)
+- Next: M5 Pet overlay — branch `feat/m5-pet-overlay`, LLD first
