@@ -1,6 +1,6 @@
 ## Current state
 - Phase: 5 — Build · Milestone: M6 Lines, bubbles, mood (next)
-- Last done: M5 Pet overlay done 2026-10-21 — verified on the API 37 emulator and the Pixel 7a, D-71 to D-78 approved, tagged `m5-done` once PR #10 is merged
+- Last done: M5 Pet overlay done 2026-10-21 — verified on the API 37 emulator and the Pixel 7a, D-71 to D-78 approved, PR #10 merged, tagged `m5-done`
 - Next step: M6 Lines, bubbles, mood — branch `feat/m6-lines-mood`, LLD first (the bubble window, D-75, lands here)
 - Blockers: none
 - Open questions: Q-04 (success-metric targets, not blocking)
@@ -112,4 +112,4 @@
 - Done: M5 closed — ROADMAP status done, LLD and decisions marked approved. The "Overlay UI" node in the component diagram stays pending until the bubble window lands in M6
 - Learned: next time, put the previous milestone's close-out on the new branch only (not also in a separate PR), or branch from `main` after that PR merges
 - Next: M6 Lines, bubbles, mood — branch `feat/m6-lines-mood`, LLD first
-
+- Done: PR #10 merged by the developer (`d3161e0`), tagged `m5-done`; Android CI green on `main` (run 39504090039)
