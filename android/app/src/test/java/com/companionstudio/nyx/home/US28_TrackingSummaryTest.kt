@@ -7,6 +7,8 @@ import com.companionstudio.nyx.config.SettingPaths
 import com.companionstudio.nyx.config.SharedFiles
 import com.companionstudio.nyx.config.parseConfig
 import com.companionstudio.nyx.pet.PetChoice
+import com.companionstudio.nyx.rules.PetEvent
+import com.companionstudio.nyx.rules.PetEventType
 import com.companionstudio.nyx.tracking.DailyUsage
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -15,6 +17,7 @@ class US28_TrackingSummaryTest {
 
     private val defaults = (parseConfig(SharedFiles.defaultConfig) as ConfigResult.Valid).config
     private val noChoice = PetChoice(petId = null, personalityId = null)
+    private val noEvents = emptyList<PetEvent>()
 
     private fun row(packageName: String, category: Category, minutes: Long) =
         DailyUsage("2026-10-21", packageName, category, durationMs = minutes * 60_000)
@@ -29,7 +32,7 @@ class US28_TrackingSummaryTest {
 
     @Test
     fun totals_productive_andDoomscrolling_comeFromTheRows() {
-        val summary = todaySummary(rows, EffectiveConfig(defaults, emptyMap()), noChoice)
+        val summary = todaySummary(rows, noEvents, EffectiveConfig(defaults, emptyMap()), noChoice)
 
         assertEquals(80 * 60L, summary.totalSeconds)
         assertEquals(10 * 60L, summary.productiveSeconds)
@@ -38,7 +41,7 @@ class US28_TrackingSummaryTest {
 
     @Test
     fun D68_goalsAreTheLimitsThatAreOn_inCategoryOrder() {
-        val summary = todaySummary(rows, EffectiveConfig(defaults, emptyMap()), noChoice)
+        val summary = todaySummary(rows, noEvents, EffectiveConfig(defaults, emptyMap()), noChoice)
 
         assertEquals(
             listOf(
@@ -58,7 +61,7 @@ class US28_TrackingSummaryTest {
             SettingPaths.TOTAL_DAILY_MINUTES to 60,
         )
 
-        val goals = todaySummary(rows, EffectiveConfig(defaults, userValues), noChoice).goals
+        val goals = todaySummary(rows, noEvents, EffectiveConfig(defaults, userValues), noChoice).goals
 
         assertEquals(
             listOf(
@@ -73,18 +76,32 @@ class US28_TrackingSummaryTest {
 
     @Test
     fun emptyDay_isAllZeros() {
-        val summary = todaySummary(emptyList(), EffectiveConfig(defaults, emptyMap()), noChoice)
+        val summary = todaySummary(emptyList(), noEvents, EffectiveConfig(defaults, emptyMap()), noChoice)
 
         assertEquals(0L, summary.totalSeconds)
         assertEquals(0L, summary.goals.first().usedSeconds)
     }
 
     @Test
-    fun D68_faceIsTheChosenPetsStartingFace_orTheFirstEnabledPet() {
+    fun faceIsTheChosenPetsStartingFace_orTheFirstEnabledPet() {
         val config = EffectiveConfig(defaults, emptyMap())
 
-        assertEquals("😄", todaySummary(rows, config, PetChoice(petId = "blob", personalityId = "calm")).petFace)
-        assertEquals("😸", todaySummary(rows, config, noChoice).petFace)
-        assertEquals("😸", todaySummary(rows, config, PetChoice(petId = "gone", personalityId = null)).petFace)
+        assertEquals("😄", todaySummary(rows, noEvents, config, PetChoice(petId = "blob", personalityId = "calm")).petFace)
+        assertEquals("😸", todaySummary(rows, noEvents, config, noChoice).petFace)
+        assertEquals("😸", todaySummary(rows, noEvents, config, PetChoice(petId = "gone", personalityId = null)).petFace)
+    }
+
+    @Test
+    fun US15_US16_theFaceFollowsTodaysMood_downToRunningAway() {
+        val config = EffectiveConfig(defaults, emptyMap())
+        fun doomscrolled(times: Int) = List(times) { PetEvent(id = it + 1L, day = "2026-10-21", atMs = it * 1000L, type = PetEventType.DOOMSCROLL_10MIN) }
+        val cat = PetChoice(petId = "cat", personalityId = null)
+        val blob = PetChoice(petId = "blob", personalityId = null)
+
+        assertEquals("😺", todaySummary(rows, doomscrolled(1), config, cat).petFace) // 67, ok
+        assertEquals("😾", todaySummary(rows, doomscrolled(12), config, cat).petFace) // 34, grumpy
+        assertEquals("🙀", todaySummary(rows, doomscrolled(23), config, cat).petFace) // 1, sick
+        assertEquals("🐾", todaySummary(rows, doomscrolled(24), config, cat).petFace) // 0, ran away
+        assertEquals("💨", todaySummary(rows, doomscrolled(24), config, blob).petFace)
     }
 }

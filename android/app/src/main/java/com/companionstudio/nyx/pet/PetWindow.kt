@@ -43,25 +43,37 @@ val PET_SIZE = 56.dp
 /** Space between the pet and its panel. */
 val PANEL_GAP = 8.dp
 
-/** How the panel opens relative to the pet (D-71): towards the middle of the screen, never off it. */
+/** How the panel or bubble opens relative to the pet (D-71): towards the middle of the screen, never off it. */
 data class PanelLayout(val side: Side, val below: Boolean, val maxHeight: Dp)
 
 /** O-03's buttons. [onFocus] is `null` when focus sessions are switched off in config. */
 class PanelActions(val hideMinutes: Int, val onFocus: (() -> Unit)?, val onOpenApp: () -> Unit, val onHide: () -> Unit)
 
-/** Everything in the overlay window: the pet (O-01) and, while open, the summary panel (O-03) beside it. */
+/** What shows beside the pet, away from its edge: the summary panel or a speech bubble, never both (D-84). */
+sealed interface Beside {
+    class Panel(val actions: PanelActions) : Beside
+
+    class Bubble(val line: String, val onDismiss: () -> Unit) : Beside
+}
+
+/** Everything in the overlay window: the pet (O-01) and, beside it, the summary panel (O-03) or a speech bubble (O-02). */
 @Composable
-fun PetWindow(summary: TodaySummary?, panelOpen: Boolean, layout: PanelLayout, onPetClick: () -> Unit, actions: PanelActions) {
+fun PetWindow(summary: TodaySummary?, beside: Beside?, layout: PanelLayout, onPetClick: () -> Unit) {
     NyxTheme {
         // Physical edges, like the window's gravity, whatever the text direction
         val alignment = if (layout.side == Side.LEFT) AbsoluteAlignment.Left else AbsoluteAlignment.Right
         Column(horizontalAlignment = alignment, verticalArrangement = Arrangement.spacedBy(PANEL_GAP)) {
-            val panel: @Composable () -> Unit = {
-                if (panelOpen && summary != null) SummaryPanel(summary, actions, Modifier.heightIn(max = layout.maxHeight))
+            val besidePet: @Composable () -> Unit = {
+                val modifier = Modifier.heightIn(max = layout.maxHeight)
+                when (beside) {
+                    is Beside.Panel -> if (summary != null) SummaryPanel(summary, beside.actions, modifier)
+                    is Beside.Bubble -> SpeechBubble(beside.line, onSnooze = null, onDismiss = beside.onDismiss, modifier)
+                    null -> Unit
+                }
             }
-            if (!layout.below) panel()
-            PetFace(summary?.petFace.orEmpty(), panelOpen, onPetClick)
-            if (layout.below) panel()
+            if (!layout.below) besidePet()
+            PetFace(summary?.petFace.orEmpty(), panelOpen = beside is Beside.Panel, onPetClick)
+            if (layout.below) besidePet()
         }
     }
 }
@@ -123,9 +135,8 @@ private fun PetWindowPreview() {
             goals = listOf(GoalProgress(Category.SOCIAL, usedSeconds = 47 * 60, targetSeconds = 60 * 60)),
             petFace = "😸",
         ),
-        panelOpen = true,
+        beside = Beside.Panel(PanelActions(hideMinutes = 30, onFocus = {}, onOpenApp = {}, onHide = {})),
         layout = PanelLayout(Side.RIGHT, below = true, maxHeight = 480.dp),
         onPetClick = {},
-        actions = PanelActions(hideMinutes = 30, onFocus = {}, onOpenApp = {}, onHide = {}),
     )
 }

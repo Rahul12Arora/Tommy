@@ -61,7 +61,7 @@ class US07_SummaryPanelTest {
 
     private fun showPanel(actions: PanelActions = this.actions) {
         composeRule.setContent {
-            PetWindow(today, panelOpen = true, PanelLayout(Side.RIGHT, below = true, maxHeight = 2000.dp), onPetClick = {}, actions)
+            PetWindow(today, Beside.Panel(actions), PanelLayout(Side.RIGHT, below = true, maxHeight = 2000.dp), onPetClick = {})
         }
     }
 
@@ -76,7 +76,7 @@ class US07_SummaryPanelTest {
             if (onHome) {
                 NyxTheme { HomeScreen(today, onShowPet = null, onFocus = {}, onTrends = {}, onSettings = {}) }
             } else {
-                PetWindow(today, panelOpen = true, PanelLayout(Side.RIGHT, below = true, maxHeight = 2000.dp), onPetClick = {}, actions)
+                PetWindow(today, Beside.Panel(actions), PanelLayout(Side.RIGHT, below = true, maxHeight = 2000.dp), onPetClick = {})
             }
         }
         numbers.forEach { composeRule.assertShows(it) }
@@ -108,7 +108,7 @@ class US07_SummaryPanelTest {
     fun US07_closed_showsOnlyThePet_andATapCallsBack() {
         var taps = 0
         composeRule.setContent {
-            PetWindow(today, panelOpen = false, PanelLayout(Side.LEFT, below = false, maxHeight = 500.dp), onPetClick = { taps++ }, actions)
+            PetWindow(today, beside = null, PanelLayout(Side.LEFT, below = false, maxHeight = 500.dp), onPetClick = { taps++ })
         }
 
         composeRule.onAllNodesWithText("Today:", substring = true).assertCountEquals(0)

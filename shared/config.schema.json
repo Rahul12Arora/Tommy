@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Nyx config document",
-  "description": "Schema version 1. Cross-field rules (setting-range, tick-order, duplicate-id, mood-bands-coverage, pet-faces, line-references, line-coverage, nothing-enabled) are checked in code: see docs/ARCHITECTURE.md §14.2. Unknown keys are allowed on purpose (D-52).",
+  "description": "Schema version 1. Cross-field rules (setting-range, tick-order, duplicate-id, mood-bands-coverage, pet-faces, line-references, line-coverage, line-placeholders, nothing-enabled) are checked in code: see docs/ARCHITECTURE.md §14.2. Unknown keys are allowed on purpose (D-52).",
   "type": "object",
   "required": [
     "schemaVersion",

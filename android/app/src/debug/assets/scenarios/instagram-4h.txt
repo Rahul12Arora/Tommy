@@ -1,0 +1,4 @@
+# Four hours of Instagram (Social & scrolling), then the screen stays on with nothing counted.
+# Expect (default weights): mood −3 every 10 min, so the Cat walks from 😸 70 down every band and runs away (🐾) at 4 h.
+app com.instagram.android 4h
+idle 2m

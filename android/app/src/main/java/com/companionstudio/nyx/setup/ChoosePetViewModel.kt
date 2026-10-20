@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.companionstudio.nyx.config.EffectiveConfig
 import com.companionstudio.nyx.config.NyxConfig
+import com.companionstudio.nyx.mood.bandAt
 import com.companionstudio.nyx.pet.PetChoice
 import com.companionstudio.nyx.pet.PetSettings
 import kotlinx.coroutines.flow.Flow
@@ -30,7 +31,7 @@ data class ChoosePetState(
  */
 fun choosePetState(document: NyxConfig, stored: PetChoice, tapped: PetChoice): ChoosePetState {
     // The face a new pet starts the day with; the validator guarantees a band and a face for every value
-    val startBand = document.mood.bands.first { document.mood.start in it.from..it.to }.id
+    val startBand = document.mood.bandAt(document.mood.start).id
     val pets = document.pets.filter { it.enabled }.map { PetOption(it.id, it.name, it.faces.getValue(startBand)) }
     val personalities = document.personalities.filter { it.enabled }.map { PersonalityOption(it.id, it.name, it.previewLine) }
     return ChoosePetState(

@@ -6,6 +6,7 @@ import com.companionstudio.nyx.config.EffectiveConfig
 import com.companionstudio.nyx.config.NyxConfig
 import com.companionstudio.nyx.config.SettingPaths
 import com.companionstudio.nyx.data.DayClock
+import com.companionstudio.nyx.data.RETENTION_DAYS
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -106,7 +107,6 @@ class Tracker(
 
     private companion object {
         const val TAG = "Nyx"
-        const val RETENTION_DAYS = 31L // A-13
         val MAX_CATCH_UP: Duration = Duration.ofDays(7) // Android keeps the event log for about this long
         val REPLAY_LOOKBACK: Duration = Duration.ofHours(24)
     }

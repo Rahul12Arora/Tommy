@@ -126,6 +126,37 @@ class ConfigValidatorTest {
     }
 
     @Test
+    fun linePlaceholders_onlyThoseTheTriggerAllows_andTyposAreCaught() {
+        fun withLine(trigger: BubbleTrigger, line: String) = minimal.copy(
+            lines = mapOf("plain" to minimal.lines.getValue("plain") + (trigger.id to mapOf(ANY_POOL to listOf("Fine.", line)))),
+        )
+
+        assertEquals(emptyList<ConfigError>(), validateConfig(withLine(BubbleTrigger.LIMIT_REACHED, "{limit} of {category} in {app}.")))
+        assertEquals(emptyList<ConfigError>(), validateConfig(withLine(BubbleTrigger.FOCUS_CHECKIN, "{minutes} minutes in.")))
+        assertEquals(
+            listOf(ConfigRule.LINE_PLACEHOLDERS to "lines.plain.break_due.any[1]"),
+            errorsOf(withLine(BubbleTrigger.BREAK_DUE, "Close {app} for {minutes} minutes.")),
+        )
+        assertEquals(
+            listOf(ConfigRule.LINE_PLACEHOLDERS to "lines.plain.focus_drift.any[1]"),
+            errorsOf(withLine(BubbleTrigger.FOCUS_DRIFT, "{App} isn't on the plan.")),
+        )
+        assertEquals(
+            listOf(ConfigRule.LINE_PLACEHOLDERS to "lines.plain.idle.any[1]", ConfigRule.LINE_PLACEHOLDERS to "lines.plain.idle.any[1]"),
+            errorsOf(withLine(BubbleTrigger.IDLE, "{} and {name}")),
+        )
+    }
+
+    @Test
+    fun linePlaceholders_inUnknownTriggers_areIgnored_D52() {
+        val config = minimal.copy(
+            lines = mapOf("plain" to minimal.lines.getValue("plain") + ("future_trigger" to mapOf(ANY_POOL to listOf("{whatever}")))),
+        )
+
+        assertEquals(emptyList<ConfigError>(), validateConfig(config))
+    }
+
+    @Test
     fun knownDifferencesFromJsonSchema_D54() {
         // kotlinx reads "3" as 3 and "true" as true, which JSON Schema rejects, and rejects 3.0, which JSON
         // Schema accepts. Neither can reach a phone (D-54). This pins the behaviour so a kotlinx upgrade that

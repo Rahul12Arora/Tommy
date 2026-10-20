@@ -11,11 +11,15 @@ object ConfigRule {
     const val PET_FACES = "pet-faces"
     const val LINE_REFERENCES = "line-references"
     const val LINE_COVERAGE = "line-coverage"
+    const val LINE_PLACEHOLDERS = "line-placeholders"
     const val NOTHING_ENABLED = "nothing-enabled"
 }
 
 private const val MOOD_MAX = 100
 private val ID_PATTERN = Regex("^[a-z0-9_]+$")
+
+// Anything in braces, so a typo such as {App} is caught as well as an unknown name
+private val PLACEHOLDER = Regex("\\{([^{}]*)\\}")
 
 /** Returns every problem found, not just the first, so the console can show them all (US-19). */
 fun validateConfig(config: NyxConfig): List<ConfigError> = ConfigChecks().run {
@@ -167,6 +171,27 @@ private class ConfigChecks {
             for (trigger in BubbleTrigger.entries) {
                 if (lines[personality]?.get(trigger.id)?.get(ANY_POOL).isNullOrEmpty()) {
                     fail(ConfigRule.LINE_COVERAGE, "lines.$personality.${trigger.id}", "needs at least one '$ANY_POOL' line")
+                }
+            }
+        }
+        checkPlaceholders(lines)
+    }
+
+    // Only for triggers this build knows: a newer config may use placeholders a newer trigger allows (D-52)
+    private fun checkPlaceholders(lines: Map<String, Map<String, Map<String, List<String>>>>) {
+        for ((personality, triggers) in lines) {
+            for (trigger in BubbleTrigger.entries) {
+                for ((pool, poolLines) in triggers[trigger.id].orEmpty()) {
+                    poolLines.forEachIndexed { i, line ->
+                        PLACEHOLDER.findAll(line).map { it.groupValues[1] }.filterNot { it in trigger.placeholders }.forEach {
+                            val allowed = trigger.placeholders.joinToString { name -> "{$name}" }.ifEmpty { "none" }
+                            fail(
+                                ConfigRule.LINE_PLACEHOLDERS,
+                                "lines.$personality.${trigger.id}.$pool[$i]",
+                                "{$it} can't be used in ${trigger.id} (allowed: $allowed)",
+                            )
+                        }
+                    }
                 }
             }
         }
