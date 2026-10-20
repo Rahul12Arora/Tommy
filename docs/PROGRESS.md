@@ -105,5 +105,5 @@
 - Bug found on the emulator and fixed: clearing a passed hide time by checking "shown" raced with Hide (the stored value changed a moment before "shown" did) and undid it at once; it now compares with the clock
 - Verified: `assembleDebug assembleRelease test lint` clean; 152 unit tests (+19: placement 8, hide timing 6, settings 4, Home view model 1), 0 skipped; mutation check: without the screen-on recheck `US29_PetShownTest` fails. 37 device tests on the API 37 emulator (+7: panel 4, bubble 2, Home show pet 1). By hand on the emulator: see §14.5 "Checked by hand" — pet over YouTube, Chrome, home screen; drag/snap; rotation; process kill; panel tick 150 ms after the tap; outside tap; Start focus / Open Nyx; hide + return (fast clock), Show pet from N-01 and Home; overlay revoked/granted; reboot → pet back, emoji font loaded
 - Not verified: Instagram (not on the emulator); the Pixel 7a; TalkBack on the pet (semantics are set, not tried with TalkBack on)
+- Verified: Android CI green on `feat/m5-pet-overlay` (run 39493685689); PR #10 open, not merged
 - Next: developer approval of D-71 to D-78 + Pixel 7a checklist → merge → `m5-done`
-
