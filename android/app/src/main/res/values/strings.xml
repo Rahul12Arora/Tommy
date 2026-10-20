@@ -119,11 +119,23 @@
     <string name="home_start_focus">Start focus</string>
     <string name="home_trends">Trends</string>
     <string name="home_settings">Settings</string>
+    <string name="home_pet_hidden">The pet is hidden for now.</string>
+    <string name="show_pet">Show pet</string>
 
-    <!-- Notifications (§14.4): N-01 pet running, N-03 permission lost -->
+    <!-- Pet overlay (§14.5): O-01 pet, O-02 speech bubble, O-03 summary panel -->
+    <string name="pet_description">Nyx, your pet</string>
+    <string name="pet_open_summary">show today\'s summary</string>
+    <string name="pet_close_summary">close the summary</string>
+    <string name="panel_open_app">Open Nyx</string>
+    <string name="panel_hide">Hide for %1$d min</string>
+    <string name="bubble_snooze">Snooze</string>
+    <string name="bubble_dismiss">Dismiss</string>
+
+    <!-- Notifications (§14.4, §14.5): N-01 pet running, N-03 permission lost -->
     <string name="notification_channel_pet">Pet is running</string>
     <string name="notification_channel_alerts">Alerts</string>
     <string name="notification_pet_running">Nyx is keeping an eye on your screen time.</string>
+    <string name="notification_pet_hidden">The pet is hidden until %1$s.</string>
     <string name="notification_permission_lost_title">Nyx lost a permission</string>
     <string name="notification_permission_lost_fix">Tap to turn it back on.</string>
 

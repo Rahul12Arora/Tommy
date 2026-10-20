@@ -1,5 +1,8 @@
 package com.companionstudio.nyx.home
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -33,7 +36,7 @@ class US28_HomeScreenTest {
     @Test
     fun showsFaceTotalsAndLimitGoals_withOverSpelledOut() {
         composeRule.setContent {
-            NyxTheme { HomeScreen(today, onFocus = {}, onTrends = {}, onSettings = {}) }
+            NyxTheme { HomeScreen(today, onShowPet = null, onFocus = {}, onTrends = {}, onSettings = {}) }
         }
 
         composeRule.onNodeWithText("😸").assertIsDisplayed()
@@ -53,6 +56,7 @@ class US28_HomeScreenTest {
             NyxTheme {
                 HomeScreen(
                     today,
+                    onShowPet = null,
                     onFocus = { clicked += "focus" },
                     onTrends = { clicked += "trends" },
                     onSettings = { clicked += "settings" },
@@ -70,9 +74,27 @@ class US28_HomeScreenTest {
     @Test
     fun loading_showsNoTotals() {
         composeRule.setContent {
-            NyxTheme { HomeScreen(summary = null, onFocus = {}, onTrends = {}, onSettings = {}) }
+            NyxTheme { HomeScreen(summary = null, onShowPet = null, onFocus = {}, onTrends = {}, onSettings = {}) }
         }
 
         composeRule.onNodeWithText("Today:", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun US29_showPet_onlyWhileHidden_andCallsBack() {
+        var shown = 0
+        var hidden by mutableStateOf(true)
+        composeRule.setContent {
+            NyxTheme {
+                HomeScreen(today, onShowPet = if (hidden) ({ shown++ }) else null, onFocus = {}, onTrends = {}, onSettings = {})
+            }
+        }
+
+        composeRule.onNodeWithText("The pet is hidden for now.").assertIsDisplayed()
+        composeRule.onNodeWithText("Show pet").performClick()
+        assertEquals(1, shown)
+
+        hidden = false
+        composeRule.onNodeWithText("Show pet").assertDoesNotExist()
     }
 }

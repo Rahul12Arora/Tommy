@@ -15,6 +15,7 @@ import com.companionstudio.nyx.data.createSettingsStore
 import com.companionstudio.nyx.home.SummaryRepository
 import com.companionstudio.nyx.home.TrackingSummaryRepository
 import com.companionstudio.nyx.pet.PetSettings
+import com.companionstudio.nyx.pet.PetVisibility
 import com.companionstudio.nyx.setup.PermissionChecks
 import com.companionstudio.nyx.setup.SetupSettings
 import com.companionstudio.nyx.stats.StatsSettings
@@ -55,6 +56,7 @@ class AppContainer(private val context: Context) {
     val setupSettings = SetupSettings(settingsStore)
     val permissionChecks = PermissionChecks(context)
     val petSettings = PetSettings(settingsStore)
+    val petVisibility = PetVisibility(petSettings, clock)
     val statsSettings = StatsSettings(settingsStore)
     val appCategories = AppCategoryRepository(database.appCategoryDao())
     val installedApps = InstalledApps(context.packageManager, context.packageName)

@@ -391,6 +391,14 @@ stateDiagram-v2
 | D-68 | Home's goals in M4 are the limit goals from the effective config; the face is the chosen pet's starting face until mood exists (M6) | Real data with no new concepts; positive goals come in M13 | Keep the fake goals until M13 | 2026-10-20 |
 | D-69 | Not counted: Nyx, `com.android.systemui`, every HOME handler with priority ≥ 0 — Settings' fallback home (priority −1000) still counts (found through a second `<queries>` intent) | A-20, without a hard-coded launcher list | A fixed list of known launcher packages | 2026-10-20 |
 | D-70 | The service starts on setup Finish, every app open, boot and app update, and is sticky after process death; M4's tick is fast only when a limit on the front app is less than one slow tick away | Every restart path R-09 names; fast ticks only where they change a reaction time | Start only on Finish and boot; a fixed tick | 2026-10-20 |
+| D-71 | one overlay window holds the pet and, when open, the summary panel; it grows away from the pet's edge and from the nearer of top/bottom so the pet stays put; outside taps are watched only while the panel is open (ARCHITECTURE §14.5) | A tap on the pet can't also count as an "outside" tap; taps beside the closed pet reach the app | Separate panel window; full-screen scrim window | 2026-10-21 |
+| D-72 | taps are Compose clicks (TalkBack can open the panel); drags are a `FrameLayout` that intercepts past the touch slop and moves the window with raw screen coordinates | The window moves under the finger, so local coordinates jump; no experimental API | Compose drag detector; `pointerInteropFilter` (experimental) | 2026-10-21 |
+| D-73 | the pet's position is stored as side + fraction of the usable height; default right edge, 30% down | Survives rotation and other screen sizes | Raw pixels | 2026-10-21 |
+| D-74 | Hide stores `pet.hiddenUntil`; the pet returns when it passes, re-checked at every screen-on; Show pet (N-01 action, Home button) clears it through storage; a passed value is removed | Timers can stall in deep sleep; screens write storage and the service follows (D-44) | An in-memory timer in the service | 2026-10-21 |
+| D-75 | the speech bubble's window arrives in M6 with the bubble arbiter; M5 ships the composable and its test | Same rule as D-50/D-64: a piece arrives with its first real use | A window with nothing to show yet | 2026-10-21 |
+| D-76 | the app initialises emoji2 itself with replace-all and removes the library's startup initializer | The default initializer waits for an Activity, so after a reboot the overlay would draw system emoji | The default initializer; `EmojiSupportMatch.All` per text style | 2026-10-21 |
+| D-77 | opening the panel forces a tick through a conflated channel the engine loop waits on; the panel shows stored numbers at once and updates after that tick | Numbers ≤ 1 min old within 1 s, still one engine coroutine (§3) | Wait for the tick before showing the panel | 2026-10-21 |
+| D-78 | overlay windows use a window context; Compose's lifecycle and saved state come from a small `OverlayOwner` (no new dependency: `androidx.savedstate` is part of `activity`'s API) | What Compose needs outside an Activity, with the context Android expects for UI | Service context + `LifecycleService` as the owner (its lifecycle is already past the point a saved-state registry can attach) | 2026-10-21 |
 
 ### D-16 — Admin / user settings split
 
@@ -508,4 +516,6 @@ stateDiagram-v2
 - Optional app blocking
 - More languages
 - Home banner when usage access is missing: today Home just shows zeros while N-03 explains it (noticed in M4's LLD)
+- Pet shadow is clipped at the screen edge: the window is exactly the pet's size, so the shadow outside the circle isn't drawn. A few dp of padding inside the window would fix it, with the placement maths adjusted (noticed in M5)
+- N-01 sits on the low-importance channel, so "Show pet" only shows once the notification is expanded; consider a second channel for the hidden state if users miss it (noticed in M5)
 - Pin the CI runner to `ubuntu-24.04` instead of `ubuntu-latest`: GitHub moves `ubuntu-latest` to Ubuntu 26 from 2026-10-19, and a new image can break a build with no change on our side (noticed on M2's CI run)

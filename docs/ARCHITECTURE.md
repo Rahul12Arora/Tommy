@@ -3,7 +3,7 @@
 > Phase 4 output. Read this first if you're new to the repo: after ~10 minutes you should know how data moves through the system and where every piece lives.
 > Low-level design (LLD) for each module is added to §14 at the **start** of its milestone, before any code.
 > Rule: code and diagrams must agree. A task that changes a component, a flow or a folder updates this file in the same task.
-> Last updated: 2026-10-20
+> Last updated: 2026-10-21
 
 ---
 
@@ -690,7 +690,7 @@ Written at the start of each milestone, before code.
 | Config: schema, defaults, validator, layering | M2 | done 2026-10-19 (§14.2) |
 | Setup flow + app categories | M3 | done 2026-10-19 (§14.3) |
 | PetService + usage tracking | M4 | done 2026-10-20 (§14.4) |
-| Overlay: pet, bubble, panel, hide | M5 | pending |
+| Overlay: pet, bubble, panel, hide | M5 | done 2026-10-21 (§14.5) |
 | Lines, bubble arbiter, mood | M6 | pending |
 | Limits, nags, breaks, idle lines | M7 | pending |
 | Focus sessions | M8 | pending |
@@ -1412,3 +1412,142 @@ idle 2m
 - **D-70:** the service starts on Finish, on every app open, on boot and on app update, and is sticky after process death. M4's tick is fast only when a limit on the front app is less than one slow tick away.
 
 **Not in M4:** the pet on screen and the "Show pet" action on N-01 (→ M5), mood and the `events` table (→ M6), triggers, nags, break reminders and their fast-tick conditions (→ M7), focus (→ M8), a Home banner when usage access is missing (parking lot), Settings opening S-03/S-05 (→ M7).
+
+### 14.5 M5 — Pet overlay: pet, summary panel, hide
+
+Written 2026-10-21 and built in the same session at the developer's request; D-71 to D-78 approved 2026-10-21 at the end of M5.
+
+**Purpose:** the pet floats over every app and the home screen, can be dragged and snaps to an edge, opens a live summary panel on tap, and can be hidden for a while. Stories: US-06 (on screen, drag, snap, taps elsewhere pass through), US-07 (summary panel), US-29 (hide, show again), F-15 (same emoji everywhere).
+
+**One overlay window** (D-71)
+
+```mermaid
+flowchart LR
+  subgraph closed["Panel closed"]
+    P1["🐱 window = the pet only (56 dp)<br/>taps elsewhere reach the app below"]
+  end
+  subgraph open["Panel open (pet in the top half)"]
+    P2["🐱<br/>panel below the pet<br/>window watches outside taps"]
+  end
+  closed -- tap pet --> open
+  open -- tap pet · tap outside · an action --> closed
+```
+
+- `PetService` owns one `PetOverlay`. Its window is `TYPE_APPLICATION_OVERLAY`, `FLAG_NOT_FOCUSABLE`, `WRAP_CONTENT` both ways, so with the panel closed it is exactly the pet's size and every tap outside it reaches the app below (US-06). Not focusable: the overlay never takes the keyboard or Back (H-05).
+- **The panel lives in the same window.** Opening it makes the window grow; the window is anchored so the pet doesn't move:
+  - horizontally to the pet's edge (`Gravity.START` or `END`, `x = 0`),
+  - vertically to the nearer of top and bottom (`TOP` with `y` = the pet's distance from the top, or `BOTTOM` with `y` = its distance from the bottom). In the top half the panel opens below the pet; in the bottom half, above it.
+  - The panel's height is capped to the space on its side (`heightIn(max)`) and scrolls inside, so it fits in landscape too.
+- **Outside taps:** while the panel is open, and only then, the window has `FLAG_WATCH_OUTSIDE_TOUCH`; an `ACTION_OUTSIDE` closes the panel (the tap still reaches the app below). Only while open, so the process isn't woken for every touch on the phone.
+- Tapping the pet toggles the panel. Because pet and panel are one window, a tap on the pet is never also an "outside" tap.
+- Rejected: a separate panel window (a tap on the pet would also be an outside tap for the panel, closing and reopening it); a full-screen scrim window (blocks the app below).
+
+**Coordinates** (`pet/PetPlacement.kt`, pure)
+- The usable area is the window metrics' bounds minus the system bars and display cutout (`WindowMetrics.windowInsets.getInsetsIgnoringVisibility(systemBars() or displayCutout())`). The window sets the same `fitInsetsTypes`, so its `x`/`y` are measured inside that area.
+- Stored position (D-73): `side` (left/right) + `yFraction` (0 = top, 1 = bottom of the area minus the pet). It survives rotation and different screen sizes. Default: right edge, 30% down.
+- `placement(position, area, petPx)` → side, `fromBottom` (yFraction > 0.5), offset `y`. `panelMaxHeight = area.height − y − petPx` on either side.
+- `snapToEdge(left, top, area, petPx)` → the side whose half holds the pet's centre, `yFraction = top / (area.height − petPx)` clamped to 0–1.
+
+**Touch handling** (D-72)
+- **Taps** stay in Compose: the pet is a `clickable` with a content description, so TalkBack can open the panel too. Touch target 56 dp ≥ 48 dp (§9).
+- **Drags** are caught by `PetDragLayout`, a `FrameLayout` that wraps the `ComposeView`. Once the finger moves past the touch slop it intercepts the gesture (Compose gets `ACTION_CANCEL`, so no click), moves the window with `updateViewLayout` using raw screen coordinates, and on release snaps to the nearest edge and stores the position. Raw coordinates matter: the window moves under the finger, so the local coordinates Compose's drag detector uses would jump each frame. (Compose's `pointerInteropFilter` would give raw coordinates too, but it's experimental.)
+- While dragging, the window uses `TOP|START` with free `x`/`y` clamped to the area; after the snap it goes back to the anchored placement above.
+- Drag is off while the panel is open. Rotation → the service's `onConfigurationChanged` re-places the window.
+
+**Compose inside a service** (D-78)
+- Windows are added through a window context: `createDisplayContext(default display).createWindowContext(TYPE_APPLICATION_OVERLAY, null)` (API 30), not the service context (Android flags UI from a non-visual context).
+- Compose needs a lifecycle and a saved-state registry on the view tree. `OverlayOwner` gives both: its own `LifecycleRegistry`, resumed from creation until the service is destroyed, and a `SavedStateRegistryController` restored with nothing (the overlay starts fresh with the service). No new dependency: `LifecycleRegistry` comes with `lifecycle-service`, and `androidx.savedstate` is part of `activity`'s public API (its Gradle metadata lists it as an `api` dependency).
+- The content is wrapped in `NyxTheme`, so it follows dark mode and dynamic colour like the app.
+
+**What's on screen**
+- **O-01 Pet:** the face from `SummaryRepository.observeToday()` — in M5 still the chosen pet's starting face (D-68) — in a 56 dp circle with a light surface and shadow, so it reads over any app. Emoji size is set in dp, so large system text doesn't make it overflow its circle. Glow (M7) and the focus timer badge (M8) come later.
+- **O-03 Summary panel:** the same composable as Home's numbers (`home/SummaryNumbers`: total, productive, doomscrolling, limit goals), so the two can't disagree. Buttons:
+  - **Start focus** (only when `features.focus` is on): opens the app at `[Home, FocusSetup]` — the placeholder until S-09 (M8).
+  - **Open Nyx:** opens Home.
+  - **Hide for N min** (`hide.minutes`, 30 by default).
+  - Each action closes the panel. Activities are started from the service with `FLAG_ACTIVITY_NEW_TASK`; Android allows it because the user granted "display over other apps" (an exemption from the background activity-start limits).
+- **O-02 Speech bubble:** M5 ships the `SpeechBubble` composable (line, optional Snooze, Dismiss) and its test. Its window and placement arrive in M6 with the bubble arbiter, its first caller (D-75; same rule as D-50 and D-64).
+
+**Panel numbers ≤ 1 min old** (US-07, D-77)
+- Opening the panel sends a request on a conflated `Channel` that the engine loop waits on between ticks (`withTimeoutOrNull(delay) { receive() }`), so the tick runs at once on the one engine coroutine (§3).
+- The panel shows Room's current numbers immediately (≤ 30 s old) and updates when that tick commits, well within 1 s.
+
+**Hide and show** (US-29, D-74)
+- Hide stores `pet.hiddenUntil` (epoch ms) = now + `hide.minutes`. "Shown" = no value or a time already past.
+- `petShown(hiddenUntil, recheck, clock)` (pure flow): emits `false`, waits until the time is up (the wait divided by the debug clock speed, D-67), then emits `true`. It re-reads the clock whenever `recheck` emits — the service passes its screen-on flow — because a coroutine timer can stall while the phone is in deep sleep. So the pet is back at the first screen-on after the time is up at the latest.
+- **Show pet early** writes "no value" (screens and buttons write storage, the service follows it, D-44):
+  - N-01 while hidden reads "The pet is hidden until 14:30." (12/24 h per the phone) and has a **Show pet** action → `ShowPetReceiver` (manifest, not exported) clears the value.
+  - Home shows a **Show pet** button while the pet is hidden.
+- A reboot while hidden keeps the pet hidden until the time is up.
+- Once the time has passed, the service removes the stored value, so setting the clock back later (or the debug fast clock resetting) can't hide the pet again. It compares with the clock, not with "shown": right after Hide the stored value changes a moment before "shown" does, and comparing with "shown" cleared the fresh value (found on the emulator).
+- N-01 is on the low-importance `pet` channel, so the shade shows it collapsed: **Show pet** appears once the notification is expanded.
+- What hiding changes for nags and break reminders (they become notifications, D-24) is M7's.
+
+**When the window is on screen**
+- `overlayAllowed && petShown`. `overlayAllowed` is updated at every tick from the permission watch (§14.4) and on every `onStartCommand` (so granting it and returning to the app shows the pet at once). Revoked → the window is removed; granted again → added back.
+- `addView` can still fail if the permission goes away in between: the error is logged and the next change retries.
+
+**emoji2** (F-15, D-76)
+- `PetApp.onCreate` calls `EmojiCompat.init(DefaultEmojiCompatConfig.create(context).setReplaceAll(true))`; the library's own startup initializer is removed in the manifest (`tools:node="remove"`).
+  - Why not the default: it waits for the first Activity to resume before loading the font, so after a reboot (service only, no Activity) the overlay would draw the phone's own emoji.
+  - The config finds Google Play services' font provider and loads on its own background thread. No provider (no Play services) → `create` returns `null`, and the phone's emoji are used (TECH_STACK §5).
+- Compose text uses `EmojiCompat` automatically once it has loaded, everywhere: setup, Home and the overlay. The load result is logged (no app names in it).
+  - **Checked on the API 37 emulator (2026-10-21):** "Emoji font loaded" after a reboot with only the service running (no Activity), so no `<queries>` entry is needed for the font provider.
+- `androidx.emoji2:emoji2` 1.7.0 (already in the register) is added to the build; Compose brought 1.4.0 transitively.
+
+**Storage** — DataStore, in `PetSettings` (all pet keys in one place)
+
+| Key | Type | Notes |
+|---|---|---|
+| `pet.side` | String | `left` / `right`; missing → default |
+| `pet.yFraction` | Float | 0–1, clamped on read |
+| `pet.hiddenUntil` | Long | Epoch ms; removed by Show pet |
+
+**Files** (`android/app/src/main/java/com/companionstudio/nyx/` unless stated)
+
+| File | Responsibility |
+|---|---|
+| `pet/PetOverlay.kt` | The window: add/remove, placement, drag, panel open/close, actions |
+| `pet/PetDragLayout.kt` | Drag detection with raw coordinates; outside-tap callback |
+| `pet/OverlayOwner.kt` | Lifecycle + saved state for Compose in the window |
+| `pet/PetPlacement.kt` | Pure: area, position, placement, snap |
+| `pet/PetWindow.kt` | Composables: the pet face, the panel and their layout in the window |
+| `pet/SpeechBubble.kt` | O-02 composable (window in M6) |
+| `pet/PetVisibility.kt` | `petShown(…)` (pure flow), hide / show |
+| `pet/PetSettings.kt` | + position and `hiddenUntil` |
+| `home/SummaryNumbers.kt` | Totals and goal rows, shared by Home and the panel |
+| `home/HomeScreen.kt` · `HomeViewModel.kt` | + Show pet while hidden |
+| `service/PetService.kt` | Creates the overlay, tick requests, overlay permission flow, N-01 updates, rotation |
+| `service/Notifications.kt` | N-01 with the hidden text and Show pet action |
+| `service/ShowPetReceiver.kt` | N-01's Show pet action |
+| `PetApp.kt` · `AppContainer.kt` · `MainActivity.kt` · `AppNavigation.kt` | emoji2 init, `petVisibility`, open at Focus |
+| `AndroidManifest.xml` | `ShowPetReceiver`, emoji2 initializer removed |
+
+**Tests**
+
+| Test | Where | Checks |
+|---|---|---|
+| `US06_PetPlacementTest` | `src/test/` | Snap to the side holding the centre · yFraction clamped to 0–1 · top half anchors from the top, bottom half from the bottom, and the pet stays at the same pixel either way · panel max height · an area smaller than the pet |
+| `US29_PetShownTest` | `src/test/` | Never hidden → shown · hidden until exactly the stored time, then shown · Show pet early · a time in the past → shown · a stalled timer is caught up at the next recheck · the debug speed divides the wait |
+| `PetSettingsTest` | `src/test/` | Position default, round trip and clamping · `hiddenUntil` set and cleared |
+| `HomeViewModelTest` (+) | `src/test/` | `petHidden` follows storage · `showPet` clears it |
+| `US07_SummaryPanelTest` | `src/androidTest/` | The panel shows exactly Home's numbers and goal lines for the same summary · buttons call back · Start focus hidden when focus is off · Hide label shows the minutes |
+| `SpeechBubbleTest` | `src/androidTest/` | Line shown · Snooze only when offered · both buttons call back |
+| `US28_HomeScreenTest` (+) | `src/androidTest/` | Show pet only while hidden, and it calls back |
+
+- Screens and the window aren't held to a coverage number (ROADMAP §2); the pure placement and visibility logic is tested above.
+- **Checked by hand on the emulator** (adb, 2026-10-21): pet over YouTube, Chrome, the home screen and Nyx itself; the window is exactly the pet (147 × 147 px) while closed; drag → snaps to the nearer edge; position kept after rotation and after the process is killed; landscape keeps the edge and relative height, and the panel is capped and scrolls; tap → panel at once, with a tick logged 150 ms after the tap; a tap outside and a tap on the pet close it; Start focus opens `[Home, FocusSetup]` and Open Nyx opens the app (no background-start block); Hide → window gone, N-01 "hidden until …" with Show pet; back after the time (30 min at 60× ≈ 30 s), from N-01's action and from Home's button; overlay revoked → gone + N-03, granted + app opened → back at once; after `adb reboot` the pet is back without opening the app and the emoji font loaded. Android hides the pet over the system permission dialog (its own rule for overlays), as expected.
+  - On the emulator `BOOT_COMPLETED` reached Nyx about 3 minutes after boot: it waits in Android's queue behind every other app's boot receiver. Same path as M4; not something the app controls.
+- **On the Pixel 7a** (the developer): the same over Instagram/YouTube, and after a reboot. Passed 2026-10-21.
+
+**Decisions** (approved 2026-10-21)
+- **D-71:** one overlay window holds the pet and, when open, the summary panel; it grows away from the pet's edge and from the nearer of top/bottom so the pet stays put. Outside taps are watched only while the panel is open.
+- **D-72:** taps are Compose clicks (accessible); drags are a `FrameLayout` that intercepts past the touch slop and moves the window with raw screen coordinates.
+- **D-73:** the position is stored as side + vertical fraction of the usable area; default right edge, 30% down.
+- **D-74:** hide stores `pet.hiddenUntil`; the pet returns when it passes, re-checked at every screen-on; Show pet (N-01 action, Home button) clears it through storage.
+- **D-75:** the speech bubble's window arrives in M6 with the arbiter; M5 ships the composable and its test.
+- **D-76:** the app initialises emoji2 itself with replace-all and removes the library's startup initializer, so the font also loads when only the service runs (after a reboot).
+- **D-77:** opening the panel forces a tick through a conflated channel the engine loop waits on; the panel shows stored numbers at once and updates after that tick.
+- **D-78:** overlay windows use a window context; Compose's lifecycle and saved state come from a small `OverlayOwner` (no new dependency).
+
+**Not in M5:** what the pet says, the bubble window and mood faces (→ M6), glow, nags, N-04 and the hidden-pet notification rules (→ M7), the focus timer badge and S-09 (→ M8), Trends from the panel (→ M13).

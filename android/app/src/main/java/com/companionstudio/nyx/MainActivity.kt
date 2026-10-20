@@ -17,10 +17,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val container = (application as PetApp).container
-        val openPermissions = intent.getStringExtra(EXTRA_OPEN) == OPEN_PERMISSIONS
+        val open = Open.entries.firstOrNull { it.name == intent.getStringExtra(EXTRA_OPEN) } ?: Open.HOME
         setContent {
             NyxTheme {
-                AppNavigation(container, openPermissions)
+                AppNavigation(container, open)
             }
         }
     }
@@ -34,15 +34,25 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /** Where the app opens from a notification or the pet's panel. */
+    enum class Open {
+        /** Home, or wherever the app already is. */
+        HOME,
+
+        /** S-03 to fix a lost permission (N-03), in a fresh task over Home. */
+        PERMISSIONS,
+
+        /** Focus setup from the pet's panel (§14.5), in a fresh task over Home. */
+        FOCUS,
+    }
+
     companion object {
         private const val EXTRA_OPEN = "open"
-        private const val OPEN_PERMISSIONS = "permissions"
 
-        /** [openPermissions]: start on S-03 to fix a lost permission (N-03), in a fresh task over Home. */
-        fun intent(context: Context, openPermissions: Boolean): Intent {
+        fun intent(context: Context, open: Open): Intent {
             val intent = Intent(context, MainActivity::class.java)
-            if (!openPermissions) return intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            return intent.putExtra(EXTRA_OPEN, OPEN_PERMISSIONS)
+            if (open == Open.HOME) return intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            return intent.putExtra(EXTRA_OPEN, open.name)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
         }
     }

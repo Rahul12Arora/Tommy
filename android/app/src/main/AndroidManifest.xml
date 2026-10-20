@@ -59,6 +59,23 @@
                 android:value="On-screen pet for screen-time awareness: while the screen is on it follows which app is in front, so it can react to the limits, breaks and focus sessions the user set." />
         </service>
 
+        <!-- N-01's "Show pet" action (§14.5). Not exported: only our own PendingIntent sends it -->
+        <receiver
+            android:name=".service.ShowPetReceiver"
+            android:exported="false" />
+
+        <!-- PetApp initialises emoji2 itself: the library's initializer waits for an Activity, and after a
+             reboot only the service runs (D-76) -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+                tools:node="remove" />
+        </provider>
+
         <!-- Not exported: only the system sends these, and it can reach any receiver -->
         <receiver
             android:name=".service.ServiceStartReceiver"

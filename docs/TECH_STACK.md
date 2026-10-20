@@ -268,7 +268,7 @@ Built into Node instead of packages: test runner (`node:test`), password hashing
 
 - ~~KSP 2.3.12 builds with Kotlin 2.4.21 under AGP 9.4.~~ ✓ Confirmed 2026-10-19: Room generated a database and DAO through KSP; no fallback needed.
 - Node 26's LTS promotion and the 21 Oct security release → pin the exact patch.
-- emoji2 "replace all" works for Compose text in the overlay window.
+- ~~emoji2 "replace all" works for Compose text in the overlay window.~~ ✓ Confirmed 2026-10-21 (M5): the app initialises emoji2 itself (D-76); the font loads from Google Play services, also after a reboot with no Activity, and Compose text in the overlay and the app uses it.
 - Restarting the service after a reboot on Android 15+ (R-09) → handled when that milestone's design is written.
 
 ---

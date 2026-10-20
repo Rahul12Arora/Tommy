@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.res.Configuration
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.PowerManager
@@ -15,25 +16,38 @@ import androidx.lifecycle.lifecycleScope
 import com.companionstudio.nyx.AppContainer
 import com.companionstudio.nyx.BuildConfig
 import com.companionstudio.nyx.PetApp
+import com.companionstudio.nyx.pet.PetOverlay
 import com.companionstudio.nyx.setup.SetupPermission
 import com.companionstudio.nyx.tracking.Tracker
 import com.companionstudio.nyx.tracking.UsageSource
 import com.companionstudio.nyx.tracking.tickDelaySeconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+import java.time.Instant
 
 /**
  * The always-on foreground service (§14.4). Its engine coroutine ticks while the screen is on: it checks the
- * permissions the pet can't do without, then credits usage. Screens never call it; they write to storage (D-44).
+ * permissions the pet can't do without, then credits usage. It also draws the pet (§14.5).
+ * Screens never call it; they write to storage (D-44).
  */
 class PetService : LifecycleService() {
 
     private val screenOn = MutableStateFlow(true)
+    private val overlayAllowed = MutableStateFlow(false)
+
+    // The pet's panel asks for a tick when it opens (D-77); one pending request is enough
+    private val tickRequests = Channel<Unit>(Channel.CONFLATED)
+    private lateinit var overlay: PetOverlay
+
+    /** `null` while the pet is shown; N-01 says until when it's hidden. */
+    private var hiddenUntil: Instant? = null
 
     // SCREEN_ON and SCREEN_OFF can only be received by a receiver registered at runtime
     private val screenReceiver = object : BroadcastReceiver() {
@@ -52,6 +66,22 @@ class PetService : LifecycleService() {
         ContextCompat.registerReceiver(this, screenReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
 
         val container = (application as PetApp).container
+        overlay = PetOverlay(this, container, requestTick = { tickRequests.trySend(Unit) })
+        overlay.start(lifecycleScope, screenOn, overlayAllowed)
+        lifecycleScope.launch {
+            combine(container.petVisibility.shown(screenOn), container.petSettings.hiddenUntil, ::Pair)
+                .collect { (shown, until) ->
+                    // A hide time that has passed is cleared, so setting the clock back later can't hide the pet again.
+                    // Checked against the clock, not `shown`: right after Hide, `shown` may not have caught up yet
+                    if (until != null && !until.isAfter(container.clock.instant())) container.petVisibility.show()
+                    val hidden = if (shown) null else until
+                    // onStartCommand posts N-01 with the current value; only a change needs a new one
+                    if (hidden == hiddenUntil) return@collect
+                    hiddenUntil = hidden
+                    Notifications.updatePetRunning(this@PetService, hidden)
+                }
+        }
+
         // Off the main thread: reading the event log and package info are blocking calls, and the app's screens
         // share this process. Still one coroutine, so engine state has one owner (§3)
         lifecycleScope.launch(Dispatchers.Default) {
@@ -67,12 +97,20 @@ class PetService : LifecycleService() {
         } else {
             0 // before Android 14 the manifest's type is used
         }
-        ServiceCompat.startForeground(this, Notifications.PET_RUNNING_ID, Notifications.petRunning(this), type)
+        ServiceCompat.startForeground(this, Notifications.PET_RUNNING_ID, Notifications.petRunning(this, hiddenUntil), type)
+        // Checked here too, not only at ticks: back from granting it, the app opening starts us and the pet shows at once
+        overlayAllowed.value = (application as PetApp).container.permissionChecks.isGranted(SetupPermission.OVERLAY)
         // After the process is killed, Android recreates the service (R-09)
         return START_STICKY
     }
 
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        overlay.onConfigurationChanged()
+    }
+
     override fun onDestroy() {
+        overlay.destroy()
         unregisterReceiver(screenReceiver)
         super.onDestroy()
     }
@@ -90,8 +128,10 @@ class PetService : LifecycleService() {
                     PermissionAlert.None -> Unit
                 }
                 missingBefore = missing
+                overlayAllowed.value = SetupPermission.OVERLAY !in missing
                 val delaySeconds = tick(container, tracker, hasUsageAccess = SetupPermission.USAGE_ACCESS !in missing)
-                if (on) delay(delaySeconds * 1000L / container.clock.speed)
+                // Waits for the next tick, or less if the pet's panel opens
+                if (on) withTimeoutOrNull(delaySeconds * 1000L / container.clock.speed) { tickRequests.receive() }
             } while (on)
         }
     }

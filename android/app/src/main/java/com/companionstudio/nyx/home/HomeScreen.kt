@@ -10,7 +10,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -26,25 +25,28 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.companionstudio.nyx.R
 import com.companionstudio.nyx.config.Category
-import com.companionstudio.nyx.ui.labelRes
+import com.companionstudio.nyx.pet.PetVisibility
 import com.companionstudio.nyx.ui.theme.NyxTheme
 
 @Composable
 fun HomeRoute(
     summaryRepository: SummaryRepository,
+    petVisibility: PetVisibility,
     onFocus: () -> Unit,
     onTrends: () -> Unit,
     onSettings: () -> Unit,
 ) {
-    val viewModel = viewModel { HomeViewModel(summaryRepository) }
+    val viewModel = viewModel { HomeViewModel(summaryRepository, petVisibility) }
     val summary by viewModel.summary.collectAsStateWithLifecycle()
-    HomeScreen(summary, onFocus, onTrends, onSettings)
+    val petHidden by viewModel.petHidden.collectAsStateWithLifecycle()
+    HomeScreen(summary, onShowPet = if (petHidden) ({ viewModel.showPet() }) else null, onFocus, onTrends, onSettings)
 }
 
-/** S-08. [summary] is `null` while loading. */
+/** S-08. [summary] is `null` while loading. [onShowPet] is `null` unless the pet is hidden (US-29). */
 @Composable
 fun HomeScreen(
     summary: TodaySummary?,
+    onShowPet: (() -> Unit)?,
     onFocus: () -> Unit,
     onTrends: () -> Unit,
     onSettings: () -> Unit,
@@ -65,14 +67,11 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(summary.petFace, style = MaterialTheme.typography.displayLarge)
-            Text(
-                stringResource(R.string.home_total, formatDuration(summary.totalSeconds)),
-                style = MaterialTheme.typography.headlineSmall,
-            )
-            Text(stringResource(R.string.home_productive, formatDuration(summary.productiveSeconds)))
-            Text(stringResource(R.string.home_doomscrolling, formatDuration(summary.doomscrollSeconds)))
-            Text(stringResource(R.string.home_goals), style = MaterialTheme.typography.titleMedium)
-            summary.goals.forEach { GoalRow(it) }
+            if (onShowPet != null) {
+                Text(stringResource(R.string.home_pet_hidden))
+                OutlinedButton(onClick = onShowPet) { Text(stringResource(R.string.show_pet)) }
+            }
+            SummaryNumbers(summary)
             Button(onClick = onFocus, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.home_start_focus))
             }
@@ -83,26 +82,6 @@ fun HomeScreen(
                 Text(stringResource(R.string.home_settings))
             }
         }
-    }
-}
-
-@Composable
-private fun GoalRow(goal: GoalProgress) {
-    val used = formatDuration(goal.usedSeconds)
-    val target = formatDuration(goal.targetSeconds)
-    val name = if (goal.category == null) stringResource(R.string.home_goal_total) else stringResource(goal.category.labelRes)
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(stringResource(R.string.home_goal_label, name, target))
-        // "over" is spelled out so the state never relies on colour alone (ARCHITECTURE §9)
-        Text(
-            if (goal.isOver) stringResource(R.string.home_goal_over, used, target)
-            else stringResource(R.string.home_goal_progress, used, target),
-            style = MaterialTheme.typography.bodySmall,
-        )
-        LinearProgressIndicator(
-            progress = { (goal.usedSeconds.toFloat() / goal.targetSeconds).coerceIn(0f, 1f) },
-            modifier = Modifier.fillMaxWidth(),
-        )
     }
 }
 
@@ -118,6 +97,7 @@ private fun HomeScreenPreview() {
                 goals = listOf(GoalProgress(Category.SOCIAL, usedSeconds = 47 * 60, targetSeconds = 60 * 60)),
                 petFace = "😸",
             ),
+            onShowPet = null,
             onFocus = {},
             onTrends = {},
             onSettings = {},

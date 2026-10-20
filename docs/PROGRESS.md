@@ -1,7 +1,7 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M5 Pet overlay (next)
-- Last done: M4 Service & tracking done 2026-10-21 — verified on the API 37 emulator and the Pixel 7a, PR #8 merged, tagged `m4-done`
-- Next step: M5 Pet overlay — branch `feat/m5-pet-overlay`, LLD first
+- Phase: 5 — Build · Milestone: M6 Lines, bubbles, mood (next)
+- Last done: M5 Pet overlay done 2026-10-21 — verified on the API 37 emulator and the Pixel 7a, D-71 to D-78 approved, tagged `m5-done` once PR #10 is merged
+- Next step: M6 Lines, bubbles, mood — branch `feat/m6-lines-mood`, LLD first (the bubble window, D-75, lands here)
 - Blockers: none
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
@@ -99,3 +99,17 @@
 - Verified: the developer ran the M4 checklist on the Pixel 7a — Home totals match Digital Wellbeing (± 2 min) and the service comes back after a reboot — and merged PR #8
 - Done: M4 closed — ROADMAP status done, R-09 reboot path marked confirmed on the Pixel 7a, tagged `m4-done` on the PR #8 merge (`0ab4ed5`)
 - Next: M5 Pet overlay — branch `feat/m5-pet-overlay`, LLD first
+- Started M5: branch `feat/m5-pet-overlay` from `main` (+ the M4 close-out commit). The developer asked to work through M5 without stopping, so the LLD (§14.5) was written and built in one go; D-71 to D-78 are proposed, waiting for approval
+- Checked before designing: Compose text uses `EmojiCompat` automatically when it's loaded (ui-text 1.12.1 sources); emoji2 1.7.0's startup initializer waits for the first Activity resume, so the app initialises it itself (D-76); `SavedStateRegistryController.performAttach` needs a lifecycle still at INITIALIZED, so the overlay has its own `OverlayOwner` (D-78); `androidx.savedstate` is an `api` dependency of `activity` (Gradle metadata) — no new dependency. `androidx.emoji2:emoji2` 1.7.0 (in the register) added to the build; Compose brought 1.4.0
+- Done: `pet/` — `PetOverlay` (one window, anchored per D-71), `PetDragLayout`, `OverlayOwner`, `PetPlacement` (pure), `PetWindow` (pet face + panel), `SpeechBubble` (composable only, D-75), `PetVisibility` + `petShown` (pure flow); `PetSettings` + position and `hiddenUntil`; `home/SummaryNumbers` shared by Home and the panel; Home "Show pet"; N-01 hidden variant + `ShowPetReceiver`; `MainActivity.Open` (HOME, PERMISSIONS, FOCUS); engine waits on a tick-request channel (D-77)
+- Bug found on the emulator and fixed: clearing a passed hide time by checking "shown" raced with Hide (the stored value changed a moment before "shown" did) and undid it at once; it now compares with the clock
+- Verified: `assembleDebug assembleRelease test lint` clean; 152 unit tests (+19: placement 8, hide timing 6, settings 4, Home view model 1), 0 skipped; mutation check: without the screen-on recheck `US29_PetShownTest` fails. 37 device tests on the API 37 emulator (+7: panel 4, bubble 2, Home show pet 1). By hand on the emulator: see §14.5 "Checked by hand" — pet over YouTube, Chrome, home screen; drag/snap; rotation; process kill; panel tick 150 ms after the tap; outside tap; Start focus / Open Nyx; hide + return (fast clock), Show pet from N-01 and Home; overlay revoked/granted; reboot → pet back, emoji font loaded
+- Not verified: Instagram (not on the emulator); the Pixel 7a; TalkBack on the pet (semantics are set, not tried with TalkBack on)
+- Verified: Android CI green on `feat/m5-pet-overlay` (run 39493685689); PR #10 open, not merged
+- Next: developer approval of D-71 to D-78 + Pixel 7a checklist → merge → `m5-done`
+- Approved: D-71 to D-78. Verified: the developer ran the M5 checklist on the Pixel 7a — passed
+- Found: PR #10 couldn't merge — `main` had the M4 close-out through PR #9, and this branch carried a cherry-pick of the same commit with later edits to the same docs (conflicts in `AGENTS.md`, `PROGRESS.md` only; the cherry-picked content was identical). Merged `main` into the branch keeping the branch's versions
+- Done: M5 closed — ROADMAP status done, LLD and decisions marked approved. The "Overlay UI" node in the component diagram stays pending until the bubble window lands in M6
+- Learned: next time, put the previous milestone's close-out on the new branch only (not also in a separate PR), or branch from `main` after that PR merges
+- Next: M6 Lines, bubbles, mood — branch `feat/m6-lines-mood`, LLD first
+
