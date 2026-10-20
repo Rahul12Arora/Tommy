@@ -1,7 +1,7 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M5 Pet overlay (in progress, branch `feat/m5-pet-overlay`)
-- Last done: M5 built and checked on the API 37 emulator — pet over every app, drag + snap, summary panel with a forced tick, hide/show (N-01, Home), emoji2 at boot. 152 unit + 37 device tests green, lint clean
-- Next step: the developer approves D-71 to D-78 and runs the M5 checklist on the Pixel 7a (Instagram/YouTube, reboot) → merge → tag `m5-done` → M6
+- Phase: 5 — Build · Milestone: M6 Lines, bubbles, mood (next)
+- Last done: M5 Pet overlay done 2026-10-21 — verified on the API 37 emulator and the Pixel 7a, D-71 to D-78 approved, tagged `m5-done` once PR #10 is merged
+- Next step: M6 Lines, bubbles, mood — branch `feat/m6-lines-mood`, LLD first (the bubble window, D-75, lands here)
 - Blockers: none
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
@@ -107,3 +107,9 @@
 - Not verified: Instagram (not on the emulator); the Pixel 7a; TalkBack on the pet (semantics are set, not tried with TalkBack on)
 - Verified: Android CI green on `feat/m5-pet-overlay` (run 39493685689); PR #10 open, not merged
 - Next: developer approval of D-71 to D-78 + Pixel 7a checklist → merge → `m5-done`
+- Approved: D-71 to D-78. Verified: the developer ran the M5 checklist on the Pixel 7a — passed
+- Found: PR #10 couldn't merge — `main` had the M4 close-out through PR #9, and this branch carried a cherry-pick of the same commit with later edits to the same docs (conflicts in `AGENTS.md`, `PROGRESS.md` only; the cherry-picked content was identical). Merged `main` into the branch keeping the branch's versions
+- Done: M5 closed — ROADMAP status done, LLD and decisions marked approved. The "Overlay UI" node in the component diagram stays pending until the bubble window lands in M6
+- Learned: next time, put the previous milestone's close-out on the new branch only (not also in a separate PR), or branch from `main` after that PR merges
+- Next: M6 Lines, bubbles, mood — branch `feat/m6-lines-mood`, LLD first
+

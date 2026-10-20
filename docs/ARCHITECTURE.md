@@ -690,7 +690,7 @@ Written at the start of each milestone, before code.
 | Config: schema, defaults, validator, layering | M2 | done 2026-10-19 (§14.2) |
 | Setup flow + app categories | M3 | done 2026-10-19 (§14.3) |
 | PetService + usage tracking | M4 | done 2026-10-20 (§14.4) |
-| Overlay: pet, bubble, panel, hide | M5 | written 2026-10-21 (§14.5), decisions proposed |
+| Overlay: pet, bubble, panel, hide | M5 | done 2026-10-21 (§14.5) |
 | Lines, bubble arbiter, mood | M6 | pending |
 | Limits, nags, breaks, idle lines | M7 | pending |
 | Focus sessions | M8 | pending |
@@ -1415,7 +1415,7 @@ idle 2m
 
 ### 14.5 M5 — Pet overlay: pet, summary panel, hide
 
-Written 2026-10-21, with D-71 to D-78 proposed. Built in the same session at the developer's request ("don't stop until my input is required"); the decisions are flagged for approval at the end of M5.
+Written 2026-10-21 and built in the same session at the developer's request; D-71 to D-78 approved 2026-10-21 at the end of M5.
 
 **Purpose:** the pet floats over every app and the home screen, can be dragged and snaps to an edge, opens a live summary panel on tap, and can be hidden for a while. Stories: US-06 (on screen, drag, snap, taps elsewhere pass through), US-07 (summary panel), US-29 (hide, show again), F-15 (same emoji everywhere).
 
@@ -1538,9 +1538,9 @@ flowchart LR
 - Screens and the window aren't held to a coverage number (ROADMAP §2); the pure placement and visibility logic is tested above.
 - **Checked by hand on the emulator** (adb, 2026-10-21): pet over YouTube, Chrome, the home screen and Nyx itself; the window is exactly the pet (147 × 147 px) while closed; drag → snaps to the nearer edge; position kept after rotation and after the process is killed; landscape keeps the edge and relative height, and the panel is capped and scrolls; tap → panel at once, with a tick logged 150 ms after the tap; a tap outside and a tap on the pet close it; Start focus opens `[Home, FocusSetup]` and Open Nyx opens the app (no background-start block); Hide → window gone, N-01 "hidden until …" with Show pet; back after the time (30 min at 60× ≈ 30 s), from N-01's action and from Home's button; overlay revoked → gone + N-03, granted + app opened → back at once; after `adb reboot` the pet is back without opening the app and the emoji font loaded. Android hides the pet over the system permission dialog (its own rule for overlays), as expected.
   - On the emulator `BOOT_COMPLETED` reached Nyx about 3 minutes after boot: it waits in Android's queue behind every other app's boot receiver. Same path as M4; not something the app controls.
-- **On the Pixel 7a** (the developer): the same over Instagram/YouTube, and after a reboot.
+- **On the Pixel 7a** (the developer): the same over Instagram/YouTube, and after a reboot. Passed 2026-10-21.
 
-**Decisions** (proposed 2026-10-21)
+**Decisions** (approved 2026-10-21)
 - **D-71:** one overlay window holds the pet and, when open, the summary panel; it grows away from the pet's edge and from the nearer of top/bottom so the pet stays put. Outside taps are watched only while the panel is open.
 - **D-72:** taps are Compose clicks (accessible); drags are a `FrameLayout` that intercepts past the touch slop and moves the window with raw screen coordinates.
 - **D-73:** the position is stored as side + vertical fraction of the usable area; default right edge, 30% down.
