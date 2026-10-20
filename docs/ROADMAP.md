@@ -193,20 +193,20 @@ Done when:
 Verify with: unit tests · fake scenario "65 min Instagram" · reboot test on your phone
 Not in this milestone: the pet on screen (→ M5)
 
-### M5 — Pet overlay            status: pending
+### M5 — Pet overlay            status: in-progress
 Goal: the emoji pet floats over every app, can be dragged and hidden, and opens a live summary panel.
 Depends on: M4
 Stories: US-06, US-07, US-29 (hide + show), F-15
 Tasks:
-- [ ] LLD: overlay windows (pet, bubble, panel), touch handling, Compose inside a service, emoji2 setup, positions, hide timer
-- [ ] Pet window sized to the pet only (taps elsewhere reach the app below); drag + snap to edge; position remembered
-- [ ] Speech bubble component (used from M6)
-- [ ] Summary panel O-03: total, productive vs doomscrolling, goal progress; forces a tick; Start focus, Open app, Hide
-- [ ] Hide for the configured minutes; "Show pet" on N-01 and Home
-- [ ] emoji2 with "replace all"
-- [ ] Tests: panel numbers match Home; hide/show timing (fake clock)
+- [x] LLD: overlay windows (pet, bubble, panel), touch handling, Compose inside a service, emoji2 setup, positions, hide timer (§14.5; D-71 to D-78 waiting for approval)
+- [x] Pet window sized to the pet only (taps elsewhere reach the app below); drag + snap to edge; position remembered
+- [x] Speech bubble component (used from M6; its window comes with M6, D-75)
+- [x] Summary panel O-03: total, productive vs doomscrolling, goal progress; forces a tick; Start focus, Open app, Hide
+- [x] Hide for the configured minutes; "Show pet" on N-01 and Home
+- [x] emoji2 with "replace all"
+- [x] Tests: panel numbers match Home; hide/show timing (fake clock)
 Done when:
-- [ ] Pet over YouTube/Instagram/home screen; panel opens ≤ 1 s; hide returns after the set time
+- [ ] Pet over YouTube/Instagram/home screen; panel opens ≤ 1 s; hide returns after the set time — done on the emulator (YouTube, Chrome, home screen); Instagram and the Pixel 7a still to check
 Verify with: emulator + phone · manual QA checklist
 Not in this milestone: what the pet says (→ M6)
 
