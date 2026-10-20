@@ -9,12 +9,21 @@
     <!-- Granted by the user in Settings → Display over other apps -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- The always-on pet service (§14.4) and its restart after a reboot -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <!-- Apps with a launcher icon, for S-05's list (R-10). Not QUERY_ALL_PACKAGES, which Play restricts -->
     <queries>
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+        <!-- Home-screen apps, whose time isn't counted (A-20, D-69) -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.HOME" />
         </intent>
     </queries>
 
@@ -39,6 +48,26 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".service.PetService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <!-- The use case Play reviews for a special-use foreground service (R-03) -->
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="On-screen pet for screen-time awareness: while the screen is on it follows which app is in front, so it can react to the limits, breaks and focus sessions the user set." />
+        </service>
+
+        <!-- Not exported: only the system sends these, and it can reach any receiver -->
+        <receiver
+            android:name=".service.ServiceStartReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

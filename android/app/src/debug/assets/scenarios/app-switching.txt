@@ -1,0 +1,8 @@
+# Switching between apps of different categories.
+# Expect: Social 15 min (Instagram 10 + 5), YouTube 10 min (Entertainment), Chrome 5 min, total 30 min.
+# Chrome doesn't reset the stretch, so it ends at 15 min of Social.
+app com.instagram.android 10m
+app com.android.chrome 5m
+app com.google.android.youtube 10m
+app com.instagram.android 5m
+idle 2m

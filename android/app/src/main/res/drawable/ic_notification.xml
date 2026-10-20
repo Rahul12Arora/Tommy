@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Status-bar icon for N-01 and N-03: a simple cat head, one colour as Android requires -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M4,3L9.5,8.2A7.5,7.5 0,0 1,14.5 8.2L20,3L20,13A8,8 0,0 1,4 13Z" />
+</vector>

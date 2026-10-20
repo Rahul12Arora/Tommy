@@ -85,4 +85,46 @@ class DayClockTest {
         assertThrows(IllegalArgumentException::class.java) { dayClock.dayKeyAt(now, resetHour = -1) }
         assertThrows(IllegalArgumentException::class.java) { dayClock.dayKeyAt(now, resetHour = 24) }
     }
+
+    @Test
+    fun startOfDay_isTheResetHourOnThatDate() {
+        val dayClock = dayClockIn("Asia/Kolkata")
+
+        assertEquals(at("2026-10-21T00:00:00", "Asia/Kolkata"), dayClock.startOfDay(date("2026-10-21"), resetHour = 0))
+        assertEquals(at("2026-10-21T04:00:00", "Asia/Kolkata"), dayClock.startOfDay(date("2026-10-21"), resetHour = 4))
+        assertThrows(IllegalArgumentException::class.java) { dayClock.startOfDay(date("2026-10-21"), resetHour = 24) }
+    }
+
+    @Test
+    fun nextDayStart_isTheNextResetAfterTheInstant() {
+        val dayClock = dayClockIn("Asia/Kolkata")
+
+        assertEquals(
+            at("2026-10-22T00:00:00", "Asia/Kolkata"),
+            dayClock.nextDayStart(at("2026-10-21T23:59:59", "Asia/Kolkata"), resetHour = 0),
+        )
+        // With reset 04:00, 03:30 still belongs to the 20th, so the next day starts at 04:00 on the 21st
+        assertEquals(
+            at("2026-10-21T04:00:00", "Asia/Kolkata"),
+            dayClock.nextDayStart(at("2026-10-21T03:30:00", "Asia/Kolkata"), resetHour = 4),
+        )
+        assertEquals(
+            at("2026-10-22T04:00:00", "Asia/Kolkata"),
+            dayClock.nextDayStart(at("2026-10-21T04:00:00", "Asia/Kolkata"), resetHour = 4),
+        )
+    }
+
+    @Test
+    fun nextDayStart_followsATimeZoneChange() {
+        var zone = ZoneId.of("Asia/Kolkata")
+        val dayClock = DayClock(zone = { zone })
+        val instant = at("2026-10-21T12:00:00", "Asia/Kolkata")
+
+        val inKolkata = dayClock.nextDayStart(instant, resetHour = 0)
+        zone = ZoneId.of("America/New_York")
+        val inNewYork = dayClock.nextDayStart(instant, resetHour = 0)
+
+        assertEquals(at("2026-10-22T00:00:00", "Asia/Kolkata"), inKolkata)
+        assertEquals(at("2026-10-22T00:00:00", "America/New_York"), inNewYork)
+    }
 }

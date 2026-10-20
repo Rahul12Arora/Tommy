@@ -4,6 +4,7 @@ import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
@@ -12,6 +13,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.companionstudio.nyx.home.HomeRoute
+import com.companionstudio.nyx.service.PetService
 import com.companionstudio.nyx.setup.AdultsOnlyScreen
 import com.companionstudio.nyx.setup.AgeCheckRoute
 import com.companionstudio.nyx.setup.AppCategoriesRoute
@@ -40,16 +42,26 @@ import kotlinx.serialization.Serializable
 @Serializable data object Limits : NavKey
 @Serializable data object StatsOptIn : NavKey
 
+// S-03 on its own, to fix a permission after setup (N-03; Settings from M7). Continue goes back
+@Serializable data object FixPermissions : NavKey
+
+/** [openPermissions]: opened from N-03, so S-03 sits on top of Home (§14.4). */
 @Composable
-fun AppNavigation(container: AppContainer) {
+fun AppNavigation(container: AppContainer, openPermissions: Boolean = false) {
     // Read once: setup is either still to do or done for good. Nothing is drawn for the moment this takes
     val setupCompleted by produceState<Boolean?>(initialValue = null) {
         value = container.setupSettings.completed.first()
     }
     val completed = setupCompleted ?: return
 
-    val backStack = rememberNavBackStack(if (completed) Home else Welcome)
+    val start = when {
+        !completed -> arrayOf(Welcome)
+        openPermissions -> arrayOf(Home, FixPermissions)
+        else -> arrayOf(Home)
+    }
+    val backStack = rememberNavBackStack(*start)
     val activity = LocalActivity.current
+    val context = LocalContext.current
     NavDisplay(
         backStack = backStack,
         onBack = { backStack.removeLastOrNull() },
@@ -81,6 +93,9 @@ fun AppNavigation(container: AppContainer) {
             entry<Permissions> {
                 PermissionsRoute(container.permissionChecks, onNext = { backStack.add(ChoosePet) })
             }
+            entry<FixPermissions> {
+                PermissionsRoute(container.permissionChecks, onNext = { backStack.removeLastOrNull() })
+            }
             entry<ChoosePet> {
                 ChoosePetRoute(container.effectiveConfig, container.petSettings, onNext = { backStack.add(AppCategories) })
             }
@@ -101,6 +116,7 @@ fun AppNavigation(container: AppContainer) {
                     setupSettings = container.setupSettings,
                     // Home replaces the whole setup stack, so Back on Home leaves the app instead of going into setup
                     onFinished = {
+                        PetService.start(context)
                         backStack.add(Home)
                         backStack.subList(0, backStack.size - 1).clear()
                     },

@@ -112,11 +112,20 @@
     <string name="home_productive">Productive: %1$s</string>
     <string name="home_doomscrolling">Doomscrolling: %1$s</string>
     <string name="home_goals">Goals</string>
+    <string name="home_goal_label">%1$s ≤ %2$s</string>
+    <string name="home_goal_total">All apps</string>
     <string name="home_goal_progress">%1$s of %2$s</string>
     <string name="home_goal_over">%1$s of %2$s · over</string>
     <string name="home_start_focus">Start focus</string>
     <string name="home_trends">Trends</string>
     <string name="home_settings">Settings</string>
+
+    <!-- Notifications (§14.4): N-01 pet running, N-03 permission lost -->
+    <string name="notification_channel_pet">Pet is running</string>
+    <string name="notification_channel_alerts">Alerts</string>
+    <string name="notification_pet_running">Nyx is keeping an eye on your screen time.</string>
+    <string name="notification_permission_lost_title">Nyx lost a permission</string>
+    <string name="notification_permission_lost_fix">Tap to turn it back on.</string>
 
     <!-- Screens not built yet -->
     <string name="focus_setup_title">Focus</string>
