@@ -45,9 +45,9 @@ import kotlinx.serialization.Serializable
 // S-03 on its own, to fix a permission after setup (N-03; Settings from M7). Continue goes back
 @Serializable data object FixPermissions : NavKey
 
-/** [openPermissions]: opened from N-03, so S-03 sits on top of Home (§14.4). */
+/** [open]: from N-03, S-03 sits on top of Home (§14.4); from the pet's panel, Focus setup does (§14.5). */
 @Composable
-fun AppNavigation(container: AppContainer, openPermissions: Boolean = false) {
+fun AppNavigation(container: AppContainer, open: MainActivity.Open = MainActivity.Open.HOME) {
     // Read once: setup is either still to do or done for good. Nothing is drawn for the moment this takes
     val setupCompleted by produceState<Boolean?>(initialValue = null) {
         value = container.setupSettings.completed.first()
@@ -56,7 +56,8 @@ fun AppNavigation(container: AppContainer, openPermissions: Boolean = false) {
 
     val start = when {
         !completed -> arrayOf(Welcome)
-        openPermissions -> arrayOf(Home, FixPermissions)
+        open == MainActivity.Open.PERMISSIONS -> arrayOf(Home, FixPermissions)
+        open == MainActivity.Open.FOCUS -> arrayOf(Home, FocusSetup)
         else -> arrayOf(Home)
     }
     val backStack = rememberNavBackStack(*start)
@@ -71,6 +72,7 @@ fun AppNavigation(container: AppContainer, openPermissions: Boolean = false) {
             entry<Home> {
                 HomeRoute(
                     summaryRepository = container.summaryRepository,
+                    petVisibility = container.petVisibility,
                     onFocus = { backStack.add(FocusSetup) },
                     onTrends = { backStack.add(Trends) },
                     onSettings = { backStack.add(Settings) },

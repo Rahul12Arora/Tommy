@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.text.format.DateFormat
 import android.util.Log
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
@@ -13,8 +14,10 @@ import androidx.core.app.NotificationManagerCompat
 import com.companionstudio.nyx.MainActivity
 import com.companionstudio.nyx.R
 import com.companionstudio.nyx.setup.SetupPermission
+import java.time.Instant
+import java.util.Date
 
-/** Channels and the notifications the service posts (§14.4): N-01 pet running, N-03 permission lost. */
+/** Channels and the notifications the service posts (§14.4, §14.5): N-01 pet running, N-03 permission lost. */
 object Notifications {
     const val PET_RUNNING_ID = 1
     private const val PERMISSION_LOST_ID = 3
@@ -37,15 +40,38 @@ object Notifications {
         )
     }
 
-    /** N-01. Android requires it while the service runs; tapping it opens Home. */
-    fun petRunning(context: Context): Notification =
-        NotificationCompat.Builder(context, CHANNEL_PET)
+    /**
+     * N-01. Android requires it while the service runs; tapping it opens Home. While the pet is hidden
+     * ([hiddenUntil] not `null`) it says until when and offers to show the pet now (US-29).
+     */
+    fun petRunning(context: Context, hiddenUntil: Instant?): Notification {
+        val builder = NotificationCompat.Builder(context, CHANNEL_PET)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(context.getString(R.string.app_name))
-            .setContentText(context.getString(R.string.notification_pet_running))
             .setOngoing(true)
-            .setContentIntent(openApp(context, MainActivity.intent(context, openPermissions = false), requestCode = 1))
+            .setContentIntent(openApp(context, MainActivity.intent(context, MainActivity.Open.HOME), requestCode = 1))
+        if (hiddenUntil == null) {
+            return builder.setContentText(context.getString(R.string.notification_pet_running)).build()
+        }
+        // The phone's 12/24-hour setting
+        val time = DateFormat.getTimeFormat(context).format(Date.from(hiddenUntil))
+        val showPet = PendingIntent.getBroadcast(
+            context,
+            0,
+            Intent(context, ShowPetReceiver::class.java),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        return builder.setContentText(context.getString(R.string.notification_pet_hidden, time))
+            .addAction(R.drawable.ic_notification, context.getString(R.string.show_pet), showPet)
             .build()
+    }
+
+    /** Replaces N-01 when the pet is hidden or shown again. */
+    fun updatePetRunning(context: Context, hiddenUntil: Instant?) {
+        // Without the permission the service still runs; Android just doesn't show N-01 (§14.4)
+        if (context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
+        NotificationManagerCompat.from(context).notify(PET_RUNNING_ID, petRunning(context, hiddenUntil))
+    }
 
     /** N-03: what stopped working, in the same words as S-03; tapping it opens S-03 to fix it (US-26). */
     fun showPermissionLost(context: Context, missing: List<SetupPermission>) {
@@ -57,7 +83,7 @@ object Notifications {
             .setContentText(text)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
             .setAutoCancel(true)
-            .setContentIntent(openApp(context, MainActivity.intent(context, openPermissions = true), requestCode = 3))
+            .setContentIntent(openApp(context, MainActivity.intent(context, MainActivity.Open.PERMISSIONS), requestCode = 3))
             .build()
         if (context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             Log.w(TAG, "Permission-lost notification not shown: notifications are off")
