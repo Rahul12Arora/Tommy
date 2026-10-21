@@ -232,23 +232,23 @@ Not in this milestone: limits and breaks triggering lines (→ M7)
 Goal: the pet nags when limits are crossed, reminds breaks, and talks now and then.
 Depends on: M6
 Stories: US-08, US-09, US-10, US-11, US-17 (limit goals), US-27, US-29 (notifications while hidden), US-07 + US-30 (actions ring, continuous screen use; CR-09, CR-10)
-Before the LLD: Q-15 (what the obstructive mode does) needs the developer's answer; everything else in M7 can be designed without it
+Q-15 answered 2026-10-21 (D-88, D-89); ring decisions D-90 to D-92
 Tasks:
-- [ ] LLD: SM-02 per limit, SM-03, escalation lines, snooze limits, limit goals judged at day reset with no mood effect (CR-05), idle timer, hidden → notifications; the actions ring (CR-09, D-87: half ring towards the middle, icon set, values, labels, placement replacing D-71's panel growth); continuous screen use + reaction mode (CR-10, A-31, Q-15)
+- [ ] LLD: SM-02 per limit, SM-03, escalation lines, snooze limits, limit goals judged at day reset with no mood effect (CR-05), idle timer, hidden → notifications; the actions ring (CR-09, D-87, D-90 to D-92: half ring towards the middle, one Limits icon, the pet sliding along its edge to fit, closed by pet or outside tap, icon set, values, labels, placement replacing D-71's panel growth); continuous screen use + reaction mode + break screen (CR-10, A-31, D-88, D-89; call detection without a new permission)
 - [ ] Daily category + total limits → `limit_reached`, red glow, bubble, repeat every N min, snooze (only that nag), max snoozes/day
 - [ ] Stretch limits; reset only by a 5-min break
 - [ ] Break reminders: bubble + N-02; `break_taken` after ≥ 5 min off
 - [ ] Idle lines (about every 30 min of screen time; off switch in settings and config)
 - [ ] While hidden: nags → N-04, break reminders → N-02
-- [ ] Actions ring replaces the summary panel (O-03): icons with used/limit digits per category, total, productive vs doomscrolling, continuous screen use, Start focus / Open Nyx / Hide; glow and Snooze state visible on the ring; ≥ 48 dp icons, TalkBack labels, "over limit" not by colour alone (CR-09)
+- [ ] Actions ring replaces the summary panel (O-03): one Limits icon (nearest-to-limit category, tap → list of all limits, D-90), total, productive vs doomscrolling, continuous screen use, Start focus / Open Nyx / Hide; glow and Snooze state visible on the ring; ≥ 48 dp icons, TalkBack labels, "over limit" not by colour alone (CR-09)
 - [ ] Continuous screen use (all apps, SM-03's counter) shown on the ring (US-30)
-- [ ] Reaction mode setting: gentle (default) / obstructive; admin switch to allow it; obstructive surface O-04 as decided in Q-15 (CR-10)
+- [ ] Reaction mode setting: gentle (default) / obstructive; admin switch to allow it; obstructive break screen O-04 with delayed buttons, 5 more minutes up to 3 times, not during focus, hidden or calls (CR-10, D-88, D-89)
 - [ ] Settings screen S-11 for nag interval, snooze, break trigger (= continuous-use limit), reaction mode, idle lines, day reset hour
-- [ ] Tests: every SM-02 and SM-03 transition, snooze isolation, max snoozes, stretch reset, held while hidden; ring values match Home's numbers, labels for TalkBack, half ring opens towards the middle on both edges; reaction mode stored and clamped to what the admin allows
+- [ ] Tests: every SM-02 and SM-03 transition, snooze isolation, max snoozes, stretch reset, held while hidden; ring values match Home's numbers, labels for TalkBack, half ring opens towards the middle on both edges and the pet slides to fit near top/bottom (D-91); reaction mode stored and clamped to what the admin allows; break screen button delay, snooze cap, held during focus, notification while hidden
 Done when:
 - [ ] Fake "65 min Instagram": glow + bubble within 60 s, repeats, snooze works; fake "50 min screen-on": break reminder bubble + notification
 - [ ] A pet that ran away comes back after a real break that follows a reminder (D-86)
-- [ ] Tapping the pet opens the half ring with the same numbers as Home; continuous screen use counts every app and resets after a 5-min break; obstructive mode, when picked, behaves as Q-15 decided
+- [ ] Tapping the pet opens the half ring with the same numbers as Home; continuous screen use counts every app and resets after a 5-min break; obstructive mode, when picked, covers the app with the break screen, unlocks its buttons after the delay and only offers Take a break after 3 snoozes (D-88)
 Verify with: `./gradlew test` · fake scenarios · manual QA checklist
 Not in this milestone: positive goals (→ M13)
 

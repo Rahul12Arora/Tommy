@@ -222,7 +222,7 @@ Targets are proposals — see Q-04.
 **US-30** (F-06, CR-09, CR-10) As a user, I want to see how long I've been on my screen without a break, whatever I'm doing, and choose how firmly Nyx reacts, so that long sessions don't slip by.
 - Given the screen is on, the pet's ring shows continuous screen use: time since my last break (screen off ≥ 5 min), in any app (A-31).
 - In Settings I can set the continuous-use limit within the admin's range (the break trigger, US-11) and pick how Nyx reacts when it's reached: gentle (bubble + notification, the default) or obstructive.
-- Obstructive is off unless I choose it, and the admin can turn the option off for everyone. What it does on screen is set by Q-15; it never stops me from dismissing it unless Q-15 decides otherwise.
+- Obstructive is off unless I choose it, and the admin can turn the option off for everyone. Obstructive covers the current app with a break screen ("Take a break" / "5 more minutes", up to 3 times) that I can always dismiss after a short delay; it doesn't show during focus, while the pet is hidden, or during a call (D-88, D-89).
 
 ---
 
@@ -287,7 +287,7 @@ Targets are proposals — see Q-04.
 
 - iOS
 - Chat with the pet (post-v1, cloud LLM)
-- Blocking or delaying apps (the opt-in obstructive break mode, CR-10, is decided by Q-15; as recommended it gets in the way but can always be dismissed)
+- Blocking or delaying apps (the opt-in obstructive break screen, CR-10, gets in the way but can always be dismissed, D-88)
 - Detecting what's inside an app (e.g. Reels vs a lecture); no Accessibility Service
 - User accounts, login, cloud backup, multi-device sync
 - ADHD or any health positioning or claims

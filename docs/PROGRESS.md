@@ -1,9 +1,9 @@
 ## Current state
 - Phase: 5 — Build · Milestone: M7 Limits, nags, breaks, idle lines (next; branch `feat/m7-limits-nags` created from `main`, plan only)
 - Last done: M6 done 2026-10-21 (`m6-done`, CI green on `main`). Planned CR-09 (actions ring, half ring D-87) and CR-10 (continuous screen use as a user setting, optional obstructive mode) into M7/M8
-- Next step: M7 LLD in a new session — answer Q-15 (what "obstructive" does) first; the rest of M7 doesn't wait on it
-- Blockers: none for starting M7; Q-15 for the obstructive part only
-- Open questions: Q-15 (obstructive mode, blocks that part of M7), Q-04 (success-metric targets, not blocking)
+- Next step: M7 LLD (§14.7) — Q-15 answered (D-88, D-89), ring decided (D-90 to D-92)
+- Blockers: none
+- Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
 - Build setup: Homebrew JDK on PATH starts Gradle; daemon runs on JDK 25 (`android/README.md`). With the phone plugged in, set `ANDROID_SERIAL` for device tasks
 
@@ -128,3 +128,5 @@
 - Started `feat/m7-limits-nags` from `main` for M7's plan changes (no code)
 - Decided: CR-09 approved — the summary panel becomes an actions ring (reference: Logitech Options' ring, the developer's screenshot); D-87 half ring opening towards the middle. CR-10 approved in principle — continuous screen use (all apps, A-31) with a user-set limit and reaction mode, optionally obstructive; what obstructive does is Q-15 (open, with a recommendation). REQUIREMENTS v1.3 (US-07 reworded, US-30), ROADMAP M7/M8 tasks, story map and cut-line note, ARCHITECTURE §14.5 note, DISCUSSION O-03/O-04
 - Next: M7 in a new session — Q-15 answer, then the LLD (§14.7)
+- Decided: Q-15 answered (a+) → D-88 obstructive break screen (delayed buttons, default 10 s; 5 more minutes up to 3 times; always dismissable, D-07 stands) and D-89 (not during focus, hidden or a call). Ring: D-90 one Limits icon, D-91 the pet may slide along its edge to fit the ring (amends D-87), D-92 no ×, pet or outside tap closes. A-32 (pet slides back on close) to confirm. REQUIREMENTS US-30 and §8, ROADMAP M7, DISCUSSION O-03/O-04, parking lot (per-app exclusions)
+- Next: M7 LLD (§14.7)
