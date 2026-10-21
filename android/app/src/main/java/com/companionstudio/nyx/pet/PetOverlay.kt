@@ -22,16 +22,17 @@ import com.companionstudio.nyx.AppContainer
 import com.companionstudio.nyx.MainActivity
 import com.companionstudio.nyx.home.TodaySummary
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 /**
- * The pet on screen (O-01) and its summary panel (O-03), in one overlay window owned by the pet service (§14.5).
- * The window is the pet's size while the panel is closed, so taps beside it reach the app below (US-06).
- * Main thread only.
+ * The pet on screen (O-01), its summary panel (O-03) and its speech bubble (O-02), in one overlay window owned by
+ * the pet service (§14.5, §14.6). The window is the pet's size while nothing is beside it, so taps beside it reach
+ * the app below (US-06). Main thread only, except [showBubble].
  */
 class PetOverlay(
     private val service: Context,
@@ -53,6 +54,9 @@ class PetOverlay(
     private var panelLayout by mutableStateOf(PanelLayout(Side.RIGHT, below = true, maxHeight = 0.dp))
     private var hideMinutes by mutableIntStateOf(0)
     private var focusEnabled by mutableStateOf(false)
+    private var bubble by mutableStateOf<String?>(null)
+    private var bubbleSeconds = 0
+    private var bubbleTimeout: Job? = null
 
     private lateinit var scope: CoroutineScope
     private var position = PetPosition.DEFAULT
@@ -86,31 +90,34 @@ class PetOverlay(
         addView(
             ComposeView(windowContext).apply {
                 setContent {
-                    PetWindow(
-                        summary = summary,
-                        panelOpen = panelOpen,
-                        layout = panelLayout,
-                        onPetClick = ::togglePanel,
-                        actions = PanelActions(
-                            hideMinutes = hideMinutes,
-                            onFocus = if (focusEnabled) ::openFocus else null,
-                            onOpenApp = ::openApp,
-                            onHide = ::hide,
-                        ),
-                    )
+                    // The panel wins; a bubble waits behind it and shows if the panel closes in time (D-84)
+                    val beside = if (panelOpen) {
+                        Beside.Panel(
+                            PanelActions(
+                                hideMinutes = hideMinutes,
+                                onFocus = if (focusEnabled) ::openFocus else null,
+                                onOpenApp = ::openApp,
+                                onHide = ::hide,
+                            ),
+                        )
+                    } else {
+                        bubble?.let { Beside.Bubble(it, onDismiss = ::dismissBubble) }
+                    }
+                    PetWindow(summary = summary, beside = beside, layout = panelLayout, onPetClick = ::togglePanel)
                 }
             },
         )
     }
 
-    /** [screenOn] re-checks the hide time (D-74); [overlayAllowed] follows the "display over other apps" permission. */
-    fun start(scope: CoroutineScope, screenOn: Flow<Boolean>, overlayAllowed: Flow<Boolean>) {
+    /** [onScreen]: the pet isn't hidden and may draw over other apps; the window is added and removed with it. */
+    fun start(scope: CoroutineScope, onScreen: Flow<Boolean>) {
         this.scope = scope
         scope.launch { container.summaryRepository.observeToday().collect { summary = it } }
         scope.launch {
             container.effectiveConfig.collect {
                 hideMinutes = it.document.hide.minutes
                 focusEnabled = it.document.features.focus
+                bubbleSeconds = it.document.bubbles.showSeconds
             }
         }
         scope.launch {
@@ -120,9 +127,20 @@ class PetOverlay(
             }
         }
         scope.launch {
-            combine(container.petVisibility.shown(screenOn), overlayAllowed) { shown, allowed -> shown && allowed }
-                .distinctUntilChanged()
-                .collect { onScreen -> if (onScreen) attach() else detach() }
+            onScreen.distinctUntilChanged().collect { if (it) attach() else detach() }
+        }
+    }
+
+    /** Shows [line] for `bubbles.showSeconds`, replacing any bubble already showing. Safe to call from any thread. */
+    fun showBubble(line: String) {
+        scope.launch {
+            bubble = line
+            bubbleTimeout?.cancel()
+            // Real seconds even under the debug fast clock (D-67): this is reading time, not usage time
+            bubbleTimeout = scope.launch {
+                delay(bubbleSeconds * 1000L)
+                bubble = null
+            }
         }
     }
 
@@ -151,6 +169,7 @@ class PetOverlay(
     private fun detach() {
         if (!attached) return
         changePanel(false)
+        dismissBubble()
         dragStart = null
         windowManager.removeView(root)
         attached = false
@@ -183,6 +202,8 @@ class PetOverlay(
 
     @SuppressLint("RtlHardcoded") // see place()
     private fun startDrag() {
+        // The window shrinks back to the pet, so the pet doesn't jump inside it under the finger
+        dismissBubble()
         val area = area()
         dragStart = petTopLeft(placement(position, area, petPx), area, petPx)
         params.gravity = Gravity.TOP or Gravity.LEFT
@@ -203,6 +224,11 @@ class PetOverlay(
         position = dropped
         place()
         scope.launch { container.petSettings.savePosition(dropped) }
+    }
+
+    private fun dismissBubble() {
+        bubbleTimeout?.cancel()
+        bubble = null
     }
 
     private fun togglePanel() {

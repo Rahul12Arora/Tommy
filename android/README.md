@@ -27,15 +27,17 @@ Run from this folder.
 
 ## Debug scenarios (debug builds only)
 
-Scripted usage instead of real usage, optionally with time running faster, so tracking can be checked in seconds ([`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md) §14.4). Scenario files: [`app/src/debug/assets/scenarios/`](app/src/debug/assets/scenarios/). Finish setup (or open the app) first, so the pet service is running.
+Scripted usage instead of real usage, optionally with time running faster, so tracking and mood can be checked in seconds ([`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md) §14.4, §14.6). Scenario files: [`app/src/debug/assets/scenarios/`](app/src/debug/assets/scenarios/). Finish setup (or open the app) first, so the pet service is running.
 
 | What | Command |
 |---|---|
 | Play a scenario at 60× | `adb shell am broadcast -n com.companionstudio.nyx/.debug.ScenarioReceiver --es scenario instagram-65min --ei speed 60` |
+| Walk the mood down to 🐾 (4 h of Instagram, ~4 min at 60×) | `adb shell am broadcast -n com.companionstudio.nyx/.debug.ScenarioReceiver --es scenario instagram-4h --ei speed 60` |
+| Log one mood event now (e.g. to bring a pet that ran away back) | `adb shell am broadcast -n com.companionstudio.nyx/.debug.ScenarioReceiver --es event break_taken` |
 | Back to real usage and time | `adb shell am broadcast -n com.companionstudio.nyx/.debug.ScenarioReceiver --ez stop true` |
-| Watch the tracker | `adb logcat -s Nyx` |
+| Watch the tracker, mood and bubbles | `adb logcat -s Nyx` |
 
-Both commands clear all tracked time first. With more than one device connected, add `-s <serial>` after `adb` (and set `ANDROID_SERIAL` for Gradle's device tasks).
+Playing a scenario and going back to real usage both clear all tracked time and the event log first; `event` clears nothing. With more than one device connected, add `-s <serial>` after `adb` (and set `ANDROID_SERIAL` for Gradle's device tasks).
 
 ## Versions and dependencies
 

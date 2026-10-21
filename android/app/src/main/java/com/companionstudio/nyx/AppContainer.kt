@@ -16,6 +16,7 @@ import com.companionstudio.nyx.home.SummaryRepository
 import com.companionstudio.nyx.home.TrackingSummaryRepository
 import com.companionstudio.nyx.pet.PetSettings
 import com.companionstudio.nyx.pet.PetVisibility
+import com.companionstudio.nyx.rules.Reactions
 import com.companionstudio.nyx.setup.PermissionChecks
 import com.companionstudio.nyx.setup.SetupSettings
 import com.companionstudio.nyx.stats.StatsSettings
@@ -71,7 +72,7 @@ class AppContainer(private val context: Context) {
         .flowOn(Dispatchers.IO)
 
     val summaryRepository: SummaryRepository =
-        TrackingSummaryRepository(database.dailyUsageDao(), effectiveConfig, petSettings, dayClock)
+        TrackingSummaryRepository(database.dailyUsageDao(), database.petEventDao(), effectiveConfig, petSettings, dayClock)
 
     val systemUsageSource = SystemUsageSource(context.getSystemService(UsageStatsManager::class.java))
 
@@ -87,6 +88,9 @@ class AppContainer(private val context: Context) {
         excluded = excludedPackages(context.packageManager, context.packageName),
         androidCategoryOf = installedApps::androidCategory,
     )
+
+    /** One per service run, like the tracker: the bubble arbiter and the recent lines live in memory (§14.6). */
+    fun newReactions() = Reactions(database.petEventDao(), clock)
 
     private companion object {
         const val TAG = "Nyx"

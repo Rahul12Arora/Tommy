@@ -6,6 +6,9 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 
+/** Days of history kept on the phone: usage totals and the event log (A-13). */
+const val RETENTION_DAYS = 31L
+
 /** Turns moments into day keys. All day logic goes through here (ARCHITECTURE §9). */
 class DayClock(
     private val clock: Clock = Clock.systemUTC(),

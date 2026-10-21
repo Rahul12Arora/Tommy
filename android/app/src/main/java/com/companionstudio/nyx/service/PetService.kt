@@ -17,6 +17,7 @@ import com.companionstudio.nyx.AppContainer
 import com.companionstudio.nyx.BuildConfig
 import com.companionstudio.nyx.PetApp
 import com.companionstudio.nyx.pet.PetOverlay
+import com.companionstudio.nyx.rules.Reactions
 import com.companionstudio.nyx.setup.SetupPermission
 import com.companionstudio.nyx.tracking.Tracker
 import com.companionstudio.nyx.tracking.UsageSource
@@ -34,13 +35,16 @@ import java.time.Instant
 
 /**
  * The always-on foreground service (§14.4). Its engine coroutine ticks while the screen is on: it checks the
- * permissions the pet can't do without, then credits usage. It also draws the pet (§14.5).
- * Screens never call it; they write to storage (D-44).
+ * permissions the pet can't do without, credits usage, then logs events, recomputes mood and maybe shows a bubble
+ * (§14.6). It also draws the pet (§14.5). Screens never call it; they write to storage (D-44).
  */
 class PetService : LifecycleService() {
 
     private val screenOn = MutableStateFlow(true)
     private val overlayAllowed = MutableStateFlow(false)
+
+    // Not hidden and allowed to draw: the window is on screen, and bubbles can show (§14.6)
+    private val petOnScreen = MutableStateFlow(false)
 
     // The pet's panel asks for a tick when it opens (D-77); one pending request is enough
     private val tickRequests = Channel<Unit>(Channel.CONFLATED)
@@ -67,7 +71,12 @@ class PetService : LifecycleService() {
 
         val container = (application as PetApp).container
         overlay = PetOverlay(this, container, requestTick = { tickRequests.trySend(Unit) })
-        overlay.start(lifecycleScope, screenOn, overlayAllowed)
+        lifecycleScope.launch {
+            // The screen-on flow re-checks the hide time (D-74)
+            combine(container.petVisibility.shown(screenOn), overlayAllowed) { shown, allowed -> shown && allowed }
+                .collect { petOnScreen.value = it }
+        }
+        overlay.start(lifecycleScope, petOnScreen)
         lifecycleScope.launch {
             combine(container.petVisibility.shown(screenOn), container.petSettings.hiddenUntil, ::Pair)
                 .collect { (shown, until) ->
@@ -118,6 +127,7 @@ class PetService : LifecycleService() {
     /** Ticks while the screen is on. When it goes off, one last tick credits up to that moment, then nothing runs. */
     private suspend fun runEngine(container: AppContainer, source: UsageSource) {
         val tracker = container.newTracker(source)
+        val reactions = container.newReactions()
         var missingBefore: Set<SetupPermission>? = null
         screenOn.collectLatest { on ->
             do {
@@ -129,7 +139,7 @@ class PetService : LifecycleService() {
                 }
                 missingBefore = missing
                 overlayAllowed.value = SetupPermission.OVERLAY !in missing
-                val delaySeconds = tick(container, tracker, hasUsageAccess = SetupPermission.USAGE_ACCESS !in missing)
+                val delaySeconds = tick(container, tracker, reactions, hasUsageAccess = SetupPermission.USAGE_ACCESS !in missing)
                 // Waits for the next tick, or less if the pet's panel opens
                 if (on) withTimeoutOrNull(delaySeconds * 1000L / container.clock.speed) { tickRequests.receive() }
             } while (on)
@@ -137,19 +147,23 @@ class PetService : LifecycleService() {
     }
 
     /** Returns the seconds until the next tick. A failed tick is logged and the loop carries on (§9). */
-    private suspend fun tick(container: AppContainer, tracker: Tracker, hasUsageAccess: Boolean): Int {
+    private suspend fun tick(container: AppContainer, tracker: Tracker, reactions: Reactions, hasUsageAccess: Boolean): Int {
         val config = container.effectiveConfig.first()
         // Without usage access the log reads as empty, so the last app in front would keep collecting time.
         // Nothing is credited and the cursor stays; the catch-up fills the gap once access is back (D-66)
         if (!hasUsageAccess) return config.document.tracking.slowTickSeconds
         return try {
             val snapshot = tracker.tick(config, container.appCategories.observeChoices().first())
+            val personalityId = container.petSettings.choice.first().personalityId
+            val reaction = reactions.afterTick(snapshot, config, personalityId, petOnScreen.value)
+            reaction.bubble?.let(overlay::showBubble)
             // Debug builds only: release builds never log which apps the user opens (§9)
             if (BuildConfig.DEBUG) {
                 Log.d(
                     TAG,
                     "tick ${snapshot.day}: front=${snapshot.frontPackage} (${snapshot.frontCategory}), " +
-                        "stretch=${snapshot.stretchMs / 1000}s, today=${snapshot.todayMs.mapValues { it.value / 1000 }}s",
+                        "stretch=${snapshot.stretchMs / 1000}s, today=${snapshot.todayMs.mapValues { it.value / 1000 }}s, " +
+                        "mood=${reaction.mood}" + reaction.bubble?.let { ", bubble=\"$it\"" }.orEmpty(),
                 )
             }
             tickDelaySeconds(snapshot, config)

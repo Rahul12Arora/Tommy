@@ -41,7 +41,7 @@ class US21_ConfigFixturesTest {
         val rules = listOf(
             ConfigRule.SCHEMA, ConfigRule.SETTING_RANGE, ConfigRule.TICK_ORDER, ConfigRule.DUPLICATE_ID,
             ConfigRule.MOOD_BANDS_COVERAGE, ConfigRule.PET_FACES, ConfigRule.LINE_REFERENCES,
-            ConfigRule.LINE_COVERAGE, ConfigRule.NOTHING_ENABLED,
+            ConfigRule.LINE_COVERAGE, ConfigRule.LINE_PLACEHOLDERS, ConfigRule.NOTHING_ENABLED,
         )
         val covered = SharedFiles.fixtures("invalid").map { it.name.substringBefore("--") }.toSet()
 
