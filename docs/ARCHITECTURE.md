@@ -691,7 +691,7 @@ Written at the start of each milestone, before code.
 | Setup flow + app categories | M3 | done 2026-10-19 (§14.3) |
 | PetService + usage tracking | M4 | done 2026-10-20 (§14.4) |
 | Overlay: pet, bubble, panel, hide | M5 | done 2026-10-21 (§14.5) |
-| Lines, bubble arbiter, mood | M6 | written 2026-10-21 (§14.6), waiting for approval |
+| Lines, bubble arbiter, mood | M6 | done 2026-10-21 (§14.6) |
 | Limits, nags, breaks, idle lines | M7 | pending |
 | Focus sessions | M8 | pending |
 | Backend foundation + config API | M10 | pending |
@@ -1554,7 +1554,7 @@ flowchart LR
 
 ### 14.6 M6 — Event log, mood, bubble arbiter, line picker
 
-Written 2026-10-21 and built in the same session at the developer's request; D-79 to D-86 are proposed, waiting for approval.
+Written 2026-10-21 and built in the same session at the developer's request; D-79 to D-86 approved 2026-10-21 at the end of M6.
 
 **Purpose:** the pet gets a mood that its face shows, runs away at 0 and comes back, and speaks through a speech bubble beside it. The bubble arbiter and the line picker are built for every trigger, but in M6 only `pet_returned` asks for a bubble: limits, nags, breaks and idle lines come in M7, focus in M8. Stories: US-15 (mood), US-16 (low point, ran away, return), US-03 (lines in the chosen personality).
 
@@ -1707,9 +1707,9 @@ fun moodOf(events: List<PetEventType>, mood: MoodConfig): Int =
 - **To check by hand** (adb, fast clock): install over the M5 build keeps categories and totals; `instagram-4h` at 60× walks the face down every band to 🐾 on the pet, the panel and Home; `--es event break_taken` → 🙀 (mood 5) and a "pet_returned" bubble in the chosen personality; Dismiss; the bubble disappears after 8 s; the bubble opens below the pet in the top half and above it in the bottom half; a drag removes it; hidden → no bubble. Start the 4 h scenario before 20:00 at 60× (or with more speed), or it crosses midnight and the day reset puts the mood back to 70.
 - **Checked on the API 37 emulator** (2026-10-21): installing over the M5 build moved the database from version 2 to 3 and kept today's totals (207 min); the service came back on its own and logged mood 70. `instagram-4h` at 60×: mood 52 at 68 min, 😼 at 70 min, 😾 mid-way, mood 1 at 238 min, 0 and 🐾 at 240 min, with `RAN_AWAY` logged once. `--es event break_taken` → mood 5, 🙀, and the tick logged a `pet_returned` line ("I'm home! Thanks for taking care of things."). A `goal_met` from 0 → 😿 (mood 10) with the bubble below the pet in the top half, the pet not moving; after a drag to the bottom half the next bubble opened above it, with a different line; Dismiss removed it; it timed out after 8 real seconds; a drag removed one at once. Hidden (Hide for 30 min) and brought back from 0 → no bubble, no pet window, `PET_RETURNED` still logged; Home showed 😿 and "Show pet". After an emulator reboot, 3 device-test runs in a row were green.
   - Two bugs found this way and fixed: the bubble's time was first divided by the debug clock's speed, so at 60× it vanished after 0.13 s (it's reading time, so it's real seconds now); and the log was first ordered by `at_ms`, so events logged after the fast clock stopped sorted before the sped-up ones and gave the wrong mood (it's ordered by `id` now, which a clock set back can't disturb either).
-- Not checked yet: TalkBack reading the bubble; the Pixel 7a.
+- Not checked: TalkBack reading the bubble; the Pixel 7a (the developer closed M6 without a Pixel result recorded).
 
-**Decisions** (proposed 2026-10-21, waiting for approval)
+**Decisions** (approved 2026-10-21)
 - **D-79:** mood is today's events folded from `mood.start` in log order with today's weights, clamped to 0–100 after every event; nothing stores a mood number.
 - **D-80:** running away and coming back are logged events (`RAN_AWAY`, `PET_RETURNED`, weight 0); logging `PET_RETURNED` offers the `pet_returned` bubble; the day reset brings the pet back without a line.
 - **D-81:** `doomscroll_10min` events are derived from today's doomscroll total: one per full 10 min, minus those already logged, logged at the tick that notices.
