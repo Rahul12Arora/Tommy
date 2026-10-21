@@ -21,6 +21,11 @@ data class TrackerState(
     val stretchDay: LocalDate? = null,
     /** Screen-on time since the last break, whatever is in front; the day reset doesn't touch it (D-96). */
     val continuousMs: Long = 0,
+    /**
+     * A screen event has been seen. Until then [screenOn] is only a guess (the replay starts 24 h back), so it credits
+     * apps as before but adds nothing to [continuousMs]; otherwise the whole look-back would count (BUG-02).
+     */
+    val screenKnown: Boolean = false,
 )
 
 /** Everything crediting needs from the config, the user's choices, the clock and the device. */
@@ -89,7 +94,7 @@ private fun creditPiece(
     // The day reset starts a new stretch (§9)
     var current = if (state.stretchDay == day) state else state.copy(stretchMs = 0, stretchDay = day)
     // Continuous use counts every screen-on moment, counted app or not (D-96)
-    if (current.screenOn) current = current.copy(continuousMs = current.continuousMs + Duration.between(from, to).toMillis())
+    if (current.screenOn && current.screenKnown) current = current.copy(continuousMs = current.continuousMs + Duration.between(from, to).toMillis())
     val packageName = current.front?.packageName
     if (!current.screenOn || packageName == null || !rules.isCounted(packageName)) return current
 
@@ -109,12 +114,15 @@ private fun apply(state: TrackerState, event: UsageEvent, breakMs: Long): Tracke
     // Only the front activity's own pause ends it, so a late pause from the previous screen changes nothing
     UsageEventType.APP_PAUSED ->
         if (state.front == ActivityKey(event.packageName, event.className)) state.copy(front = null) else state
-    UsageEventType.SCREEN_OFF ->
-        if (state.screenOn) state.copy(screenOn = false, screenOffSince = event.at) else state
+    UsageEventType.SCREEN_OFF -> if (state.screenOn) {
+        state.copy(screenOn = false, screenOffSince = event.at, screenKnown = true)
+    } else {
+        state.copy(screenKnown = true)
+    }
     UsageEventType.SCREEN_ON -> screenOn(state, event.at, breakMs)
     UsageEventType.DEVICE_STARTUP -> screenOn(state.copy(front = null), event.at, breakMs)
     UsageEventType.DEVICE_SHUTDOWN ->
-        state.copy(front = null, screenOn = false, screenOffSince = state.screenOffSince ?: event.at)
+        state.copy(front = null, screenOn = false, screenOffSince = state.screenOffSince ?: event.at, screenKnown = true)
 }
 
 /** A screen-off gap of at least the break length is a break: a new stretch and new continuous use (D-27, D-65, D-96). */
@@ -122,6 +130,7 @@ private fun screenOn(state: TrackerState, at: Instant, breakMs: Long): TrackerSt
     val tookBreak = isBreak(state, at, breakMs)
     return state.copy(
         screenOn = true,
+        screenKnown = true,
         screenOffSince = null,
         stretchMs = if (tookBreak) 0 else state.stretchMs,
         continuousMs = if (tookBreak) 0 else state.continuousMs,

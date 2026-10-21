@@ -218,6 +218,18 @@ class US08_ReactionsTest {
     }
 
     @Test
+    fun BUG03_anIdleLineDueWithANag_isDropped_notShownAfterIt() = runTest {
+        reactions.afterTick(inInstagram(socialMinutes = 30), config, null, petOnScreen = true)
+        later(30)
+        val nag = reactions.afterTick(inInstagram(socialMinutes = 60), config, null, petOnScreen = true)
+        later(2)
+        val after = reactions.afterTick(inInstagram(socialMinutes = 62), config, null, petOnScreen = true)
+
+        assertEquals("limit:social", nag.bubble?.snoozeKey)
+        assertNull(after.bubble)
+    }
+
+    @Test
     fun theRingStatus_carriesContinuousUse_theBreakLimit_andTheStretch() = runTest {
         val reaction = reactions.afterTick(inChrome(continuousMinutes = 12), config, null, petOnScreen = true)
 

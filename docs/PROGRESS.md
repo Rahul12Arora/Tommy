@@ -1,8 +1,8 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M7 Limits, nags, breaks, idle lines (in progress on `feat/m7-limits-nags`; built, emulator checks pending)
+- Phase: 5 — Build · Milestone: M7 Limits, nags, breaks, idle lines (on `feat/m7-limits-nags`; built and checked on the Pixel 7a, waiting for the developer's OK to close)
 - Last done: M7 built to §14.7 (D-93 to D-108 approved): unit tests 260/260, lint clean, debug + release build
-- Next step: re-run device tests and the by-hand checks (§14.7) on a working emulator, then tick ROADMAP M7
-- Blockers: the API 37 emulator hangs at boot ("hanging thread 'QEMU2 main loop'") since it died mid device-test run; needs a restart from Android Studio (cold boot or wipe)
+- Next step: CI on the PR → the developer's OK (and a real call while a break is due, if wanted) → merge → `m7-done` → M8 Focus sessions
+- Blockers: none. The API 37 emulator still hangs at boot ("hanging thread 'QEMU2 main loop'"); it needs a cold boot or wipe from Android Studio before it's used again
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
 - Build setup: Homebrew JDK on PATH starts Gradle; daemon runs on JDK 25 (`android/README.md`). With the phone plugged in, set `ANDROID_SERIAL` for device tasks
@@ -146,3 +146,9 @@
 - BUG-01 · Ring runs off the right edge · Steps: pet on the right edge, tap it · Expected: the whole half ring on screen · Actual: the pet and the right-hand slots (total, hide, the far ends) past the edge · Env: Pixel 7a, debug build `d1f8ee7` · Evidence: the developer's screenshot · Severity: major
 - Cause: a `WRAP_CONTENT` overlay window is first measured at the dialog width (~320 dp, `config_prefDialogWidth` in `ViewRootImpl.measureHierarchy`, checked in the API 37 sources); Compose doesn't flag "too small", so the 364 dp ring box was squeezed and drawn past the window. Fixed: the window gets the box's width and height explicitly while the ring is open (`ringBoxWidth`), and wrap-content again when closed. Test: `US07_RingLayoutTest` (window width = geometry width, 364 dp on a 411 dp phone)
 - Verified: 261 unit tests, lint, debug build. Not verified on a phone: no device connected here; the developer to re-check on the Pixel 7a
+- With the developer's OK to wipe the phone's Nyx data: device tests on the Pixel 7a 54/54 (48 in the full run; the rest re-run alone after the phone locked mid-run; "stay awake on USB" was on for the run and is back off). Gradle's device-test run uninstalls the app, and `installDebugAndroidTest` also reinstalled it and wiped setup (my mistake); updates since then used `adb install -r`, which keeps data
+- BUG-02 · Continuous use starts at ~24 h in a scenario · Expected: from the scenario's start · Actual: 89 458 s · Cause: before the replay sees a screen event the tracker guesses "screen on", so the 24 h look-back counted. Fixed: `TrackerState.screenKnown`; scenarios start with a screen-on. Test: `US30_ContinuousUseTest` BUG02 · Severity: major
+- BUG-03 · An idle line right after a nag · Expected: idle only after quiet · Actual: "Have you had some water today?" a minute after the stretch nag · Cause: the idle request, due at the same tick, waited in the arbiter. Fixed: a waiting idle request is withdrawn when any bubble shows. Test: `US08_ReactionsTest` BUG03 (fails without the fix) · Severity: minor
+- Verified on the Pixel 7a by hand (details in ARCHITECTURE §14.7): nags, repeats, glow, snooze, break reminders and break taken, D-86's real path, ring (fit, captions, Limits list, Home's numbers, moving near the top and back), Settings, obstructive mode through every answer (also on real use), hidden → N-02/N-04. Mode set back to Gentle; the test APK removed; the pet shown again. Today's tracked time on the phone was wiped by the scenarios, as agreed
+- Not verified: a real call while a break is due; TalkBack by ear
+- Verified: 263 unit tests, lint, debug build

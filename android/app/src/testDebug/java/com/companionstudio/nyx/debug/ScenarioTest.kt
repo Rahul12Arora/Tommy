@@ -71,6 +71,7 @@ class ScenarioTest {
 
         assertEquals(
             listOf(
+                UsageEvent(UsageEventType.SCREEN_ON, start),
                 UsageEvent(UsageEventType.APP_RESUMED, start, "com.instagram.android", "scenario"),
                 UsageEvent(UsageEventType.APP_PAUSED, start.plusSeconds(20 * 60), "com.instagram.android", "scenario"),
                 UsageEvent(UsageEventType.SCREEN_OFF, start.plusSeconds(20 * 60)),
@@ -87,8 +88,9 @@ class ScenarioTest {
         val events = scenarioEvents(listOf(ScenarioStep.App("com.instagram.android", Duration.ofMinutes(10))), start)
         val source = ScenarioUsageSource(events)
 
-        assertEquals(1, source.events(start, start.plusSeconds(600)).size) // the pause at exactly +10 min isn't included
-        assertEquals(2, source.events(start, start.plusSeconds(601)).size)
+        // The screen-on and the resume at the start; the pause at exactly +10 min isn't included
+        assertEquals(2, source.events(start, start.plusSeconds(600)).size)
+        assertEquals(3, source.events(start, start.plusSeconds(601)).size)
         assertEquals(0, source.events(start.plusSeconds(1), start.plusSeconds(600)).size)
     }
 }

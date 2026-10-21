@@ -165,7 +165,8 @@ class Reactions(
                 minGap = Duration.ofSeconds(document.bubbles.minGapSeconds.toLong()),
             ),
         )
-        arbiter = result.state
+        // An idle line is for when the pet has been quiet: once anything else is said, a waiting one goes (BUG-03)
+        arbiter = if (result.bubble != null) result.state.without(BubbleTrigger.IDLE.id) else result.state
         idleBaselineMs = if (result.bubble != null) totalMs else idle.baselineMs
 
         val band = document.mood.bandAt(mood).id

@@ -48,9 +48,12 @@ private fun parseDuration(text: String): Duration? {
     }
 }
 
-/** The events the steps produce, played from [start] with the screen on. */
+/**
+ * The events the steps produce, played from [start] with the screen on. It starts with a screen-on, so continuous use
+ * counts from the scenario's start, not from the tracker's look-back (BUG-02).
+ */
 fun scenarioEvents(steps: List<ScenarioStep>, start: Instant): List<UsageEvent> {
-    val events = mutableListOf<UsageEvent>()
+    val events = mutableListOf(UsageEvent(UsageEventType.SCREEN_ON, start))
     var at = start
     for (step in steps) {
         val end = at.plus(step.duration)
