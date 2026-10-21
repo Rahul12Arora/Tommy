@@ -101,7 +101,7 @@ Targets are proposals — see Q-04.
 - Given the phone restarts, the pet returns without me opening the app.
 
 **US-07** As a user, I want to tap the pet for a quick summary, so that I know where my day stands.
-- Given the pet is on screen, when I tap it, then a half ring of small icons opens around it, towards the middle of the screen (CR-09, D-87), showing: total screen time today, productive time vs doomscrolling time, progress on each goal as used/limit (e.g. `47/60m`), continuous screen use (US-30), and the focus timer while a session runs. Start focus, Open Nyx and Hide are icons on the same ring.
+- Given the pet is on screen, when I tap it, then a half ring of small icons opens around it, towards the middle of the screen (CR-09, D-87), showing: total screen time today, productive time vs doomscrolling time, goal progress as one Limits icon showing the goal nearest to or furthest over its limit as used/limit (e.g. `47/60m`), which opens the list of every goal (D-90), continuous screen use (US-30), and the focus timer while a session runs. Start focus, Open Nyx and Hide are icons on the same ring.
 - Each icon has a label I can read (and TalkBack reads); "over limit" is shown by more than colour.
 - When I tap the pet again or outside the ring, it collapses.
 - Numbers are at most 1 minute old when the panel opens.

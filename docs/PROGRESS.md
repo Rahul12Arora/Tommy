@@ -1,8 +1,8 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M7 Limits, nags, breaks, idle lines (next; branch `feat/m7-limits-nags` created from `main`, plan only)
-- Last done: M6 done 2026-10-21 (`m6-done`, CI green on `main`). Planned CR-09 (actions ring, half ring D-87) and CR-10 (continuous screen use as a user setting, optional obstructive mode) into M7/M8
-- Next step: M7 LLD (§14.7) — Q-15 answered (D-88, D-89), ring decided (D-90 to D-92)
-- Blockers: none
+- Phase: 5 — Build · Milestone: M7 Limits, nags, breaks, idle lines (in progress on `feat/m7-limits-nags`; LLD written, no code)
+- Last done: M7 LLD written (ARCHITECTURE §14.7) after Q-15 (D-88, D-89) and the ring decisions (D-90 to D-92, A-32 confirmed)
+- Next step: developer reviews ARCHITECTURE §14.7 and approves D-93 to D-108, then build M7
+- Blockers: approval of D-93 to D-108
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
 - Build setup: Homebrew JDK on PATH starts Gradle; daemon runs on JDK 25 (`android/README.md`). With the phone plugged in, set `ANDROID_SERIAL` for device tasks
@@ -130,3 +130,7 @@
 - Next: M7 in a new session — Q-15 answer, then the LLD (§14.7)
 - Decided: Q-15 answered (a+) → D-88 obstructive break screen (delayed buttons, default 10 s; 5 more minutes up to 3 times; always dismissable, D-07 stands) and D-89 (not during focus, hidden or a call). Ring: D-90 one Limits icon, D-91 the pet may slide along its edge to fit the ring (amends D-87), D-92 no ×, pet or outside tap closes. A-32 (pet slides back on close) to confirm. REQUIREMENTS US-30 and §8, ROADMAP M7, DISCUSSION O-03/O-04, parking lot (per-app exclusions)
 - Next: M7 LLD (§14.7)
+- Confirmed: A-32 (the pet moves back when the ring closes)
+- Done: M7 LLD as ARCHITECTURE §14.7 — limits and SM-02 per key, snooze, continuous use + SM-03, reaction mode and break screen, call detection, idle lines, N-02/N-04, glow, actions ring geometry and caption, S-11, limit goals, storage (events.subject, Room v4), debug scenarios, files, tests. D-93 to D-108 proposed. US-07 reworded for the Limits icon (D-90); parking lot +2
+- Learned: `AudioManager.getMode()` has no permission annotation in the API 37 sources, while `TelephonyManager.getCallState` and `TelecomManager.isInCall` need `READ_PHONE_STATE`, so D-89's call check needs no new permission (D-99)
+- Next: approval of D-93 to D-108, then build M7

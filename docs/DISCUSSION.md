@@ -466,7 +466,7 @@ stateDiagram-v2
 | A-29 | The brand battery steps (Xiaomi, Samsung, Vivo, Oppo) are our own words from the brands' help pages and dontkillmyapp.com, not checked on those phones until one is borrowed (R-04) | Accepted |
 | A-30 | S-05 lists every app with a launcher icon, system apps included, except Nyx | Accepted |
 | A-31 | "Continuous screen use" (US-30) = screen-on time since the last break (screen off ≥ `breaks.breakMinutes`), in any app — SM-03's counter, not the Social/Games stretch. "Configurable on the user's end" = its limit (the existing break trigger) and the reaction mode (gentle / obstructive) in S-11 | Active — confirm in M7's LLD review |
-| A-32 | When the pet slid along its edge to fit the ring (D-91), it slides back to where it was when the ring closes | Active — confirm in M7's LLD review |
+| A-32 | When the pet slid along its edge to fit the ring (D-91), it slides back to where it was when the ring closes | Confirmed by the developer 2026-10-21 |
 
 ---
 
@@ -541,4 +541,6 @@ stateDiagram-v2
 - TalkBack: the pet's description is always "Nyx, your pet"; it could add the mood band or "ran away", which today only the emoji shows (noticed in M6)
 - `US02_AgeCheckTest` can race on a slow emulator: the age choice is saved before navigating, which Compose's idling doesn't wait for. Seen twice on an emulator that had been up for hours (memory swapping, System UI ANR); green 3 runs in a row after a reboot. A `waitUntilDisplayed` would make it robust (noticed in M6)
 - Pin the CI runner to `ubuntu-24.04` instead of `ubuntu-latest`: GitHub moves `ubuntu-latest` to Ubuntu 26 from 2026-10-19, and a new image can break a build with no change on our side (noticed on M2's CI run)
+- A Snooze action on N-04, so a nag can be snoozed while the pet is hidden (noticed in M7's LLD, D-95)
+- Animate the pet moving along its edge when the ring opens and closes (noticed in M7's LLD, D-102)
 - Per-app exclusions for the obstructive break screen (e.g. navigation apps, which Nyx can't detect) (noticed answering Q-15)

@@ -228,13 +228,13 @@ Done when:
 Verify with: `./gradlew test` · fake scenarios on the emulator (`instagram-4h`, `--es event break_taken`)
 Not in this milestone: limits and breaks triggering lines (→ M7)
 
-### M7 — Limits, nags, breaks, idle lines            status: pending
+### M7 — Limits, nags, breaks, idle lines            status: in-progress
 Goal: the pet nags when limits are crossed, reminds breaks, and talks now and then.
 Depends on: M6
 Stories: US-08, US-09, US-10, US-11, US-17 (limit goals), US-27, US-29 (notifications while hidden), US-07 + US-30 (actions ring, continuous screen use; CR-09, CR-10)
 Q-15 answered 2026-10-21 (D-88, D-89); ring decisions D-90 to D-92
 Tasks:
-- [ ] LLD: SM-02 per limit, SM-03, escalation lines, snooze limits, limit goals judged at day reset with no mood effect (CR-05), idle timer, hidden → notifications; the actions ring (CR-09, D-87, D-90 to D-92: half ring towards the middle, one Limits icon, the pet sliding along its edge to fit, closed by pet or outside tap, icon set, values, labels, placement replacing D-71's panel growth); continuous screen use + reaction mode + break screen (CR-10, A-31, D-88, D-89; call detection without a new permission)
+- [ ] LLD (written 2026-10-21 as ARCHITECTURE §14.7; D-93 to D-108 waiting for approval): SM-02 per limit, SM-03, escalation lines, snooze limits, limit goals judged at day reset with no mood effect (CR-05), idle timer, hidden → notifications; the actions ring (CR-09, D-87, D-90 to D-92: half ring towards the middle, one Limits icon, the pet sliding along its edge to fit, closed by pet or outside tap, icon set, values, labels, placement replacing D-71's panel growth); continuous screen use + reaction mode + break screen (CR-10, A-31, D-88, D-89; call detection without a new permission)
 - [ ] Daily category + total limits → `limit_reached`, red glow, bubble, repeat every N min, snooze (only that nag), max snoozes/day
 - [ ] Stretch limits; reset only by a 5-min break
 - [ ] Break reminders: bubble + N-02; `break_taken` after ≥ 5 min off
@@ -246,7 +246,7 @@ Tasks:
 - [ ] Settings screen S-11 for nag interval, snooze, break trigger (= continuous-use limit), reaction mode, idle lines, day reset hour
 - [ ] Tests: every SM-02 and SM-03 transition, snooze isolation, max snoozes, stretch reset, held while hidden; ring values match Home's numbers, labels for TalkBack, half ring opens towards the middle on both edges and the pet slides to fit near top/bottom (D-91); reaction mode stored and clamped to what the admin allows; break screen button delay, snooze cap, held during focus, notification while hidden
 Done when:
-- [ ] Fake "65 min Instagram": glow + bubble within 60 s, repeats, snooze works; fake "50 min screen-on": break reminder bubble + notification
+- [ ] Fake "65 min Instagram": glow + bubble within 60 s; "90 min Instagram": repeats, snooze works; fake "50 min screen-on": break reminder bubble + notification
 - [ ] A pet that ran away comes back after a real break that follows a reminder (D-86)
 - [ ] Tapping the pet opens the half ring with the same numbers as Home; continuous screen use counts every app and resets after a 5-min break; obstructive mode, when picked, covers the app with the break screen, unlocks its buttons after the delay and only offers Take a break after 3 snoozes (D-88)
 Verify with: `./gradlew test` · fake scenarios · manual QA checklist
