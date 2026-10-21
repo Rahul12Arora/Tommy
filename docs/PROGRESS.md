@@ -1,7 +1,7 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M6 Lines, bubbles, mood (in progress, built — waiting for approval and the Pixel check)
-- Last done: M6 LLD (§14.6) written and built on `feat/m6-lines-mood`: event log, mood, ran away/back, bubble arbiter, line picker, bubble window. 194 unit + 42 device tests green; checked on the API 37 emulator
-- Next step: the developer approves D-79 to D-86 and runs the M6 check on the Pixel 7a → merge PR #11 (CI green) → close M6 → M7
+- Phase: 5 — Build · Milestone: M7 Limits, nags, breaks, idle lines (next)
+- Last done: M6 Lines, bubbles, mood done 2026-10-21 — verified on the API 37 emulator, D-79 to D-86 approved, PR #11 merged, tagged `m6-done`
+- Next step: M7 — branch `feat/m7-limits-nags` from `main`, LLD first (SM-02, SM-03, N-02/N-04, idle lines, Settings S-11)
 - Blockers: none
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
@@ -121,3 +121,6 @@
 - Not verified: the Pixel 7a; TalkBack reading the bubble
 - Verified: Android CI green on `feat/m6-lines-mood` (run 39510198731); PR #11 open, not merged
 - Next: developer approval of D-79 to D-86 + Pixel 7a check → merge PR #11 → `m6-done`
+- Approved: D-79 to D-86. The developer closed M6 without a Pixel 7a result recorded; M6 is verified on the API 37 emulator only
+- Done: M6 closed — ROADMAP status done, LLD and decisions marked approved, AGENTS card on M7; PR #11 merged, tagged `m6-done`
+- Next: M7 Limits, nags, breaks, idle lines — branch `feat/m7-limits-nags` from `main`, LLD first
