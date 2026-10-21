@@ -23,11 +23,15 @@ enum class PetEventType {
     PET_RETURNED,
 }
 
-/** One logged event. [day] is the ISO day key of the moment it was logged; [id] is its place in the log. */
+/**
+ * One logged event. [day] is the ISO day key of the moment it was logged; [id] is its place in the log.
+ * [subject] is the limit key for [PetEventType.LIMIT_EXCEEDED] and [PetEventType.SNOOZED] (§14.7), otherwise `null`.
+ */
 @Entity(tableName = "events", indices = [Index("day")])
 data class PetEvent(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val day: String,
     @ColumnInfo(name = "at_ms") val atMs: Long,
     val type: PetEventType,
+    val subject: String? = null,
 )

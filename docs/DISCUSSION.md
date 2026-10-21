@@ -201,6 +201,7 @@ stateDiagram-v2
 - While the pet is hidden, a bubble is delivered as a notification instead (D-24).
 - During a focus session, nags are held and fire when the session ends if they still apply (D-25).
 - Snooze affects only the nag it was pressed on (D-28).
+- From M7 (D-94): coming back to a covered app brings the glow back at once, but the next line waits until N min have passed since that limit's last line.
 
 **SM-03 Break reminder**
 
@@ -414,6 +415,22 @@ stateDiagram-v2
 | D-90 | The actions ring has one **Limits** icon for all category limits: it shows the category nearest to (or furthest over) its limit, e.g. `! 52/45m`, and tapping it opens a short list of every limit | Keeps the ring to a fixed ~7 icons, so a ~100 dp radius fits on any phone however many categories have limits | A bigger radius (~160 dp); only the top 2–3 categories | 2026-10-21 |
 | D-91 | Amends D-87: the pet may move. When the half ring wouldn't fit above or below the pet, the pet slides along its edge until it fits | The ring keeps one shape and never runs off screen; the developer's choice | A quarter ring near the corners | 2026-10-21 |
 | D-92 | The ring has no × button; tapping the pet again or anywhere outside the ring closes it (D-71's outside-tap watch) | One less icon on a crowded ring; the reference's centre × sits where our pet is | A centre × as in the reference | 2026-10-21 |
+| D-93 | One nag state machine per limit key (`limit:<category>`, `limit:total`, `stretch`), in memory; rebuilt at engine start and each day from today's `LIMIT_EXCEEDED` events (over + logged → Paused, no line); `LIMIT_EXCEEDED` once per key per day, the stretch included; `events` gets a nullable `subject` (Room v4, auto-migration). | See ARCHITECTURE §14.7 | See §14.7 | 2026-10-21 |
+| D-94 | Returning to a covered app brings the glow back at once, but the next line waits until `nags.repeatMinutes` since that limit's last line (refines SM-02's "immediately"). | See ARCHITECTURE §14.7 | See §14.7 | 2026-10-21 |
+| D-95 | Snooze only from the bubble; `maxSnoozesPerDay` counts all nags together; the snooze end is in memory; N-04 has no Snooze action in v1. | See ARCHITECTURE §14.7 | See §14.7 | 2026-10-21 |
+| D-96 | Continuous screen use is all screen-on time, any app, launcher and lock screen included; reset only by a break, not by the day reset; kept by the tracker and rebuilt by its replay. | See ARCHITECTURE §14.7 | See §14.7 | 2026-10-21 |
+| D-97 | A break counts (`BREAK_TAKEN`, +5, `break_taken` bubble, N-02 cancelled) when the continuous use before it had reached the break limit, i.e. a reminder was due; reminders come at the limit and every `breaks.repeatMinutes`, each as bubble + N-02. | See ARCHITECTURE §14.7 | See §14.7 | 2026-10-21 |
+| D-98 | Obstructive timing: the break screen replaces each reminder; 5 more minutes → back after `snoozeMinutes`, at most `maxSnoozes` per sitting; Take a break → back after `returnAfterTakeBreakSeconds` (60 s) if the screen stays on; config block `breaks.obstructive` with Kotlin defaults; the user's mode in DataStore, effective only when allowed, stored choice kept. | See ARCHITECTURE §14.7 | See §14.7 | 2026-10-21 |
+| D-99 | "in a call" = `AudioManager.getMode()` in a ringing, call, communication, screening or redirect mode; no permission needed, VoIP calls included. | See ARCHITECTURE §14.7 | See §14.7 | 2026-10-21 |
+| D-100 | Idle lines come after `idle.everyMinutes` of counted screen time since the last bubble; baseline in memory, starting at the current total; switched off by `features.idleLines` or the user's `idle.enabled`. | See ARCHITECTURE §14.7 | See §14.7 | 2026-10-21 |
+| D-101 | The ring has 6–7 slots over the half circle (radius 120 dp, 56 dp circles, emoji glyphs + short values), a caption with the full label of the pressed slot, and the Limits slot opens a list card with Back. | See ARCHITECTURE §14.7 | See §14.7 | 2026-10-21 |
+| D-102 | While open, the pet's window is the fixed bounding box of the ring; the pet moves along its edge to fit and back on close, without animation; taps on the box's empty space close it. | See ARCHITECTURE §14.7 | See §14.7 | 2026-10-21 |
+| D-103 | One unlimited engine request channel (`Tick`, `Snooze`, `BreakScreenAnswer`) replaces the conflated tick channel; the loop moves to `service/Engine.kt`. | See ARCHITECTURE §14.7 | See §14.7 | 2026-10-21 |
+| D-104 | N-02 and N-04 use the `alerts` channel with fixed IDs (one of each at a time), the line as text, tap → Home; N-02 is cancelled when the break is taken. | See ARCHITECTURE §14.7 | See §14.7 | 2026-10-21 |
+| D-105 | Limit goals are judged from the log (a `LIMIT_EXCEEDED` for the key that day = missed); M7 writes nothing at the day reset; which goals were on each day is M13's. | See ARCHITECTURE §14.7 | See §14.7 | 2026-10-21 |
+| D-106 | S-11 as in the table; `breaks.mode` and `idle.enabled` in `ReactionSettings`; the S-06 slider row shared through `ui/SettingSlider.kt`. | See ARCHITECTURE §14.7 | See §14.7 | 2026-10-21 |
+| D-107 | Fast ticks also while the pet glows and when continuous use is within one slow tick of the break limit. | See ARCHITECTURE §14.7 | See §14.7 | 2026-10-21 |
+| D-108 | Four new debug scenarios (above). | See ARCHITECTURE §14.7 | See §14.7 | 2026-10-21 |
 
 ### D-16 — Admin / user settings split
 
@@ -543,4 +560,5 @@ stateDiagram-v2
 - Pin the CI runner to `ubuntu-24.04` instead of `ubuntu-latest`: GitHub moves `ubuntu-latest` to Ubuntu 26 from 2026-10-19, and a new image can break a build with no change on our side (noticed on M2's CI run)
 - A Snooze action on N-04, so a nag can be snoozed while the pet is hidden (noticed in M7's LLD, D-95)
 - Animate the pet moving along its edge when the ring opens and closes (noticed in M7's LLD, D-102)
+- `pet/PetOverlay.kt` is ~320 lines (§4's ~250): split the window placement (pet, bubble, ring box) from the Compose content (noticed building M7)
 - Per-app exclusions for the obstructive break screen (e.g. navigation apps, which Nyx can't detect) (noticed answering Q-15)

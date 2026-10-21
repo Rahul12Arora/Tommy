@@ -28,8 +28,9 @@ fun SummaryNumbers(summary: TodaySummary, modifier: Modifier = Modifier) {
     }
 }
 
+/** One limit goal; also the rows of the ring's Limits list (§14.7). */
 @Composable
-private fun GoalRow(goal: GoalProgress) {
+fun GoalRow(goal: GoalProgress) {
     val used = formatDuration(goal.usedSeconds)
     val target = formatDuration(goal.targetSeconds)
     val name = if (goal.category == null) stringResource(R.string.home_goal_total) else stringResource(goal.category.labelRes)

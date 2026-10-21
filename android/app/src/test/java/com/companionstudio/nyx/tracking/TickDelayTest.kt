@@ -64,9 +64,21 @@ class TickDelayTest {
     }
 
     @Test
-    fun aLimitAlreadyPassed_isSlowUntilM7AddsNags() {
+    fun aLimitAlreadyPassed_isSlow_unlessThePetGlows() {
         val snapshot = snapshot(Category.SOCIAL, mapOf(Category.SOCIAL to minutes(61)), stretchMs = minutes(1))
         assertEquals(30, tickDelaySeconds(snapshot, config()))
+        assertEquals(5, tickDelaySeconds(snapshot, config(), glowing = true))
+    }
+
+    @Test
+    fun D107_continuousUseWithinOneSlowTickOfTheBreakLimit_isFast_evenWithNothingCountedInFront() {
+        val near = snapshot(category = null).copy(continuousMs = minutes(44, 40))
+        val far = snapshot(category = null).copy(continuousMs = minutes(40))
+        val breaksOff = EffectiveConfig(defaults.copy(features = defaults.features.copy(breaks = false)), emptyMap())
+
+        assertEquals(5, tickDelaySeconds(near, config()))
+        assertEquals(30, tickDelaySeconds(far, config()))
+        assertEquals(30, tickDelaySeconds(near, breaksOff))
     }
 
     @Test

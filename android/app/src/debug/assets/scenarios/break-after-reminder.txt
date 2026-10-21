@@ -1,0 +1,4 @@
+# A break after the reminder: 50 minutes of Chrome, the screen off for 6, then Chrome again. Counts as taken (M7)
+app com.android.chrome 50m
+screen_off 6m
+app com.android.chrome 2m

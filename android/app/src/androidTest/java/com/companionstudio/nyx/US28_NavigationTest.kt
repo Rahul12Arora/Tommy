@@ -25,10 +25,10 @@ class US28_NavigationTest {
         composeRule.waitUntilDisplayed("Goals") // Home, whatever today's real numbers are
 
         composeRule.onNodeWithText("Settings").performScrollTo().performClick()
-        composeRule.onNodeWithText("Not built yet.").assertIsDisplayed()
+        composeRule.onNodeWithText("Pet and personality").assertIsDisplayed()
 
         composeRule.runOnUiThread { composeRule.activity.onBackPressedDispatcher.onBackPressed() }
         composeRule.onNodeWithText("Goals").assertIsDisplayed()
-        composeRule.onNodeWithText("Not built yet.").assertDoesNotExist()
+        composeRule.onNodeWithText("Pet and personality").assertDoesNotExist()
     }
 }

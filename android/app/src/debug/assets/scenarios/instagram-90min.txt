@@ -1,0 +1,3 @@
+# 90 minutes of Instagram: the Social limit (60 min) nags at 60, then again every 10 minutes (M7)
+app com.instagram.android 90m
+idle 2m

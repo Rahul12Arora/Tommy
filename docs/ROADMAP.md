@@ -233,8 +233,9 @@ Goal: the pet nags when limits are crossed, reminds breaks, and talks now and th
 Depends on: M6
 Stories: US-08, US-09, US-10, US-11, US-17 (limit goals), US-27, US-29 (notifications while hidden), US-07 + US-30 (actions ring, continuous screen use; CR-09, CR-10)
 Q-15 answered 2026-10-21 (D-88, D-89); ring decisions D-90 to D-92
+Built 2026-10-21; unit tests and lint green; boxes stay open until the emulator checks below are done (PROGRESS)
 Tasks:
-- [ ] LLD (written 2026-10-21 as ARCHITECTURE §14.7; D-93 to D-108 waiting for approval): SM-02 per limit, SM-03, escalation lines, snooze limits, limit goals judged at day reset with no mood effect (CR-05), idle timer, hidden → notifications; the actions ring (CR-09, D-87, D-90 to D-92: half ring towards the middle, one Limits icon, the pet sliding along its edge to fit, closed by pet or outside tap, icon set, values, labels, placement replacing D-71's panel growth); continuous screen use + reaction mode + break screen (CR-10, A-31, D-88, D-89; call detection without a new permission)
+- [x] LLD (ARCHITECTURE §14.7; D-93 to D-108 approved 2026-10-21): SM-02 per limit, SM-03, escalation lines, snooze limits, limit goals judged at day reset with no mood effect (CR-05), idle timer, hidden → notifications; the actions ring (CR-09, D-87, D-90 to D-92: half ring towards the middle, one Limits icon, the pet sliding along its edge to fit, closed by pet or outside tap, icon set, values, labels, placement replacing D-71's panel growth); continuous screen use + reaction mode + break screen (CR-10, A-31, D-88, D-89; call detection without a new permission)
 - [ ] Daily category + total limits → `limit_reached`, red glow, bubble, repeat every N min, snooze (only that nag), max snoozes/day
 - [ ] Stretch limits; reset only by a 5-min break
 - [ ] Break reminders: bubble + N-02; `break_taken` after ≥ 5 min off

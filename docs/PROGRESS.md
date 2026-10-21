@@ -1,8 +1,8 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M7 Limits, nags, breaks, idle lines (in progress on `feat/m7-limits-nags`; LLD written, no code)
-- Last done: M7 LLD written (ARCHITECTURE §14.7) after Q-15 (D-88, D-89) and the ring decisions (D-90 to D-92, A-32 confirmed)
-- Next step: developer reviews ARCHITECTURE §14.7 and approves D-93 to D-108, then build M7
-- Blockers: approval of D-93 to D-108
+- Phase: 5 — Build · Milestone: M7 Limits, nags, breaks, idle lines (in progress on `feat/m7-limits-nags`; built, emulator checks pending)
+- Last done: M7 built to §14.7 (D-93 to D-108 approved): unit tests 260/260, lint clean, debug + release build
+- Next step: re-run device tests and the by-hand checks (§14.7) on a working emulator, then tick ROADMAP M7
+- Blockers: the API 37 emulator hangs at boot ("hanging thread 'QEMU2 main loop'") since it died mid device-test run; needs a restart from Android Studio (cold boot or wipe)
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
 - Build setup: Homebrew JDK on PATH starts Gradle; daemon runs on JDK 25 (`android/README.md`). With the phone plugged in, set `ANDROID_SERIAL` for device tasks
@@ -134,3 +134,10 @@
 - Done: M7 LLD as ARCHITECTURE §14.7 — limits and SM-02 per key, snooze, continuous use + SM-03, reaction mode and break screen, call detection, idle lines, N-02/N-04, glow, actions ring geometry and caption, S-11, limit goals, storage (events.subject, Room v4), debug scenarios, files, tests. D-93 to D-108 proposed. US-07 reworded for the Limits icon (D-90); parking lot +2
 - Learned: `AudioManager.getMode()` has no permission annotation in the API 37 sources, while `TelephonyManager.getCallState` and `TelecomManager.isInCall` need `READ_PHONE_STATE`, so D-89's call check needs no new permission (D-99)
 - Next: approval of D-93 to D-108, then build M7
+- Approved: D-93 to D-108 (decision log rows added); started building M7 straight through at the developer's request
+- Done: config `breaks.obstructive` (Kotlin defaults, schema, default config, bounds); `events.subject` + Room v4 auto-migration; tracker continuous use + ended breaks; `rules/` Limits, Nags, Breaks, Idle, ReactionSettings, CallState; Reactions orchestrating them; `service/Engine.kt` (loop moved out of PetService, one request channel); N-02, N-04; glow; Snooze on nag bubbles; actions ring (ActionsRing, RingLimitsList, RingLayout) replacing the summary panel; break screen window; S-11 Settings with links to S-03..S-07; shared `ui/SettingSlider.kt`; four scenarios
+- Changed while building: a pet coming back after a break says `pet_returned` only, not also `break_taken`; the caption stays readable by TalkBack (tests found it hidden); call state is read each tick while obstructive (so a call closes a showing screen); lint `InlinedApi` on the API 33 redirect modes suppressed with the reason
+- Verified: `assembleDebug assembleRelease testDebugUnitTest lint` clean; 260 unit tests (+66), 0 skipped; coverage `rules/` hand-written 315/324 lines (CallState, an Android wrapper, untested), `pet/RingLayout.kt` 23/23; a deliberate bug in Nags fails US08_NagsTest
+- Device tests: first full run 51/54 — US28_NavigationTest expected the old Settings placeholder (fixed) and two ring caption tests couldn't find the caption (fixed); the re-run of US07_ActionsRingTest then lost the emulator mid-test (it died, and now hangs at boot)
+- Not verified: device tests after the fixes, every by-hand check in §14.7, TalkBack, the Pixel 7a
+- Next: restart the emulator → `connectedDebugAndroidTest` → by-hand checks → tick ROADMAP → PR

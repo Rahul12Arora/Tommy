@@ -38,12 +38,6 @@ fun limitRows(effective: EffectiveConfig): List<LimitRow> = buildList {
     add(SettingPaths.STRETCH_MINUTES, LimitName.Stretch(effective.document.limits.stretch.categories))
 }
 
-/** Minutes per slider step: 5 on long ranges that divide evenly by 5, otherwise 1, so every step lands inside the range. */
-fun sliderStepMinutes(setting: Setting): Int {
-    val span = setting.max - setting.min
-    return if (span > 60 && span % 5 == 0) 5 else 1
-}
-
 class LimitsViewModel(config: Flow<EffectiveConfig>, private val userValues: ConfigUserValues) : ViewModel() {
 
     /** `null` while loading. */

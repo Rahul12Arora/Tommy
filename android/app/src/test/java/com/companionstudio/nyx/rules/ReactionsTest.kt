@@ -6,8 +6,6 @@ import com.companionstudio.nyx.config.EffectiveConfig
 import com.companionstudio.nyx.config.SharedFiles
 import com.companionstudio.nyx.config.parseConfig
 import com.companionstudio.nyx.tracking.TrackerSnapshot
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -25,12 +23,13 @@ class ReactionsTest {
     private val config = EffectiveConfig(defaults, emptyMap())
     private val today = LocalDate.parse("2026-10-21")
     private val dao = FakePetEventDao()
-    private val reactions = Reactions(dao, Clock.fixed(Instant.parse("2026-10-21T10:00:00Z"), ZoneOffset.UTC), Random(5))
+    private val reactions = Reactions(dao, Clock.fixed(Instant.parse("2026-10-21T10:00:00Z"), ZoneOffset.UTC), TestLabels, Random(5))
 
+    // Nothing counted in front, so no limit nags: these tests are about the log and mood (M6)
     private fun snapshot(socialMinutes: Long, day: LocalDate = today) = TrackerSnapshot(
         day = day,
-        frontPackage = "com.instagram.android",
-        frontCategory = Category.SOCIAL,
+        frontPackage = null,
+        frontCategory = null,
         stretchMs = 0,
         todayMs = mapOf(Category.SOCIAL to socialMinutes * 60_000, Category.PRODUCTIVE to 99 * 60_000),
     )
@@ -70,7 +69,7 @@ class ReactionsTest {
         val after = reactions.afterTick(snapshot(socialMinutes = 240), config, personalityId = "calm", petOnScreen = true)
 
         assertEquals(5, back.mood)
-        assertTrue(back.bubble in linesFor("calm", "pet_returned"))
+        assertTrue(back.bubble?.line in linesFor("calm", "pet_returned"))
         assertEquals(PetEventType.PET_RETURNED, loggedTypes().last())
         assertEquals(1, loggedTypes().count { it == PetEventType.PET_RETURNED })
         assertNull(after.bubble)
@@ -100,7 +99,7 @@ class ReactionsTest {
 
         val back = reactions.afterTick(snapshot(socialMinutes = 240), calmOff, personalityId = "calm", petOnScreen = true)
 
-        assertTrue(back.bubble in linesFor("cheerful", "pet_returned"))
+        assertTrue(back.bubble?.line in linesFor("cheerful", "pet_returned"))
     }
 
     @Test
@@ -119,29 +118,5 @@ class ReactionsTest {
         val tomorrow = reactions.afterTick(snapshot(socialMinutes = 0, day = today.plusDays(1)), config, personalityId = null, petOnScreen = true)
 
         assertEquals(70, tomorrow.mood)
-    }
-
-    private class FakePetEventDao : PetEventDao {
-        val events = mutableListOf<PetEvent>()
-        val deletedBefore = mutableListOf<String>()
-
-        fun log(type: PetEventType) {
-            events += PetEvent(id = events.size + 1L, day = "2026-10-21", atMs = 0, type = type)
-        }
-
-        override suspend fun insertAll(events: List<PetEvent>) {
-            events.forEach { this.events += it.copy(id = this.events.size + 1L) }
-        }
-
-        // Insertion order, like the real DAO's id order
-        override suspend fun eventsOn(day: String) = events.filter { it.day == day }
-
-        override fun observeDay(day: String): Flow<List<PetEvent>> = flowOf(events.filter { it.day == day })
-
-        override suspend fun deleteBefore(day: String) {
-            deletedBefore += day
-        }
-
-        override suspend fun clearAll() = events.clear()
     }
 }

@@ -1,0 +1,2 @@
+# 50 minutes of Chrome without a break: the break reminder comes at 45 minutes (M7)
+app com.android.chrome 50m

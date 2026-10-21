@@ -39,6 +39,14 @@ class PetEventDaoTest {
     }
 
     @Test
+    fun D93_theSubject_isStoredAndReadBack() = runBlocking {
+        dao.insertAll(listOf(PetEvent(day = "2026-10-21", atMs = 1, type = PetEventType.LIMIT_EXCEEDED, subject = "limit:social")))
+        dao.insertAll(listOf(event("2026-10-21", 2, PetEventType.BREAK_TAKEN)))
+
+        assertEquals(listOf("limit:social", null), dao.eventsOn("2026-10-21").map { it.subject })
+    }
+
+    @Test
     fun observeDay_emitsAfterAnInsert() = runBlocking {
         assertEquals(emptyList<PetEvent>(), dao.observeDay("2026-10-21").first())
 

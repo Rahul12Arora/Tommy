@@ -1,8 +1,5 @@
 package com.companionstudio.nyx.pet
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -29,7 +26,9 @@ class PetWindowBubbleTest {
     @Test
     fun US16_theBubbleShowsBesideThePet_withoutSnooze_andDismissCallsBack() {
         var dismissed = 0
-        composeRule.setContent { PetWindow(today, Beside.Bubble(line, onDismiss = { dismissed++ }), layout, onPetClick = {}) }
+        composeRule.setContent {
+            PetWindow(today, glowing = false, BubbleContent(line, onSnooze = null, onDismiss = { dismissed++ }), layout, onPetClick = {})
+        }
 
         composeRule.onNodeWithContentDescription("Nyx, your pet").assertIsDisplayed()
         composeRule.onNodeWithText(line).assertIsDisplayed()
@@ -40,15 +39,21 @@ class PetWindowBubbleTest {
     }
 
     @Test
-    fun D84_thePanelTakesTheBubblesPlace_whileOpen() {
-        val actions = PanelActions(hideMinutes = 30, onFocus = null, onOpenApp = {}, onHide = {})
-        var beside: Beside by mutableStateOf(Beside.Bubble(line, onDismiss = {}))
-        composeRule.setContent { PetWindow(today, beside, layout, onPetClick = {}) }
-        composeRule.onNodeWithText(line).assertIsDisplayed()
+    fun US10_aNagsBubble_offersSnooze() {
+        var snoozed = 0
+        composeRule.setContent {
+            PetWindow(today, glowing = true, BubbleContent("Ding!", onSnooze = { snoozed++ }, onDismiss = {}), layout, onPetClick = {})
+        }
 
-        beside = Beside.Panel(actions)
+        composeRule.onNodeWithText("Snooze").performClick()
 
-        composeRule.onNodeWithText(line).assertDoesNotExist()
-        composeRule.onNodeWithText("Hide for 30 min").assertIsDisplayed()
+        assertEquals(1, snoozed)
+    }
+
+    @Test
+    fun US08_whileGlowing_TalkBackHearsOverALimit() {
+        composeRule.setContent { PetWindow(today, glowing = true, bubble = null, layout, onPetClick = {}) }
+
+        composeRule.onNodeWithContentDescription("Nyx, your pet. Over a limit").assertIsDisplayed()
     }
 }

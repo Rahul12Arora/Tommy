@@ -692,7 +692,7 @@ Written at the start of each milestone, before code.
 | PetService + usage tracking | M4 | done 2026-10-20 (§14.4) |
 | Overlay: pet, bubble, panel, hide | M5 | done 2026-10-21 (§14.5) |
 | Lines, bubble arbiter, mood | M6 | done 2026-10-21 (§14.6) |
-| Limits, nags, breaks, idle lines, actions ring, break screen | M7 | written 2026-10-21, waiting for approval (§14.7) |
+| Limits, nags, breaks, idle lines, actions ring, break screen | M7 | done 2026-10-21 (§14.7) |
 | Focus sessions | M8 | pending |
 | Backend foundation + config API | M10 | pending |
 | Admin auth + console | M11 | pending |
@@ -1725,7 +1725,7 @@ fun moodOf(events: List<PetEventType>, mood: MoodConfig): Int =
 
 ### 14.7 M7 — Limits, nags, breaks, idle lines, actions ring, break screen
 
-Written 2026-10-21. D-93 to D-108 proposed, waiting for the developer's approval; no code yet.
+Written 2026-10-21; D-93 to D-108 approved 2026-10-21. Built in the same session at the developer's request.
 
 **Purpose:** the pet reacts to the day. It glows and nags when a limit is crossed and repeats while you stay, a nag can be snoozed, it reminds you to take breaks and notices when you do, it says something now and then, and while hidden it uses notifications. Tapping it opens the actions ring. Users who pick it get the obstructive break screen. Stories: US-08, US-09, US-10, US-11, US-17 (limit goals), US-27, US-29 (notifications while hidden), US-07 + US-30 (ring, continuous screen use, reaction mode; CR-09, CR-10).
 
@@ -1798,7 +1798,7 @@ stateDiagram-v2
 - **Continuous use** (D-96) = screen-on time since the last break, whatever is in front: apps, the launcher, the lock screen, Nyx itself. `TrackerState.continuousMs` grows in `creditPiece` for every screen-on piece (before the "is it counted?" check) and resets where the stretch does: a screen-off gap ≥ `breaks.breakMinutes`. Unlike the stretch, the day reset doesn't reset it: it's about your eyes, not the calendar. Rebuilt by the replay like the stretch (24 h look-back, §14.4), so it survives restarts. `TrackerSnapshot.continuousMs` exposes it.
 - **Breaks that just ended:** `advance` also returns `EndedBreak(endedAt, continuousBeforeMs)` for every break whose screen-on lies at or after the cursor. Replayed breaks are before the cursor, so a restart never reports one twice.
 - **Reminders** (gentle mode, US-11): the first when continuous use reaches `breaks.afterMinutes` (effective), then every `breaks.repeatMinutes` while there's no break. Each one offers a `break_due` bubble (`{minutes}` = `breaks.breakMinutes`) **and** posts **N-02** with the same line, pet on screen or not (US-11: "bubble and notification"). The count of reminders since the last break is in memory; a restart can bring one early.
-- **Break taken** (D-97): an ended break counts when `continuousBeforeMs` had reached `breaks.afterMinutes`, i.e. a reminder was due (A-26). Then: log `BREAK_TAKEN` (+5), offer a `break_taken` bubble (the tick at screen-on, so the pet greets you), cancel N-02, reset reminders and break-screen snoozes. Derived from the tracker, so a restart neither loses nor repeats it, and a phone left overnight after 10 minutes of use earns nothing. Any break resets SM-03, rewarded or not.
+- **Break taken** (D-97): an ended break counts when `continuousBeforeMs` had reached `breaks.afterMinutes`, i.e. a reminder was due (A-26). Then: log `BREAK_TAKEN` (+5), offer a `break_taken` bubble (the tick at screen-on, so the pet greets you; a pet that comes back from running away at that moment says its `pet_returned` line instead, one line for one moment), cancel N-02, reset reminders and break-screen snoozes. Derived from the tracker, so a restart neither loses nor repeats it, and a phone left overnight after 10 minutes of use earns nothing. Any break resets SM-03, rewarded or not.
 - `features.breaks` off → no reminders, no break screen, no `BREAK_TAKEN`. The ring still shows continuous use (US-30 is about seeing it).
 
 **Reaction mode and the break screen** (O-04, CR-10, D-88, D-89, D-98, D-99)
@@ -1825,7 +1825,7 @@ stateDiagram-v2
   - in a call → gentle bubble + N-02 for this reminder; the next one tries again;
   - focus session (M8) → held until it ends, then shown if a reminder is still due (D-25);
   - no overlay permission → nothing can draw; N-02 only.
-- **Call detection** (D-99): `AudioManager.getMode()` needs no permission (checked in the API 37 sources: no `@RequiresPermission`, while `TelephonyManager.getCallState` and `TelecomManager.isInCall` need `READ_PHONE_STATE`). "In a call" = `MODE_RINGTONE`, `MODE_IN_CALL`, `MODE_IN_COMMUNICATION`, `MODE_CALL_SCREENING` (API 30), `MODE_CALL_REDIRECT`, `MODE_COMMUNICATION_REDIRECT` (API 33). `MODE_IN_COMMUNICATION` is what VoIP apps (WhatsApp, Meet) set, so their calls count too. Read on the engine coroutine only when the break screen is about to show; behind a small `CallState` interface so tests fake it. D-89's "if it needs a permission, ask" doesn't arise.
+- **Call detection** (D-99): `AudioManager.getMode()` needs no permission (checked in the API 37 sources: no `@RequiresPermission`, while `TelephonyManager.getCallState` and `TelecomManager.isInCall` need `READ_PHONE_STATE`). "In a call" = `MODE_RINGTONE`, `MODE_IN_CALL`, `MODE_IN_COMMUNICATION`, `MODE_CALL_SCREENING` (API 30), `MODE_CALL_REDIRECT`, `MODE_COMMUNICATION_REDIRECT` (API 33). `MODE_IN_COMMUNICATION` is what VoIP apps (WhatsApp, Meet) set, so their calls count too. Read on the engine coroutine at each tick while the effective mode is obstructive (also while the screen shows, so a call coming in closes it); behind a small `CallState` interface so tests fake it. D-89's "if it needs a permission, ask" doesn't arise.
 - **The window** (`pet/BreakScreenOverlay.kt`): a second `TYPE_APPLICATION_OVERLAY` window, `MATCH_PARENT` both ways, `FLAG_NOT_FOCUSABLE` (it never takes the keyboard or Back), added after the pet's window so it's on top. Android keeps the status bar and navigation above app overlays, so Home, Recents and the shade still work: the phone is never locked (D-07 stands). Window context and `OverlayOwner` as in D-78.
 - **What's on it** (`pet/BreakScreen.kt`): a dim scrim (`scrim` colour at 80%), the pet's face large in the middle, the heading "You've been on your screen for 1 h 32 min without a break" (app string), a `break_due` line in the chosen personality and band (the "line" of D-88), and the two buttons. The buttons are disabled for `buttonDelaySeconds` real seconds from when it appears (reading time, like bubbles, not the debug fast clock), with "Available in 8 s" on them. TalkBack: the heading is a heading and a polite live region; the disabled buttons say why.
 - The pet's window stays underneath; the ring and any bubble close when the break screen appears.
@@ -1861,7 +1861,7 @@ stateDiagram-v2
 
 - **Slots** (D-101), top to bottom: Total today · Productive vs doomscrolling · Limits · Continuous use · Start focus (only when `features.focus` is on; the M8 timer takes this slot while a session runs) · Open Nyx · Hide. Spread evenly over the half circle facing the middle of the screen (−90° to +90°), so 6 or 7 slots. Each is a 56 dp circle (≥ 48 dp target) with an emoji glyph and a short value (`3h12`, `47m`, `!52/45m`) sized in dp, like the pet's face, so large text can't burst the circle; the full text is in the caption and TalkBack. Emoji instead of an icon library: no new dependency, and they match the pet.
 - **Values** come from the same `TodaySummary` as Home (total, productive, doomscrolling, goals), so the two can't disagree. The Limits slot shows the goal with the highest used/limit share, `!` in front when over, `—` when no limit is on. Continuous use comes from the engine (below).
-- **Caption** (D-101): a small surface beside the middle slot, towards the screen's middle, showing the full label of the last pressed slot: "Screen time today: 3 h 12 min", "Productive 1 h 5 min · doomscrolling 47 min", "Social & scrolling: 52 min of 45 min — over", "On screen for 38 min without a break · reminder at 45 min". Tapping a value slot shows its caption; tapping an action slot does the action; a long press on an action slot shows its caption. TalkBack reads the same text as each slot's description, with role Button.
+- **Caption** (D-101): a small surface beside the middle slot, towards the screen's middle, showing the full label of the last pressed slot: "Screen time today: 3 h 12 min", "Productive 1 h 5 min · doomscrolling 47 min", "Social & scrolling: 52 min of 45 min — over", "On screen for 38 min without a break · reminder at 45 min". Tapping a value slot shows its caption; tapping an action slot does the action; a long press on an action slot shows its caption. TalkBack reads the same text as each slot's description, with role Button; the caption itself is readable too.
 - **Limits list:** tapping the Limits slot swaps the ring for a card beside the pet (width ≤ 280 dp, scrolls): Home's goal rows (`SummaryNumbers`' `GoalRow`, made shareable) plus the stretch ("Unbroken stretch: 12 of 30 min") and each limit's nag state ("Snoozed until 14:30", "Over"). A **Back** button returns to the ring.
 - **Geometry** (`pet/RingLayout.kt`, pure; D-102): while the ring is open the window has a fixed size, the bounding box of pet + ring + caption (height 2 × (120 + 28) = 296 dp), with the pet at its vertical centre on its edge. The pet's centre is clamped so the box fits in the usable area: near the top or bottom the pet moves along its edge (D-91) and moves back when the ring closes (A-32). No animation in M7. If the area is shorter than the box (split screen), the box is centred and the end slots can be cut off; accepted, rare.
 - **Closing** (D-92): tapping the pet, an action, or anywhere outside the ring closes it: outside the window by `FLAG_WATCH_OUTSIDE_TOUCH` (D-71), and the window's own empty space by a click handler behind the slots. Drag stays off while open.
@@ -1880,7 +1880,7 @@ stateDiagram-v2
 | When a break is due | Gentle / Obstructive | Obstructive explained in one line ("Covers the screen until you choose; you can always close it"); disabled with "Turned off for everyone" when not allowed |
 | Idle chatter | On / Off (`idle.enabled`) | Hidden when `features.idleLines` is off |
 | Day starts at | `day.resetHour` | 00:00–06:00 |
-| Share anonymous stats | → S-07 | Continue goes back; doesn't touch setup state |
+| Share anonymous stats | → S-07 | Finish goes back (it marks setup done again, which it already is) |
 | Permissions | → S-03 (`FixPermissions`) | |
 
 - The slider row moves from `setup/LimitsScreen.kt` to `ui/SettingSlider.kt`, used by S-06 and S-11 (its second user; a small move, not a new abstraction).
@@ -1917,7 +1917,7 @@ stateDiagram-v2
 | `config/NyxConfig.kt` · `ConfigValidator.kt` | `ObstructiveConfig` with defaults; bounds |
 | `service/Engine.kt` (new) · `PetService.kt` · `Notifications.kt` | Loop + requests; acting on a `Reaction`; N-02, N-04 |
 | `pet/PetOverlay.kt` · `PetWindow.kt` | Ring open/close, fixed-size window, glow, Snooze on bubbles; `SummaryPanel` removed |
-| `pet/ActionsRing.kt` · `pet/RingLayout.kt` | Ring composable, caption, Limits list · pure geometry |
+| `pet/ActionsRing.kt` · `pet/RingLimitsList.kt` · `pet/RingLayout.kt` | Ring composable and caption · the Limits list · pure geometry |
 | `pet/BreakScreenOverlay.kt` · `pet/BreakScreen.kt` | O-04 window · composable |
 | `home/SummaryNumbers.kt` · `home/DurationFormat.kt` | `GoalRow` shared; `formatShort` ("3h12") |
 | `settings/SettingsScreen.kt` · `SettingsViewModel.kt` · `ui/SettingSlider.kt` | S-11 |
@@ -1932,24 +1932,24 @@ stateDiagram-v2
 |---|---|---|
 | `US08_LimitsTest` | `src/test/` | One check per limit that's on; 0 = off; covered rules for category, total and stretch; placeholders filled for every trigger (`{app}`, `{category}`, `{limit}`, `{minutes}`) |
 | `US08_NagsTest` | `src/test/` | Every SM-02 transition above; `LIMIT_EXCEEDED` once per key per day, the stretch's second crossing nags without a second event; repeat after `repeatMinutes`; return to a covered app glows at once and waits for the interval (D-94); day reset → Under; rebuild after a restart (over + logged → Paused, no line, no event; over + not logged → crossed) |
-| `US10_SnoozeTest` | `src/test/` | Snooze only its own key; −5 logged with the subject; ends after `snoozeMinutes` → repeat if covered, Paused if not; Snooze hidden once today's count reaches the max, shared by all nags; waiting requests withdrawn |
+| `US08_NagsTest` (snooze part) · `US08_ReactionsTest` | `src/test/` | Snooze only its own key; ends after `snoozeMinutes` → repeat if covered, Paused if not · end to end with a fake DAO: −5 logged with the subject, Snooze hidden once today's count reaches the max (shared by all nags), a waiting nag withdrawn after leaving the app, N-04 while hidden, gentle reminder, break taken, obstructive and the call fallback, idle, D-86's real path |
 | `US30_ContinuousUseTest` | `src/test/` (crediting) | Counts every screen-on piece, launcher and excluded apps included; break resets it, a shorter off doesn't; day reset doesn't; replay rebuilds it; ended breaks only after the cursor |
 | `US11_BreaksTest` | `src/test/` | First reminder at the limit, repeats every `repeatMinutes`; bubble and N-02 each time; break after a due reminder → `BREAK_TAKEN` + bubble + N-02 cancelled; break before the limit → nothing (A-26); `features.breaks` off → nothing |
-| `US30_BreakScreenTest` | `src/test/` | Effective mode (stored × allowed); screen instead of bubble; 5 more minutes → back after `snoozeMinutes`, at most `maxSnoozes` per sitting; Take a break → back after `returnAfterTakeBreakSeconds`; a break resets snoozes; hidden → N-02 only; in a call → gentle; focus → held |
+| `US11_BreaksTest` (break-screen part) | `src/test/` | Effective mode (stored × allowed); screen instead of bubble; 5 more minutes → back after `snoozeMinutes`, at most `maxSnoozes` per sitting; Take a break → back after `returnAfterTakeBreakSeconds`; a break resets snoozes; hidden → N-02 only; in a call → gentle; focus → held |
 | `US27_IdleTest` | `src/test/` | Due after `everyMinutes` of counted time since the last bubble; any bubble resets; off by feature or by user; engine start and day reset move the baseline |
-| `BubbleArbiterTest` (+) · `ReactionsTest` (+) | `src/test/` | `without(key)`; end to end with a fake DAO: nag + glow + snooze, break taken, idle, nag notifications while hidden, ran-away pet back after a real break (D-86) |
+| `BubbleArbiterTest` (+) · `ReactionsTest` (changed) | `src/test/` | `without(key)` · M6's tests with nothing in front, so no nags interfere |
 | `US07_RingLayoutTest` | `src/test/` | Slots spread over the half facing the middle on both edges; 6 or 7 slots; the pet's centre clamped near the top and bottom and back to its spot when closed (D-91, A-32); window size; an area shorter than the box |
 | `TickDelayTest` (+) · `DurationFormatTest` (+) · `ConfigValidatorTest` (+) · `US21_DefaultConfigTest` (+) | `src/test/` | Fast while glowing and near the break limit · `formatShort` · obstructive bounds, a document without the block gets the defaults |
-| `SettingsViewModelTest` · `ReactionSettingsTest` | `src/test/` | Values clamped and stored; locked settings read-only; obstructive disabled when not allowed, stored choice kept |
+| `SettingsViewModelTest` | `src/test/` | Values clamped and stored; locked settings read-only; obstructive disabled when not allowed, stored choice kept |
 | `PetEventDaoTest` (+) | `src/androidTest/` | `subject` stored and read back |
 | `US07_ActionsRingTest` (replaces `US07_SummaryPanelTest`) | `src/androidTest/` | Values equal Home's for the same summary; worst limit with `!`; captions; TalkBack descriptions; Limits list and Back; Start focus slot gone when focus is off; actions call back |
-| `US30_BreakScreenUiTest` · `PetWindowBubbleTest` (+) · `US11_SettingsScreenTest` | `src/androidTest/` | Buttons disabled for the delay, then call back; 5 more minutes gone after the last snooze · Snooze shown and calls back · rows, read-only locked rows, obstructive disabled |
+| `US30_BreakScreenUiTest` · `PetWindowBubbleTest` (changed) · `US11_SettingsScreenTest` · `US28_NavigationTest` (changed) | `src/androidTest/` | Buttons disabled for the delay, then call back; 5 more minutes gone after the last snooze · Snooze shown and calls back, glow said to TalkBack · rows, read-only locked rows, obstructive disabled, links · Settings is the real S-11 |
 
 - Coverage: ≥ 90% lines on `rules/` (ROADMAP §2) and on `pet/RingLayout.kt`.
 - **By hand** (adb, fast clock): the four scenarios plus `instagram-65min`; snooze from the bubble; hidden → N-04 and N-02; the ring on both edges, near the top and bottom (the pet moves and moves back), values against Home, captions, Limits list; TalkBack across the ring; obstructive mode over YouTube: delay, 5 more minutes ×3, Take a break, a call (emulator: a fake incoming call from the extended controls), screen off 5 min; settings rows; install over the M6 build keeps data (v3 → v4).
 - **On the Pixel 7a** (the developer): the ring and the break screen over Instagram, a WhatsApp call while the break is due.
 
-**Decisions** (proposed 2026-10-21, waiting for approval)
+**Decisions** (approved 2026-10-21)
 - **D-93:** one nag state machine per limit key (`limit:<category>`, `limit:total`, `stretch`), in memory; rebuilt at engine start and each day from today's `LIMIT_EXCEEDED` events (over + logged → Paused, no line); `LIMIT_EXCEEDED` once per key per day, the stretch included; `events` gets a nullable `subject` (Room v4, auto-migration).
 - **D-94:** returning to a covered app brings the glow back at once, but the next line waits until `nags.repeatMinutes` since that limit's last line (refines SM-02's "immediately").
 - **D-95:** snooze only from the bubble; `maxSnoozesPerDay` counts all nags together; the snooze end is in memory; N-04 has no Snooze action in v1.
