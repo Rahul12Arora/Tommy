@@ -1,7 +1,7 @@
-# Requirements — v1.2 (approved 2026-10-18; CR-01 to CR-05 applied)
+# Requirements — v1.3 (approved 2026-10-18; CR-01 to CR-05, CR-09 and CR-10 applied)
 
 > Phase 1 output. Decisions (`D-##`), assumptions (`A-##`), open questions (`Q-##`) and risks (`R-##`) live in `docs/DISCUSSION.md`.
-> Last updated: 2026-10-18 · Changes after approval go through change control (`CR-##` in `docs/DISCUSSION.md`).
+> Last updated: 2026-10-21 · Changes after approval go through change control (`CR-##` in `docs/DISCUSSION.md`).
 
 ---
 
@@ -101,8 +101,9 @@ Targets are proposals — see Q-04.
 - Given the phone restarts, the pet returns without me opening the app.
 
 **US-07** As a user, I want to tap the pet for a quick summary, so that I know where my day stands.
-- Given the pet is on screen, when I tap it, then a panel opens showing: total screen time today, productive time vs doomscrolling time, progress on each goal.
-- When I tap the pet again or outside the panel, it collapses.
+- Given the pet is on screen, when I tap it, then a half ring of small icons opens around it, towards the middle of the screen (CR-09, D-87), showing: total screen time today, productive time vs doomscrolling time, progress on each goal as used/limit (e.g. `47/60m`), continuous screen use (US-30), and the focus timer while a session runs. Start focus, Open Nyx and Hide are icons on the same ring.
+- Each icon has a label I can read (and TalkBack reads); "over limit" is shown by more than colour.
+- When I tap the pet again or outside the ring, it collapses.
 - Numbers are at most 1 minute old when the panel opens.
 
 ### Limits & nags — F-05
@@ -216,6 +217,13 @@ Targets are proposals — see Q-04.
 - While the pet is hidden, nags and break reminders arrive as notifications.
 - I can bring the pet back early from the persistent notification or from Home; otherwise it returns when the time is up.
 
+### Added in v1.3 — change requests CR-09, CR-10
+
+**US-30** (F-06, CR-09, CR-10) As a user, I want to see how long I've been on my screen without a break, whatever I'm doing, and choose how firmly Nyx reacts, so that long sessions don't slip by.
+- Given the screen is on, the pet's ring shows continuous screen use: time since my last break (screen off ≥ 5 min), in any app (A-31).
+- In Settings I can set the continuous-use limit within the admin's range (the break trigger, US-11) and pick how Nyx reacts when it's reached: gentle (bubble + notification, the default) or obstructive.
+- Obstructive is off unless I choose it, and the admin can turn the option off for everyone. What it does on screen is set by Q-15; it never stops me from dismissing it unless Q-15 decides otherwise.
+
 ---
 
 ## 6. Non-functional requirements
@@ -279,7 +287,7 @@ Targets are proposals — see Q-04.
 
 - iOS
 - Chat with the pet (post-v1, cloud LLM)
-- Blocking or delaying apps
+- Blocking or delaying apps (the opt-in obstructive break mode, CR-10, is decided by Q-15; as recommended it gets in the way but can always be dismissed)
 - Detecting what's inside an app (e.g. Reels vs a lecture); no Accessibility Service
 - User accounts, login, cloud backup, multi-device sync
 - ADHD or any health positioning or claims

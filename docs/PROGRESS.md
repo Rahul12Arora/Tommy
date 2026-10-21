@@ -1,9 +1,9 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M7 Limits, nags, breaks, idle lines (next)
-- Last done: M6 Lines, bubbles, mood done 2026-10-21 — verified on the API 37 emulator, D-79 to D-86 approved, PR #11 merged, tagged `m6-done`
-- Next step: M7 — branch `feat/m7-limits-nags` from `main`, LLD first (SM-02, SM-03, N-02/N-04, idle lines, Settings S-11)
-- Blockers: none
-- Open questions: Q-04 (success-metric targets, not blocking)
+- Phase: 5 — Build · Milestone: M7 Limits, nags, breaks, idle lines (next; branch `feat/m7-limits-nags` created from `main`, plan only)
+- Last done: M6 done 2026-10-21 (`m6-done`, CI green on `main`). Planned CR-09 (actions ring, half ring D-87) and CR-10 (continuous screen use as a user setting, optional obstructive mode) into M7/M8
+- Next step: M7 LLD in a new session — answer Q-15 (what "obstructive" does) first; the rest of M7 doesn't wait on it
+- Blockers: none for starting M7; Q-15 for the obstructive part only
+- Open questions: Q-15 (obstructive mode, blocks that part of M7), Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
 - Build setup: Homebrew JDK on PATH starts Gradle; daemon runs on JDK 25 (`android/README.md`). With the phone plugged in, set `ANDROID_SERIAL` for device tasks
 
@@ -124,3 +124,7 @@
 - Approved: D-79 to D-86. The developer closed M6 without a Pixel 7a result recorded; M6 is verified on the API 37 emulator only
 - Done: M6 closed — ROADMAP status done, LLD and decisions marked approved, AGENTS card on M7; PR #11 merged, tagged `m6-done`
 - Next: M7 Limits, nags, breaks, idle lines — branch `feat/m7-limits-nags` from `main`, LLD first
+- Verified: Android CI green on `main` after the M6 merge (run 39610648553); `m6-done` points at the merge (`344b0a6`)
+- Started `feat/m7-limits-nags` from `main` for M7's plan changes (no code)
+- Decided: CR-09 approved — the summary panel becomes an actions ring (reference: Logitech Options' ring, the developer's screenshot); D-87 half ring opening towards the middle. CR-10 approved in principle — continuous screen use (all apps, A-31) with a user-set limit and reaction mode, optionally obstructive; what obstructive does is Q-15 (open, with a recommendation). REQUIREMENTS v1.3 (US-07 reworded, US-30), ROADMAP M7/M8 tasks, story map and cut-line note, ARCHITECTURE §14.5 note, DISCUSSION O-03/O-04
+- Next: M7 in a new session — Q-15 answer, then the LLD (§14.7)

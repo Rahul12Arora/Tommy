@@ -34,6 +34,7 @@
 | Sat 31 Oct → | M15 Deploy + Play submission. Public listing after Google's review (usually a few days, R-08) |
 
 **Cut line if week 1 runs late** (approved, D-46)
+- CR-09/CR-10 (2026-10-21) add about one and a half sessions to M7, so Fri 23 Oct is tighter. If M7 runs late, the obstructive mode (CR-10) moves first, ahead of the list below; the ring and the gentle mode stay.
 - If M7 isn't done by Fri 23 Oct evening, these move to week 2, in this order:
   1. Idle lines (F-20)
   2. Focus check-in mode and the "no switching" goal (fixed-time and until-done stay)
@@ -230,19 +231,24 @@ Not in this milestone: limits and breaks triggering lines (→ M7)
 ### M7 — Limits, nags, breaks, idle lines            status: pending
 Goal: the pet nags when limits are crossed, reminds breaks, and talks now and then.
 Depends on: M6
-Stories: US-08, US-09, US-10, US-11, US-17 (limit goals), US-27, US-29 (notifications while hidden)
+Stories: US-08, US-09, US-10, US-11, US-17 (limit goals), US-27, US-29 (notifications while hidden), US-07 + US-30 (actions ring, continuous screen use; CR-09, CR-10)
+Before the LLD: Q-15 (what the obstructive mode does) needs the developer's answer; everything else in M7 can be designed without it
 Tasks:
-- [ ] LLD: SM-02 per limit, SM-03, escalation lines, snooze limits, limit goals judged at day reset with no mood effect (CR-05), idle timer, hidden → notifications
+- [ ] LLD: SM-02 per limit, SM-03, escalation lines, snooze limits, limit goals judged at day reset with no mood effect (CR-05), idle timer, hidden → notifications; the actions ring (CR-09, D-87: half ring towards the middle, icon set, values, labels, placement replacing D-71's panel growth); continuous screen use + reaction mode (CR-10, A-31, Q-15)
 - [ ] Daily category + total limits → `limit_reached`, red glow, bubble, repeat every N min, snooze (only that nag), max snoozes/day
 - [ ] Stretch limits; reset only by a 5-min break
 - [ ] Break reminders: bubble + N-02; `break_taken` after ≥ 5 min off
 - [ ] Idle lines (about every 30 min of screen time; off switch in settings and config)
 - [ ] While hidden: nags → N-04, break reminders → N-02
-- [ ] Settings screen S-11 for nag interval, snooze, break trigger, idle lines, day reset hour
-- [ ] Tests: every SM-02 and SM-03 transition, snooze isolation, max snoozes, stretch reset, held while hidden
+- [ ] Actions ring replaces the summary panel (O-03): icons with used/limit digits per category, total, productive vs doomscrolling, continuous screen use, Start focus / Open Nyx / Hide; glow and Snooze state visible on the ring; ≥ 48 dp icons, TalkBack labels, "over limit" not by colour alone (CR-09)
+- [ ] Continuous screen use (all apps, SM-03's counter) shown on the ring (US-30)
+- [ ] Reaction mode setting: gentle (default) / obstructive; admin switch to allow it; obstructive surface O-04 as decided in Q-15 (CR-10)
+- [ ] Settings screen S-11 for nag interval, snooze, break trigger (= continuous-use limit), reaction mode, idle lines, day reset hour
+- [ ] Tests: every SM-02 and SM-03 transition, snooze isolation, max snoozes, stretch reset, held while hidden; ring values match Home's numbers, labels for TalkBack, half ring opens towards the middle on both edges; reaction mode stored and clamped to what the admin allows
 Done when:
 - [ ] Fake "65 min Instagram": glow + bubble within 60 s, repeats, snooze works; fake "50 min screen-on": break reminder bubble + notification
 - [ ] A pet that ran away comes back after a real break that follows a reminder (D-86)
+- [ ] Tapping the pet opens the half ring with the same numbers as Home; continuous screen use counts every app and resets after a 5-min break; obstructive mode, when picked, behaves as Q-15 decided
 Verify with: `./gradlew test` · fake scenarios · manual QA checklist
 Not in this milestone: positive goals (→ M13)
 
@@ -252,7 +258,8 @@ Depends on: M7
 Stories: US-12, US-13, US-14
 Tasks:
 - [ ] LLD: session model, goal types, allowed-app picker, drift detection, check-ins, rewards, held nags release (D-25)
-- [ ] S-09 Focus setup (from the panel and Home)
+- [ ] S-09 Focus setup (from the ring and Home)
+- [ ] Focus timer icon on the actions ring (CR-09)
 - [ ] SM-04: running, drifting, paused on lock, completed, broken, ended early
 - [ ] Pet modes: quiet / check-in every X min / reward at the end
 - [ ] Hold nags, break reminders and idle lines during focus; release those that still apply
@@ -381,7 +388,7 @@ Verify with: production `curl` · Play Console status
 |---|---|
 | US-01, US-02, US-03, US-04, US-05 | M3 (US-03 lines in M6; US-04 new apps in M4; US-05 data in M2) |
 | US-06 | M4 (restart), M5 (overlay) |
-| US-07 | M5 |
+| US-07 | M5 (panel), M7 (actions ring, CR-09) |
 | US-08, US-09, US-10, US-11 | M7 |
 | US-12, US-13, US-14 | M8 |
 | US-15, US-16 | M6 |
@@ -395,5 +402,6 @@ Verify with: production `curl` · Play Console status
 | US-25 | M14 |
 | US-26 | M4 |
 | US-27 | M7 |
+| US-30 | M7 (continuous screen use, reaction mode; CR-10), M8 (focus timer on the ring) |
 | US-28 | M1, M4 |
 | US-29 | M5, M7 |
