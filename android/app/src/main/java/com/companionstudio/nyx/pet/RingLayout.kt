@@ -33,6 +33,16 @@ fun ringBox(petCenterY: Int, areaHeight: Int, halfHeightPx: Int): RingBox {
     return RingBox(top = center - halfHeightPx, height = 2 * halfHeightPx, petCenterY = center)
 }
 
+/**
+ * The ring box's width in dp for a usable width of [maxWidth] dp: pet + ring + as much caption as fits. The window is
+ * given this width explicitly: a wrap-content window is first measured at the dialog width (~320 dp), and the ring
+ * would be squeezed into it and run off the screen (found on the Pixel 7a).
+ */
+fun ringBoxWidth(maxWidth: Float): Float {
+    val ringWidth = PET_DP / 2 + RING_RADIUS_DP + RING_SLOT_DP / 2
+    return ringWidth + GAP_DP + (maxWidth - ringWidth - GAP_DP).coerceIn(0f, RING_CAPTION_DP)
+}
+
 /** A point in the ring's box, in dp from its top-left corner. */
 data class DpPoint(val x: Float, val y: Float)
 
@@ -56,8 +66,8 @@ data class RingGeometry(
 fun ringGeometry(side: Side, slotCount: Int, maxWidth: Float): RingGeometry {
     require(slotCount >= 2) { "a ring needs at least 2 slots, had $slotCount" }
     val ringWidth = PET_DP / 2 + RING_RADIUS_DP + RING_SLOT_DP / 2
-    val captionWidth = (maxWidth - ringWidth - GAP_DP).coerceIn(0f, RING_CAPTION_DP)
-    val width = ringWidth + GAP_DP + captionWidth
+    val width = ringBoxWidth(maxWidth)
+    val captionWidth = width - ringWidth - GAP_DP
     val petX = if (side == Side.LEFT) PET_DP / 2 else width - PET_DP / 2
     // Towards the middle: right for a pet on the left edge, left for one on the right
     val inward = if (side == Side.LEFT) 1 else -1

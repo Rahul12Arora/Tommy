@@ -46,6 +46,14 @@ class US07_RingLayoutTest {
     }
 
     @Test
+    fun theWindowsWidth_isTheGeometrysWidth_andFitsOnAPixel7a() {
+        // Pixel 7a: 411 dp wide. Wider than the ~320 dp a wrap-content window is first measured at, so it's set explicitly
+        assertEquals(364f, ringBoxWidth(411f), 0.01f)
+        assertEquals(300f, ringBoxWidth(300f), 0.01f)
+        for (side in Side.entries) assertEquals(ringBoxWidth(411f), ringGeometry(side, 7, 411f).width, 0.01f)
+    }
+
+    @Test
     fun D102_theBox_isCentredOnThePet_whenItFits() {
         assertEquals(RingBox(top = 400 - half, height = 2 * half, petCenterY = 400), ringBox(petCenterY = 400, areaHeight = 2000, halfHeightPx = half))
     }

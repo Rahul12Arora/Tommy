@@ -220,11 +220,17 @@ class PetOverlay(
             val box = ringBox(petTop + petPx / 2, area.height, (RING_HALF_HEIGHT_DP * density).roundToInt())
             params.gravity = horizontal or Gravity.TOP
             params.y = box.top.coerceAtLeast(0)
-            ringMaxWidth = (area.width / density).dp
+            // An explicit size: wrap-content would be measured at the dialog width first and cut the ring off
+            val areaWidthDp = area.width / density
+            params.width = (ringBoxWidth(areaWidthDp) * density).roundToInt()
+            params.height = box.height
+            ringMaxWidth = areaWidthDp.dp
             if (attached) windowManager.updateViewLayout(root, params)
             return
         }
         val vertical = if (placement.fromBottom) Gravity.BOTTOM else Gravity.TOP
+        params.width = LayoutParams.WRAP_CONTENT
+        params.height = LayoutParams.WRAP_CONTENT
         params.gravity = horizontal or vertical
         params.y = placement.offsetY
         val roomPx = panelMaxHeight(placement, area, petPx) - (PANEL_GAP.value * density).roundToInt()

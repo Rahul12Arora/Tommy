@@ -141,3 +141,8 @@
 - Device tests: first full run 51/54 — US28_NavigationTest expected the old Settings placeholder (fixed) and two ring caption tests couldn't find the caption (fixed); the re-run of US07_ActionsRingTest then lost the emulator mid-test (it died, and now hangs at boot)
 - Not verified: device tests after the fixes, every by-hand check in §14.7, TalkBack, the Pixel 7a
 - Next: restart the emulator → `connectedDebugAndroidTest` → by-hand checks → tick ROADMAP → PR
+
+### 2026-10-22
+- BUG-01 · Ring runs off the right edge · Steps: pet on the right edge, tap it · Expected: the whole half ring on screen · Actual: the pet and the right-hand slots (total, hide, the far ends) past the edge · Env: Pixel 7a, debug build `d1f8ee7` · Evidence: the developer's screenshot · Severity: major
+- Cause: a `WRAP_CONTENT` overlay window is first measured at the dialog width (~320 dp, `config_prefDialogWidth` in `ViewRootImpl.measureHierarchy`, checked in the API 37 sources); Compose doesn't flag "too small", so the 364 dp ring box was squeezed and drawn past the window. Fixed: the window gets the box's width and height explicitly while the ring is open (`ringBoxWidth`), and wrap-content again when closed. Test: `US07_RingLayoutTest` (window width = geometry width, 364 dp on a 411 dp phone)
+- Verified: 261 unit tests, lint, debug build. Not verified on a phone: no device connected here; the developer to re-check on the Pixel 7a
