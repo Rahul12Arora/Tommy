@@ -152,3 +152,4 @@
 - Verified on the Pixel 7a by hand (details in ARCHITECTURE §14.7): nags, repeats, glow, snooze, break reminders and break taken, D-86's real path, ring (fit, captions, Limits list, Home's numbers, moving near the top and back), Settings, obstructive mode through every answer (also on real use), hidden → N-02/N-04. Mode set back to Gentle; the test APK removed; the pet shown again. Today's tracked time on the phone was wiped by the scenarios, as agreed
 - Not verified: a real call while a break is due; TalkBack by ear
 - Verified: 263 unit tests, lint, debug build
+- Verified: Android CI green on `feat/m7-limits-nags` (run 39665643172); PR #13 open, not merged
