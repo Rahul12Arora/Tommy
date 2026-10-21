@@ -1550,6 +1550,8 @@ flowchart LR
 - **D-77:** opening the panel forces a tick through a conflated channel the engine loop waits on; the panel shows stored numbers at once and updates after that tick.
 - **D-78:** overlay windows use a window context; Compose's lifecycle and saved state come from a small `OverlayOwner` (no new dependency).
 
+**Changed later:** from M7 the summary panel becomes the actions ring (CR-09, D-87): a half ring of icons opening towards the middle of the screen. M7's LLD replaces the panel parts of this section (D-71's growth, `SummaryPanel`), keeping the window, drag, hide and emoji parts.
+
 **Not in M5:** what the pet says, the bubble window and mood faces (→ M6), glow, nags, N-04 and the hidden-pet notification rules (→ M7), the focus timer badge and S-09 (→ M8), Trends from the panel (→ M13).
 
 ### 14.6 M6 — Event log, mood, bubble arbiter, line picker

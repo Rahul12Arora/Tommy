@@ -126,7 +126,8 @@ sequenceDiagram
 |---|---|---|---|
 | O-01 | Pet | Emoji for current mood; red glow while a nag is active; timer badge during focus | Tap → panel; drag → snaps to the nearest edge |
 | O-02 | Speech bubble | One line in the pet's personality | Snooze (on nags), Dismiss |
-| O-03 | Summary panel | Today: total, productive vs doomscrolling, goal progress | Start focus, Open app, Hide pet (30 min default, D-24) |
+| O-03 | Summary panel → **actions ring** from M7 (CR-09, D-87) | Today: total, productive vs doomscrolling, goal progress; from M7 as a half ring of icons with short values, plus continuous screen use (US-30); focus timer from M8 | Start focus, Open app, Hide pet (30 min default, D-24) |
+| O-04 | Break screen (only if the user picks the obstructive mode, CR-10) | To be designed once Q-15 is answered | To be designed |
 
 **Notifications**
 
@@ -406,6 +407,7 @@ stateDiagram-v2
 | D-83 | Lines come from the band pool, else `any`, never one of the last 3 lines of that trigger (kept in memory); placeholders per trigger are fixed in code and enforced by a new validator rule `line-placeholders` (backend in M10) | A typo such as `{App}` is caught in the console, not shown to users | Storing shown lines in the log; leaving placeholders unchecked | 2026-10-21 |
 | D-84 | The bubble shows in the pet's window, in the panel's place; the panel wins; it lasts `showSeconds` real seconds; Dismiss or a drag removes it; the window's transparent corner may catch taps for those seconds | Reuses D-71's anchoring, no second window to keep beside the pet | A separate bubble window | 2026-10-21 |
 | D-85 | Room version 3 adds `events` through an auto-migration from version 2, so debug installs keep their data; still no migration tests before v1.0.0 (`room-testing` not added) | The developer's phone keeps its categories and today's totals; no new dependency | The destructive fallback (§14.1), which would wipe them again | 2026-10-21 |
+| D-87 | The actions ring (CR-09) is a half ring that opens towards the middle of the screen; the pet stays on its edge | The developer's choice; the pet doesn't move under the finger, and the ring never runs off screen | A full ring with the pet sliding inward to its centre | 2026-10-21 |
 | D-86 | M6's "done when" uses a 4 h scenario (2 h only reaches 34 😾 with the default weights) and checks the return with a debug-logged `break_taken` (a real break raises mood only after a reminder, A-26, M7); M7's "done when" adds the real path | Keeps the default weights and A-26 as approved | Steeper default weights; letting any break raise mood | 2026-10-21 |
 
 ### D-16 — Admin / user settings split
@@ -458,6 +460,7 @@ stateDiagram-v2
 | A-28 | Default content: two personalities, `cheerful` "Cheerful coach" and `calm` "Calm friend", with at least 4 English lines per bubble trigger; the placeholder ranges in ARCHITECTURE §14.2. Tuned from the console later | Accepted |
 | A-29 | The brand battery steps (Xiaomi, Samsung, Vivo, Oppo) are our own words from the brands' help pages and dontkillmyapp.com, not checked on those phones until one is borrowed (R-04) | Accepted |
 | A-30 | S-05 lists every app with a launcher icon, system apps included, except Nyx | Accepted |
+| A-31 | "Continuous screen use" (US-30) = screen-on time since the last break (screen off ≥ `breaks.breakMinutes`), in any app — SM-03's counter, not the Social/Games stretch. "Configurable on the user's end" = its limit (the existing break trigger) and the reaction mode (gentle / obstructive) in S-11 | Active — confirm in M7's LLD review |
 
 ---
 
@@ -478,6 +481,7 @@ stateDiagram-v2
 | Q-11 | App name and Android application ID? The ID can't change once the app is on Google Play | Yes — M0 | Answered → D-49 (D-47 superseded) |
 | Q-12 | Which real phone will you test on? | Yes — M4 | Answered → D-48 (Pixel 7a) |
 | Q-13 | Is there a GitHub repo for this? | Yes — M0 | Answered → D-48 |
+| Q-15 | What should the obstructive mode (CR-10) do when continuous screen use reaches the limit? (a) A full-screen break screen over the current app (pet in the middle, dimmed background) with "Take a break" and "5 more minutes" — it gets in the way but never locks the phone (recommended; keeps D-07's "no blocking"); (b) the same, but it can't be dismissed until the screen has been off ≥ 5 min — a real block, which reverses D-07, needs §8 changed and carries Play-review risk and an emergency-call problem; (c) the pet grows and moves to the middle of the screen, covering part of the app until dragged away. Also: does it repeat after "5 more minutes" (how often, how many times), and is it skipped during calls, navigation and focus sessions (D-25)? | Yes — the obstructive part of M7 | Open |
 | Q-14 | Limit goals (e.g. Social ≤ 1 h) can only be judged at day end, when mood resets. (a) Limit goals show progress and count as "kept" in trends, with no mood bonus — exceeding already costs −10 (recommended); (b) the bonus goes to the next day's starting mood; (c) judge them at a fixed evening hour | Yes — M7 | Answered — (a) → CR-05 |
 
 ---
@@ -511,6 +515,8 @@ stateDiagram-v2
 | CR-06 | AGP 9.4.0 → 9.4.1 (patch release on Google Maven; Android Studio's wizard picks it by default) | None: build-only, same Gradle 9.6.0 / SDK range. TECH_STACK §1, §4, §6 updated | Approved 2026-10-19 |
 | CR-07 | Add `androidx.test.espresso:espresso-core` 3.7.0 as a device-test-only dependency | None for the app: test APK only. Compose UI tests pull in Espresso 3.5.0, which fails on API 35+ (`NoSuchMethodException: InputManager.getInstance`); 3.7.0 fixes it. TECH_STACK §6 updated | Approved 2026-10-19 |
 | CR-08 | Add `androidx.lifecycle:lifecycle-viewmodel-navigation3` 2.11.0 (Apache-2.0): each screen's ViewModel lives as long as its back-stack entry (ARCHITECTURE §14.3, D-55) | Small: one runtime library, in the lifecycle version we already use; it only pulls in artifacts that are already there. TECH_STACK §6 gets one row | Approved 2026-10-19 |
+| CR-09 | Summary panel (O-03) becomes an **actions ring**: tapping the pet opens a half ring of small round icons around it, towards the middle of the screen (D-87), each with a short value — category limits as used/limit (`47/60m`), total today, productive vs doomscrolling, **continuous screen use across all apps** (whatever is in front, US-30), the focus timer (M8) — plus the panel's actions (Start focus, Open Nyx, Hide) as icons. Reference: Logitech Options' actions ring (the developer's screenshot, 2026-10-21): eight round, light icon buttons on a full circle around a small × close button in the centre; the one under the pointer turns dark and shows its label | UI only for the ring itself; no API change. Config: none for the ring. Changes O-03 (screen inventory), D-71's window growth and placement (§14.5), `PetWindow`/`SummaryPanel`, `US07_SummaryPanelTest`, US-07's wording. Needs: ≥ 48 dp icons (ring radius ~100 dp), a TalkBack label per icon, "over limit" shown by more than colour (e.g. a "!" mark), a way to read an icon's full meaning (label on press, like the reference). The continuous-use value is SM-03's screen-on counter, which M7 builds anyway; the focus timer icon arrives with M8. Designed in M7's LLD so M7's glow/snooze and M8's timer land in the ring directly. About one session on top of M7, which makes M7's cut line (D-46) tighter | Approved 2026-10-21 (half ring, D-87) |
+| CR-10 | Continuous screen use (all apps, US-30) becomes a **user setting**: the limit (today's `breaks.afterMinutes`, already user-editable within the admin range) and how Nyx reacts when it's reached — gentle (bubble + N-02, the default, as US-11) or **obstructive**, only if the user selects it | Data: one new user setting (reaction mode) in DataStore; config: a switch for the admin to allow or forbid the obstructive mode (additive, `schemaVersion` stays 1). UI: S-11 row; a new overlay surface if obstructive (O-04). Requirements: touches D-07 ("only warns, no blocking") and §8 out of scope ("Blocking or delaying apps"), so what "obstructive" does must be settled first (Q-15). Play: a large overlay over other apps is allowed for a user-chosen feature, but must stay dismissable and clearly explained (R-03's review covers the overlay too). Timeline: the setting and gentle mode fit M7; the obstructive surface ~half a session once Q-15 is answered | Approved in principle 2026-10-21 — behaviour waits for Q-15 |
 
 ---
 
