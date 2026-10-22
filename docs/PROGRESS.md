@@ -1,7 +1,7 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M11 Admin login + console (done; PR open from `feat/m11-admin`)
-- Last done: M11 built and verified locally 2026-10-22 — login, draft/publish API, console W-01 to W-03, console in the image; Done-when checked in headless Chrome
-- Next step: merge the M11 PR, tag `m11-done`; then M12 (app fetches remote config) in a new session, LLD first. Each dev needs an admin login in `backend/.env` (`npm run hash-password`, `backend/README.md`)
+- Phase: 5 — Build · Milestone: M12 App fetches remote config (next)
+- Last done: M11 done 2026-10-22 — PR #18 merged, tagged `m11-done` (`cdd0f84`)
+- Next step: M12 in a new session, LLD first (`ConfigClient` with ETag, 6-hour check, atomic cache, debug build → `10.0.2.2:3000`) Each dev needs an admin login in `backend/.env` (`npm run hash-password`, `backend/README.md`)
 - Blockers: none. Docker note: Homebrew's `docker` CLI comes first on PATH and can't find Docker Desktop's credential helper (`docker pull` fails); put `/Applications/Docker.app/Contents/Resources/bin` first or `brew uninstall docker`
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37; start it with `-gpu swiftshader_indirect`, see log 2026-10-22 M9) + Pixel 7a
@@ -255,3 +255,5 @@
 - Verified: the developer's browser check of the console (2026-10-22)
 - Not verified: the `Secure` cookie over HTTPS (production, M15)
 - Known: a server error under a field can show twice (RJSF quirk; parking lot)
+- Done: PR #18 merged to `main` (`cdd0f84`), tagged `m11-done`
+- Next: M12 — app fetches remote config, LLD first
