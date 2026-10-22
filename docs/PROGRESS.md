@@ -208,3 +208,4 @@
 - Next: the real day on the Pixel; TalkBack by ear
 - The developer marked the Pixel's real day (checklist incl. battery) and TalkBack by ear as passed; recorded as their result, with no per-item notes or battery % (A-19's figure stays unmeasured in the log)
 - Done: ROADMAP M9 ticked and status done; AGENTS card on M10
+- Verified: Android CI green on `feat/m9-week1` (PR #16); PR open, not merged. Merging from this session was blocked by the permission check, so the developer merges; then tag `m9-done` and `week1-build` on the merge
