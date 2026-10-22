@@ -1,7 +1,7 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M10 Backend + config API (done; PR open from `feat/m10-backend`, waiting for the developer's merge)
-- Last done: config validation (+ shared fixtures), initial config seed, `GET /v1/config`, `GET /health`, BUG-05 fixed, backend CI workflow
-- Next step: the developer merges the M10 PR → tag `m10-done` on the merge → M11 in a new session, LLD first
+- Phase: 5 — Build · Milestone: M11 Admin login + console (next; branch `feat/m11-admin` from `main`)
+- Last done: M10 done 2026-10-22 — PR #17 merged, tagged `m10-done` (`61b5430`)
+- Next step: M11 in a new session, LLD first (login, session cookie, CSRF rules, draft/publish endpoints, console W-01 to W-03)
 - Blockers: none. Docker note: Homebrew's `docker` CLI comes first on PATH and can't find Docker Desktop's credential helper (`docker pull` fails); put `/Applications/Docker.app/Contents/Resources/bin` first or `brew uninstall docker`
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37; start it with `-gpu swiftshader_indirect`, see log 2026-10-22 M9) + Pixel 7a
@@ -238,3 +238,5 @@
 - Done: ROADMAP M10 ticked and status done; AGENTS card on M11
 
 - Done: PR #17 opened (M10 → main) with the manual QA checklist; merging is the developer's step
+- Done: the developer merged PR #17; tagged `m10-done` on the merge (`61b5430`). M10 closed; `feat/m11-admin` started from `main` for the close-out docs
+- Next: M11 Admin login + console
