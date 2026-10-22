@@ -1,7 +1,7 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M9 Week-1 check (closing; PR from `feat/m9-week1`)
-- Last done: M9 checks — the Pixel's real day and TalkBack by ear marked passed by the developer (2026-10-22; no per-item results or battery % recorded); fixes BUG-04, E-01 to E-03, A-01 to A-03 (ARCHITECTURE §14.9)
-- Next step: merge the M9 PR, tag `m9-done` and `week1-build`, then M10 Backend + config API (LLD first)
+- Phase: 5 — Build · Milestone: M10 Backend + config API (next; branch `feat/m10-backend` from `main`)
+- Last done: M9 done 2026-10-22 — PR #16 merged, tagged `m9-done` and `week1-build` (`b4c7832`)
+- Next step: M10 in a new session, LLD first (tables, migrations, config endpoints, validation, error handler, logging, health)
 - Blockers: none
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37; start it with `-gpu swiftshader_indirect`, see log 2026-10-22 M9) + Pixel 7a
@@ -209,3 +209,5 @@
 - The developer marked the Pixel's real day (checklist incl. battery) and TalkBack by ear as passed; recorded as their result, with no per-item notes or battery % (A-19's figure stays unmeasured in the log)
 - Done: ROADMAP M9 ticked and status done; AGENTS card on M10
 - Verified: Android CI green on `feat/m9-week1` (PR #16); PR open, not merged. Merging from this session was blocked by the permission check, so the developer merges; then tag `m9-done` and `week1-build` on the merge
+- Done: the developer merged PR #16; tagged `m9-done` and `week1-build` on the merge (`b4c7832`). M9 closed; `feat/m10-backend` started from `main` for the close-out docs
+- Next: M10 Backend + config API
