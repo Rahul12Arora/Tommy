@@ -184,6 +184,40 @@
           "type": "integer",
           "minimum": 1,
           "maximum": 240
+        },
+        "obstructive": {
+          "description": "The break screen users can opt into (CR-10). Optional: a document without it gets these defaults.",
+          "type": "object",
+          "properties": {
+            "allowed": {
+              "type": "boolean",
+              "default": true
+            },
+            "buttonDelaySeconds": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 60,
+              "default": 10
+            },
+            "snoozeMinutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 60,
+              "default": 5
+            },
+            "maxSnoozes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10,
+              "default": 3
+            },
+            "returnAfterTakeBreakSeconds": {
+              "type": "integer",
+              "minimum": 10,
+              "maximum": 600,
+              "default": 60
+            }
+          }
         }
       }
     },

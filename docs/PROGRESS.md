@@ -1,9 +1,9 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M7 Limits, nags, breaks, idle lines (next; branch `feat/m7-limits-nags` created from `main`, plan only)
-- Last done: M6 done 2026-10-21 (`m6-done`, CI green on `main`). Planned CR-09 (actions ring, half ring D-87) and CR-10 (continuous screen use as a user setting, optional obstructive mode) into M7/M8
-- Next step: M7 LLD in a new session — answer Q-15 (what "obstructive" does) first; the rest of M7 doesn't wait on it
-- Blockers: none for starting M7; Q-15 for the obstructive part only
-- Open questions: Q-15 (obstructive mode, blocks that part of M7), Q-04 (success-metric targets, not blocking)
+- Phase: 5 — Build · Milestone: M7 Limits, nags, breaks, idle lines (on `feat/m7-limits-nags`; built and checked on the Pixel 7a, waiting for the developer's OK to close)
+- Last done: M7 built to §14.7 (D-93 to D-108 approved): unit tests 260/260, lint clean, debug + release build
+- Next step: CI on the PR → the developer's OK (and a real call while a break is due, if wanted) → merge → `m7-done` → M8 Focus sessions
+- Blockers: none. The API 37 emulator still hangs at boot ("hanging thread 'QEMU2 main loop'"); it needs a cold boot or wipe from Android Studio before it's used again
+- Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
 - Build setup: Homebrew JDK on PATH starts Gradle; daemon runs on JDK 25 (`android/README.md`). With the phone plugged in, set `ANDROID_SERIAL` for device tasks
 
@@ -128,3 +128,28 @@
 - Started `feat/m7-limits-nags` from `main` for M7's plan changes (no code)
 - Decided: CR-09 approved — the summary panel becomes an actions ring (reference: Logitech Options' ring, the developer's screenshot); D-87 half ring opening towards the middle. CR-10 approved in principle — continuous screen use (all apps, A-31) with a user-set limit and reaction mode, optionally obstructive; what obstructive does is Q-15 (open, with a recommendation). REQUIREMENTS v1.3 (US-07 reworded, US-30), ROADMAP M7/M8 tasks, story map and cut-line note, ARCHITECTURE §14.5 note, DISCUSSION O-03/O-04
 - Next: M7 in a new session — Q-15 answer, then the LLD (§14.7)
+- Decided: Q-15 answered (a+) → D-88 obstructive break screen (delayed buttons, default 10 s; 5 more minutes up to 3 times; always dismissable, D-07 stands) and D-89 (not during focus, hidden or a call). Ring: D-90 one Limits icon, D-91 the pet may slide along its edge to fit the ring (amends D-87), D-92 no ×, pet or outside tap closes. A-32 (pet slides back on close) to confirm. REQUIREMENTS US-30 and §8, ROADMAP M7, DISCUSSION O-03/O-04, parking lot (per-app exclusions)
+- Next: M7 LLD (§14.7)
+- Confirmed: A-32 (the pet moves back when the ring closes)
+- Done: M7 LLD as ARCHITECTURE §14.7 — limits and SM-02 per key, snooze, continuous use + SM-03, reaction mode and break screen, call detection, idle lines, N-02/N-04, glow, actions ring geometry and caption, S-11, limit goals, storage (events.subject, Room v4), debug scenarios, files, tests. D-93 to D-108 proposed. US-07 reworded for the Limits icon (D-90); parking lot +2
+- Learned: `AudioManager.getMode()` has no permission annotation in the API 37 sources, while `TelephonyManager.getCallState` and `TelecomManager.isInCall` need `READ_PHONE_STATE`, so D-89's call check needs no new permission (D-99)
+- Next: approval of D-93 to D-108, then build M7
+- Approved: D-93 to D-108 (decision log rows added); started building M7 straight through at the developer's request
+- Done: config `breaks.obstructive` (Kotlin defaults, schema, default config, bounds); `events.subject` + Room v4 auto-migration; tracker continuous use + ended breaks; `rules/` Limits, Nags, Breaks, Idle, ReactionSettings, CallState; Reactions orchestrating them; `service/Engine.kt` (loop moved out of PetService, one request channel); N-02, N-04; glow; Snooze on nag bubbles; actions ring (ActionsRing, RingLimitsList, RingLayout) replacing the summary panel; break screen window; S-11 Settings with links to S-03..S-07; shared `ui/SettingSlider.kt`; four scenarios
+- Changed while building: a pet coming back after a break says `pet_returned` only, not also `break_taken`; the caption stays readable by TalkBack (tests found it hidden); call state is read each tick while obstructive (so a call closes a showing screen); lint `InlinedApi` on the API 33 redirect modes suppressed with the reason
+- Verified: `assembleDebug assembleRelease testDebugUnitTest lint` clean; 260 unit tests (+66), 0 skipped; coverage `rules/` hand-written 315/324 lines (CallState, an Android wrapper, untested), `pet/RingLayout.kt` 23/23; a deliberate bug in Nags fails US08_NagsTest
+- Device tests: first full run 51/54 — US28_NavigationTest expected the old Settings placeholder (fixed) and two ring caption tests couldn't find the caption (fixed); the re-run of US07_ActionsRingTest then lost the emulator mid-test (it died, and now hangs at boot)
+- Not verified: device tests after the fixes, every by-hand check in §14.7, TalkBack, the Pixel 7a
+- Next: restart the emulator → `connectedDebugAndroidTest` → by-hand checks → tick ROADMAP → PR
+
+### 2026-10-22
+- BUG-01 · Ring runs off the right edge · Steps: pet on the right edge, tap it · Expected: the whole half ring on screen · Actual: the pet and the right-hand slots (total, hide, the far ends) past the edge · Env: Pixel 7a, debug build `d1f8ee7` · Evidence: the developer's screenshot · Severity: major
+- Cause: a `WRAP_CONTENT` overlay window is first measured at the dialog width (~320 dp, `config_prefDialogWidth` in `ViewRootImpl.measureHierarchy`, checked in the API 37 sources); Compose doesn't flag "too small", so the 364 dp ring box was squeezed and drawn past the window. Fixed: the window gets the box's width and height explicitly while the ring is open (`ringBoxWidth`), and wrap-content again when closed. Test: `US07_RingLayoutTest` (window width = geometry width, 364 dp on a 411 dp phone)
+- Verified: 261 unit tests, lint, debug build. Not verified on a phone: no device connected here; the developer to re-check on the Pixel 7a
+- With the developer's OK to wipe the phone's Nyx data: device tests on the Pixel 7a 54/54 (48 in the full run; the rest re-run alone after the phone locked mid-run; "stay awake on USB" was on for the run and is back off). Gradle's device-test run uninstalls the app, and `installDebugAndroidTest` also reinstalled it and wiped setup (my mistake); updates since then used `adb install -r`, which keeps data
+- BUG-02 · Continuous use starts at ~24 h in a scenario · Expected: from the scenario's start · Actual: 89 458 s · Cause: before the replay sees a screen event the tracker guesses "screen on", so the 24 h look-back counted. Fixed: `TrackerState.screenKnown`; scenarios start with a screen-on. Test: `US30_ContinuousUseTest` BUG02 · Severity: major
+- BUG-03 · An idle line right after a nag · Expected: idle only after quiet · Actual: "Have you had some water today?" a minute after the stretch nag · Cause: the idle request, due at the same tick, waited in the arbiter. Fixed: a waiting idle request is withdrawn when any bubble shows. Test: `US08_ReactionsTest` BUG03 (fails without the fix) · Severity: minor
+- Verified on the Pixel 7a by hand (details in ARCHITECTURE §14.7): nags, repeats, glow, snooze, break reminders and break taken, D-86's real path, ring (fit, captions, Limits list, Home's numbers, moving near the top and back), Settings, obstructive mode through every answer (also on real use), hidden → N-02/N-04. Mode set back to Gentle; the test APK removed; the pet shown again. Today's tracked time on the phone was wiped by the scenarios, as agreed
+- Not verified: a real call while a break is due; TalkBack by ear
+- Verified: 263 unit tests, lint, debug build
+- Verified: Android CI green on `feat/m7-limits-nags` (run 39665643172); PR #13 open, not merged

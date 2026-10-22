@@ -21,6 +21,13 @@ class US21_DefaultConfigTest {
     }
 
     @Test
+    fun D98_theDefaultDocument_spellsOutTheObstructiveDefaults_andADocumentWithoutThemGetsTheSame() {
+        assertEquals(ObstructiveConfig(), defaultConfig().breaks.obstructive)
+        assertTrue("minimal.json has no obstructive block", "obstructive" !in SharedFiles.fixture("valid", "minimal"))
+        assertEquals(ObstructiveConfig(allowed = true, buttonDelaySeconds = 10, snoozeMinutes = 5, maxSnoozes = 3, returnAfterTakeBreakSeconds = 60), SharedFiles.minimalConfig.breaks.obstructive)
+    }
+
+    @Test
     fun catAndBlob_andAtLeastTwoPersonalities_areEnabled() {
         val config = defaultConfig()
 

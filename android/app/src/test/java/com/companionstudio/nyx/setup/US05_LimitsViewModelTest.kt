@@ -10,6 +10,7 @@ import com.companionstudio.nyx.config.SettingPaths
 import com.companionstudio.nyx.config.SharedFiles
 import com.companionstudio.nyx.config.parseConfig
 import com.companionstudio.nyx.data.createSettingsStore
+import com.companionstudio.nyx.ui.sliderStepMinutes
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map

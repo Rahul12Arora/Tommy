@@ -21,6 +21,10 @@ data class TrackerSnapshot(
     val frontCategory: Category?,
     val stretchMs: Long,
     val todayMs: Map<Category, Long>,
+    /** Screen-on time since the last break, any app (US-30, D-96). */
+    val continuousMs: Long = 0,
+    /** Breaks that ended since the previous tick (§14.7). */
+    val endedBreaks: List<EndedBreak> = emptyList(),
 )
 
 /**
@@ -71,7 +75,7 @@ class Tracker(
             dao.deleteBefore(today.minusDays(RETENTION_DAYS).toString())
             cleanedUpDay = today
         }
-        return snapshot(result.state, today, rules)
+        return snapshot(result, today, rules)
     }
 
     /** The first start ever credits from the start of today; a very old cursor is cut to the catch-up limit. */
@@ -94,7 +98,8 @@ class Tracker(
         choices[packageName]
             ?: suggestCategory(packageName, androidCategories.getOrPut(packageName) { androidCategoryOf(packageName) }, document)
 
-    private suspend fun snapshot(state: TrackerState, today: LocalDate, rules: CreditRules): TrackerSnapshot {
+    private suspend fun snapshot(result: Advanced, today: LocalDate, rules: CreditRules): TrackerSnapshot {
+        val state = result.state
         val front = state.front?.packageName?.takeIf { state.screenOn && rules.isCounted(it) }
         return TrackerSnapshot(
             day = today,
@@ -102,6 +107,8 @@ class Tracker(
             frontCategory = front?.let(rules.categoryOf),
             stretchMs = if (state.stretchDay == today) state.stretchMs else 0,
             todayMs = dao.categoryTotals(today.toString()).associate { it.category to it.durationMs },
+            continuousMs = state.continuousMs,
+            endedBreaks = result.breaks,
         )
     }
 

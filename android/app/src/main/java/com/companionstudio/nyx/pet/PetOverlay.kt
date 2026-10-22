@@ -21,6 +21,10 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.companionstudio.nyx.AppContainer
 import com.companionstudio.nyx.MainActivity
 import com.companionstudio.nyx.home.TodaySummary
+import com.companionstudio.nyx.rules.RingStatus
+import com.companionstudio.nyx.rules.ShownBubble
+import com.companionstudio.nyx.service.EngineRequest
+import com.companionstudio.nyx.ui.theme.NyxTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -30,14 +34,14 @@ import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 /**
- * The pet on screen (O-01), its summary panel (O-03) and its speech bubble (O-02), in one overlay window owned by
- * the pet service (§14.5, §14.6). The window is the pet's size while nothing is beside it, so taps beside it reach
- * the app below (US-06). Main thread only, except [showBubble].
+ * The pet on screen (O-01), its actions ring (O-03) and its speech bubble (O-02), in one overlay window owned by
+ * the pet service (§14.5, §14.6, §14.7). The window is the pet's size while nothing is beside it, so taps beside it
+ * reach the app below (US-06). Main thread only. [request] passes the pet's buttons to the engine (D-103).
  */
 class PetOverlay(
     private val service: Context,
     private val container: AppContainer,
-    private val requestTick: () -> Unit,
+    private val request: (EngineRequest) -> Unit,
 ) {
     // A window context, not the service's: Android expects UI to come from a visual context (D-78)
     private val windowContext = service.getSystemService(DisplayManager::class.java)
@@ -52,9 +56,12 @@ class PetOverlay(
     private var summary by mutableStateOf<TodaySummary?>(null)
     private var panelOpen by mutableStateOf(false)
     private var panelLayout by mutableStateOf(PanelLayout(Side.RIGHT, below = true, maxHeight = 0.dp))
+    private var ringMaxWidth by mutableStateOf(0.dp)
     private var hideMinutes by mutableIntStateOf(0)
     private var focusEnabled by mutableStateOf(false)
-    private var bubble by mutableStateOf<String?>(null)
+    private var glowing by mutableStateOf(false)
+    private var status by mutableStateOf(RingStatus())
+    private var bubble by mutableStateOf<ShownBubble?>(null)
     private var bubbleSeconds = 0
     private var bubbleTimeout: Job? = null
 
@@ -90,20 +97,32 @@ class PetOverlay(
         addView(
             ComposeView(windowContext).apply {
                 setContent {
-                    // The panel wins; a bubble waits behind it and shows if the panel closes in time (D-84)
-                    val beside = if (panelOpen) {
-                        Beside.Panel(
-                            PanelActions(
-                                hideMinutes = hideMinutes,
-                                onFocus = if (focusEnabled) ::openFocus else null,
-                                onOpenApp = ::openApp,
-                                onHide = ::hide,
-                            ),
-                        )
+                    val today = summary
+                    // The ring wins; a bubble waits behind it and shows if the ring closes in time (D-84)
+                    if (panelOpen && today != null) {
+                        NyxTheme {
+                            ActionsRing(
+                                summary = today,
+                                status = status,
+                                glowing = glowing,
+                                actions = RingActions(
+                                    hideMinutes = hideMinutes,
+                                    onFocus = if (focusEnabled) ::openFocus else null,
+                                    onOpenApp = ::openApp,
+                                    onHide = ::hide,
+                                ),
+                                side = position.side,
+                                maxWidth = ringMaxWidth,
+                                onPetClick = ::togglePanel,
+                                onClose = ::closePanel,
+                            )
+                        }
                     } else {
-                        bubble?.let { Beside.Bubble(it, onDismiss = ::dismissBubble) }
+                        val content = bubble?.let { shown ->
+                            BubbleContent(shown.line, onSnooze = shown.snoozeKey?.let { key -> { snooze(key) } }, onDismiss = ::dismissBubble)
+                        }
+                        PetWindow(summary, glowing, content, panelLayout, onPetClick = ::togglePanel)
                     }
-                    PetWindow(summary = summary, beside = beside, layout = panelLayout, onPetClick = ::togglePanel)
                 }
             },
         )
@@ -131,17 +150,27 @@ class PetOverlay(
         }
     }
 
-    /** Shows [line] for `bubbles.showSeconds`, replacing any bubble already showing. Safe to call from any thread. */
-    fun showBubble(line: String) {
-        scope.launch {
-            bubble = line
-            bubbleTimeout?.cancel()
-            // Real seconds even under the debug fast clock (D-67): this is reading time, not usage time
-            bubbleTimeout = scope.launch {
-                delay(bubbleSeconds * 1000L)
-                bubble = null
-            }
+    /** Shows [shown] for `bubbles.showSeconds`, replacing any bubble already showing. */
+    fun showBubble(shown: ShownBubble) {
+        bubble = shown
+        bubbleTimeout?.cancel()
+        // Real seconds even under the debug fast clock (D-67): this is reading time, not usage time
+        bubbleTimeout = scope.launch {
+            delay(bubbleSeconds * 1000L)
+            bubble = null
         }
+    }
+
+    /** After each tick: the glow and what the ring shows that only the engine knows. */
+    fun update(glowing: Boolean, status: RingStatus) {
+        this.glowing = glowing
+        this.status = status
+    }
+
+    /** The break screen is about to cover everything: close the ring and any bubble. */
+    fun makeWayForBreakScreen() {
+        closePanel()
+        dismissBubble()
     }
 
     /** The screen rotated or changed size: same edge, same relative height. */
@@ -175,15 +204,34 @@ class PetOverlay(
         attached = false
     }
 
-    /** Anchors the window so the pet stays put whether the panel is open or not (D-71). */
+    /**
+     * Anchors the window so the pet stays put while a bubble opens beside it (D-71). While the ring is open the window
+     * is the ring's box, and the pet moves along its edge if the box wouldn't fit (D-91, D-102); it's back at its
+     * stored place once the ring closes (A-32).
+     */
     @SuppressLint("RtlHardcoded") // the pet sits on a physical edge of the screen, whatever the text direction
     private fun place() {
         val area = area()
         val placement = placement(position, area, petPx)
         val horizontal = if (placement.side == Side.LEFT) Gravity.LEFT else Gravity.RIGHT
-        val vertical = if (placement.fromBottom) Gravity.BOTTOM else Gravity.TOP
-        params.gravity = horizontal or vertical
         params.x = 0
+        if (panelOpen) {
+            val (_, petTop) = petTopLeft(placement, area, petPx)
+            val box = ringBox(petTop + petPx / 2, area.height, (RING_HALF_HEIGHT_DP * density).roundToInt())
+            params.gravity = horizontal or Gravity.TOP
+            params.y = box.top.coerceAtLeast(0)
+            // An explicit size: wrap-content would be measured at the dialog width first and cut the ring off
+            val areaWidthDp = area.width / density
+            params.width = (ringBoxWidth(areaWidthDp) * density).roundToInt()
+            params.height = box.height
+            ringMaxWidth = areaWidthDp.dp
+            if (attached) windowManager.updateViewLayout(root, params)
+            return
+        }
+        val vertical = if (placement.fromBottom) Gravity.BOTTOM else Gravity.TOP
+        params.width = LayoutParams.WRAP_CONTENT
+        params.height = LayoutParams.WRAP_CONTENT
+        params.gravity = horizontal or vertical
         params.y = placement.offsetY
         val roomPx = panelMaxHeight(placement, area, petPx) - (PANEL_GAP.value * density).roundToInt()
         panelLayout = PanelLayout(placement.side, below = !placement.fromBottom, maxHeight = (roomPx / density).coerceAtLeast(0f).dp)
@@ -242,8 +290,8 @@ class PetOverlay(
     private fun changePanel(open: Boolean) {
         if (open == panelOpen) return
         panelOpen = open
-        // Numbers at most a minute old: tick now; the panel updates when it commits (US-07, D-77)
-        if (open) requestTick()
+        // Numbers at most a minute old: tick now; the ring updates when it commits (US-07, D-77)
+        if (open) request(EngineRequest.Tick)
         // Outside taps only matter while the panel is open; watching them always would wake the app on every touch
         params.flags = if (open) {
             params.flags or LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
@@ -251,7 +299,12 @@ class PetOverlay(
             params.flags and LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH.inv()
         }
         root.dragEnabled = !open
-        if (attached) windowManager.updateViewLayout(root, params)
+        place()
+    }
+
+    private fun snooze(key: String) {
+        dismissBubble()
+        request(EngineRequest.Snooze(key))
     }
 
     private fun openFocus() = open(MainActivity.Open.FOCUS)

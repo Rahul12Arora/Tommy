@@ -34,7 +34,10 @@ data class BubbleRequest(
 )
 
 /** What the arbiter remembers between ticks. */
-data class ArbiterState(val pending: List<BubbleRequest> = emptyList(), val lastShownAt: Instant? = null)
+data class ArbiterState(val pending: List<BubbleRequest> = emptyList(), val lastShownAt: Instant? = null) {
+    /** Withdraws a waiting request that no longer applies, e.g. a nag after leaving the app (§14.7). */
+    fun without(key: String): ArbiterState = copy(pending = pending.filterNot { it.key == key })
+}
 
 /** What the pet's situation allows this tick. [focusActive] stays `false` until focus sessions arrive (M8). */
 data class BubbleConditions(val petOnScreen: Boolean, val focusActive: Boolean, val minGap: Duration)

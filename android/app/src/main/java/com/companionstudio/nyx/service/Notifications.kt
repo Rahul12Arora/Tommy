@@ -17,10 +17,15 @@ import com.companionstudio.nyx.setup.SetupPermission
 import java.time.Instant
 import java.util.Date
 
-/** Channels and the notifications the service posts (§14.4, §14.5): N-01 pet running, N-03 permission lost. */
+/**
+ * Channels and the notifications the service posts (§14.4, §14.5, §14.7): N-01 pet running, N-02 break reminder,
+ * N-03 permission lost, N-04 nag while the pet isn't on screen.
+ */
 object Notifications {
     const val PET_RUNNING_ID = 1
+    private const val BREAK_REMINDER_ID = 2
     private const val PERMISSION_LOST_ID = 3
+    private const val NAG_ID = 4
     private const val CHANNEL_PET = "pet"
     private const val CHANNEL_ALERTS = "alerts"
     private const val TAG = "Nyx"
@@ -94,6 +99,35 @@ object Notifications {
 
     fun cancelPermissionLost(context: Context) {
         NotificationManagerCompat.from(context).cancel(PERMISSION_LOST_ID)
+    }
+
+    /** N-02 with the pet's [line] (US-11). One at a time: a new reminder replaces the last (D-104). */
+    fun showBreakReminder(context: Context, line: String) =
+        showLine(context, BREAK_REMINDER_ID, context.getString(R.string.notification_break_title), line)
+
+    /** The break was taken, so its reminder no longer applies (D-104). */
+    fun cancelBreakReminder(context: Context) {
+        NotificationManagerCompat.from(context).cancel(BREAK_REMINDER_ID)
+    }
+
+    /** N-04: a nag while the pet is hidden or can't draw (D-24). One at a time, like N-02. */
+    fun showNag(context: Context, line: String) =
+        showLine(context, NAG_ID, context.getString(R.string.app_name), line)
+
+    private fun showLine(context: Context, id: Int, title: String, line: String) {
+        if (context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            Log.w(TAG, "Notification $id not shown: notifications are off")
+            return
+        }
+        val notification = NotificationCompat.Builder(context, CHANNEL_ALERTS)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(title)
+            .setContentText(line)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(line))
+            .setAutoCancel(true)
+            .setContentIntent(openApp(context, MainActivity.intent(context, MainActivity.Open.HOME), requestCode = id))
+            .build()
+        NotificationManagerCompat.from(context).notify(id, notification)
     }
 
     private fun withoutIt(permission: SetupPermission): Int = when (permission) {

@@ -17,10 +17,11 @@ import com.companionstudio.nyx.tracking.TrackingCursor
 /** The one Room database. Entities and DAOs live in their feature packages (§14.1). */
 @Database(
     entities = [AppCategoryEntity::class, DailyUsage::class, TrackingCursor::class, PetEvent::class],
-    version = 3,
+    version = 4,
     exportSchema = true,
-    // Version 3 only adds the event log, so debug installs keep their categories and totals (D-85)
-    autoMigrations = [AutoMigration(from = 2, to = 3)],
+    // Version 3 only adds the event log (D-85), version 4 only a nullable column to it (D-93),
+    // so debug installs keep their categories and totals
+    autoMigrations = [AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4)],
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun appCategoryDao(): AppCategoryDao

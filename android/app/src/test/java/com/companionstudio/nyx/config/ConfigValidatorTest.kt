@@ -49,6 +49,23 @@ class ConfigValidatorTest {
     }
 
     @Test
+    fun obstructiveBounds_atTheEdgesPass_andOnePastFails() {
+        val edges = minimal.breaks.obstructive.copy(buttonDelaySeconds = 60, snoozeMinutes = 60, maxSnoozes = 10, returnAfterTakeBreakSeconds = 10)
+        assertEquals(emptyList<ConfigError>(), validateConfig(minimal.copy(breaks = minimal.breaks.copy(obstructive = edges))))
+
+        val past = edges.copy(buttonDelaySeconds = 61, snoozeMinutes = 0, maxSnoozes = 11, returnAfterTakeBreakSeconds = 601)
+        assertEquals(
+            listOf(
+                ConfigRule.SCHEMA to "breaks.obstructive.buttonDelaySeconds",
+                ConfigRule.SCHEMA to "breaks.obstructive.snoozeMinutes",
+                ConfigRule.SCHEMA to "breaks.obstructive.maxSnoozes",
+                ConfigRule.SCHEMA to "breaks.obstructive.returnAfterTakeBreakSeconds",
+            ),
+            errorsOf(minimal.copy(breaks = minimal.breaks.copy(obstructive = past))),
+        )
+    }
+
+    @Test
     fun minAboveMax_isASettingRangeError() {
         val config = minimal.copy(focus = minimal.focus.copy(checkinMinutes = Setting(default = 10, min = 20, max = 10, userEditable = true)))
 

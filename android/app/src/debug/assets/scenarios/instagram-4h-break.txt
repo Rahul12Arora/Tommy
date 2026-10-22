@@ -1,0 +1,4 @@
+# Four hours of Instagram walk the pet to 🐾; a real break after the reminder brings it back (D-86, M7)
+app com.instagram.android 4h
+screen_off 6m
+idle 1m

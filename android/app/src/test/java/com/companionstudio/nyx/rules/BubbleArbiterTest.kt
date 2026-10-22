@@ -153,4 +153,12 @@ class BubbleArbiterTest {
         assertNull(result.bubble)
         assertEquals(ArbiterState(), result.state)
     }
+
+    @Test
+    fun without_withdrawsOnlyThatKeysWaitingRequest() {
+        val state = ArbiterState(pending = listOf(request(BubbleTrigger.LIMIT_REPEAT, key = "limit:social"), request(BubbleTrigger.IDLE)))
+
+        assertEquals(listOf("idle"), state.without("limit:social").pending.map { it.key })
+        assertEquals(state, state.without("limit:games"))
+    }
 }

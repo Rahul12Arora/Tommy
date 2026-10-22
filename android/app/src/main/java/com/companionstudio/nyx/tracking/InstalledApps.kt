@@ -34,6 +34,13 @@ class InstalledApps(private val packageManager: PackageManager, private val ownP
         null // the row just shows no icon; the next list won't contain the app
     }
 
+    /** The app's name as the launcher shows it; its package name for an app Nyx can't see. Call off the main thread. */
+    fun label(packageName: String): String = try {
+        packageManager.getApplicationLabel(packageManager.getApplicationInfo(packageName, 0)).toString()
+    } catch (_: PackageManager.NameNotFoundException) {
+        packageName
+    }
+
     /** Android's category for any app Nyx can see; `CATEGORY_UNDEFINED` (→ Neutral) for one it can't. */
     fun androidCategory(packageName: String): Int = try {
         packageManager.getApplicationInfo(packageName, 0).category

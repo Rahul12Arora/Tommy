@@ -122,26 +122,71 @@
     <string name="home_pet_hidden">The pet is hidden for now.</string>
     <string name="show_pet">Show pet</string>
 
-    <!-- Pet overlay (§14.5): O-01 pet, O-02 speech bubble, O-03 summary panel -->
+    <!-- Pet overlay (§14.5, §14.7): O-01 pet, O-02 speech bubble, O-03 actions ring -->
     <string name="pet_description">Nyx, your pet</string>
+    <string name="pet_description_over_limit">Nyx, your pet. Over a limit</string>
     <string name="pet_open_summary">show today\'s summary</string>
     <string name="pet_close_summary">close the summary</string>
     <string name="panel_open_app">Open Nyx</string>
     <string name="panel_hide">Hide for %1$d min</string>
     <string name="bubble_snooze">Snooze</string>
     <string name="bubble_dismiss">Dismiss</string>
+    <string name="ring_total">Screen time today: %1$s</string>
+    <string name="ring_balance">Productive %1$s · doomscrolling %2$s</string>
+    <string name="ring_limits_title">Limits</string>
+    <string name="ring_limits_none">No limits set</string>
+    <string name="ring_limit">%1$s: %2$s of %3$s</string>
+    <string name="ring_limit_over">%1$s: %2$s of %3$s · over</string>
+    <string name="ring_stretch">Without a break: %1$s of %2$s</string>
+    <string name="ring_stretch_over">Without a break: %1$s of %2$s · over</string>
+    <string name="ring_snoozed_until">Snoozed until %1$s</string>
+    <string name="ring_continuous">On screen for %1$s without a break</string>
+    <string name="ring_continuous_reminder">On screen for %1$s without a break · reminder at %2$s</string>
+    <string name="ring_back">Back</string>
 
-    <!-- Notifications (§14.4, §14.5): N-01 pet running, N-03 permission lost -->
+    <!-- Nag placeholders (§14.7): {category} for the total limit -->
+    <string name="limit_total_name">screen time</string>
+
+    <!-- O-04 break screen (§14.7) -->
+    <string name="break_screen_heading">You\'ve been on your screen for %1$s without a break</string>
+    <string name="break_screen_take_break">Take a break</string>
+    <string name="break_screen_five_more">5 more minutes</string>
+    <string name="break_screen_wait">Available in %1$d s</string>
+
+    <!-- Notifications (§14.4, §14.5, §14.7): N-01 pet running, N-02 break reminder, N-03 permission lost, N-04 nag -->
     <string name="notification_channel_pet">Pet is running</string>
     <string name="notification_channel_alerts">Alerts</string>
     <string name="notification_pet_running">Nyx is keeping an eye on your screen time.</string>
     <string name="notification_pet_hidden">The pet is hidden until %1$s.</string>
     <string name="notification_permission_lost_title">Nyx lost a permission</string>
     <string name="notification_permission_lost_fix">Tap to turn it back on.</string>
+    <string name="notification_break_title">Break time</string>
+
+    <!-- S-11 Settings (§14.7) -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_pet">Pet and personality</string>
+    <string name="settings_categories">App categories</string>
+    <string name="settings_limits">Limits</string>
+    <string name="settings_nags">Nags</string>
+    <string name="settings_nag_repeat">Nag again every</string>
+    <string name="settings_snooze">Snooze for</string>
+    <string name="settings_breaks">Breaks</string>
+    <string name="settings_break_after">Break reminder after</string>
+    <string name="settings_break_mode">When a break is due</string>
+    <string name="settings_mode_gentle">Gentle</string>
+    <string name="settings_mode_gentle_hint">The pet says so and you get a notification.</string>
+    <string name="settings_mode_obstructive">Obstructive</string>
+    <string name="settings_mode_obstructive_hint">A break screen covers the app until you choose. Its buttons work after %1$d s, and you can always close it.</string>
+    <string name="settings_mode_obstructive_off">Turned off for everyone.</string>
+    <string name="settings_idle">Idle chatter</string>
+    <string name="settings_idle_hint">The pet says something now and then.</string>
+    <string name="settings_day">Day</string>
+    <string name="settings_reset_hour">Day starts at</string>
+    <string name="settings_stats">Share anonymous stats</string>
+    <string name="settings_permissions">Permissions</string>
 
     <!-- Screens not built yet -->
     <string name="focus_setup_title">Focus</string>
     <string name="trends_title">Trends</string>
-    <string name="settings_title">Settings</string>
     <string name="placeholder_not_built">Not built yet.</string>
 </resources>

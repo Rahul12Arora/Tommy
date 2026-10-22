@@ -14,6 +14,8 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.companionstudio.nyx.home.HomeRoute
 import com.companionstudio.nyx.service.PetService
+import com.companionstudio.nyx.settings.SettingsLinks
+import com.companionstudio.nyx.settings.SettingsRoute
 import com.companionstudio.nyx.setup.AdultsOnlyScreen
 import com.companionstudio.nyx.setup.AgeCheckRoute
 import com.companionstudio.nyx.setup.AppCategoriesRoute
@@ -42,8 +44,14 @@ import kotlinx.serialization.Serializable
 @Serializable data object Limits : NavKey
 @Serializable data object StatsOptIn : NavKey
 
-// S-03 on its own, to fix a permission after setup (N-03; Settings from M7). Continue goes back
+// S-03 on its own, to fix a permission after setup (N-03, Settings). Continue goes back
 @Serializable data object FixPermissions : NavKey
+
+// S-04 to S-07 opened from Settings (§14.7): the same screens, Continue goes back
+@Serializable data object SettingsChoosePet : NavKey
+@Serializable data object SettingsAppCategories : NavKey
+@Serializable data object SettingsLimits : NavKey
+@Serializable data object SettingsStats : NavKey
 
 /** [open]: from N-03, S-03 sits on top of Home (§14.4); from the pet's panel, Focus setup does (§14.5). */
 @Composable
@@ -78,10 +86,31 @@ fun AppNavigation(container: AppContainer, open: MainActivity.Open = MainActivit
                     onSettings = { backStack.add(Settings) },
                 )
             }
-            // Placeholders until S-09 (M8), S-10 (M13) and S-11 (M7) exist
+            // Placeholders until S-09 (M8) and S-10 (M13) exist
             entry<FocusSetup> { PlaceholderScreen(stringResource(R.string.focus_setup_title)) }
             entry<Trends> { PlaceholderScreen(stringResource(R.string.trends_title)) }
-            entry<Settings> { PlaceholderScreen(stringResource(R.string.settings_title)) }
+            entry<Settings> {
+                SettingsRoute(
+                    config = container.effectiveConfig,
+                    userValues = container.configUserValues,
+                    reactionSettings = container.reactionSettings,
+                    links = SettingsLinks(
+                        onPet = { backStack.add(SettingsChoosePet) },
+                        onCategories = { backStack.add(SettingsAppCategories) },
+                        onLimits = { backStack.add(SettingsLimits) },
+                        onStats = { backStack.add(SettingsStats) },
+                        onPermissions = { backStack.add(FixPermissions) },
+                    ),
+                )
+            }
+            val back: () -> Unit = { backStack.removeLastOrNull() }
+            entry<SettingsChoosePet> { ChoosePetRoute(container.effectiveConfig, container.petSettings, onNext = back) }
+            entry<SettingsAppCategories> {
+                AppCategoriesRoute(container.installedApps, container.effectiveConfig, container.appCategories, onNext = back)
+            }
+            entry<SettingsLimits> { LimitsRoute(container.effectiveConfig, container.configUserValues, onNext = back) }
+            // Finish marks setup done again, which it already is
+            entry<SettingsStats> { StatsOptInRoute(container.statsSettings, container.setupSettings, onFinished = back) }
 
             entry<Welcome> { WelcomeScreen(onStart = { backStack.add(AgeCheck) }) }
             entry<AgeCheck> {

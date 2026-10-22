@@ -92,7 +92,14 @@
       "userEditable": true
     },
     "breakMinutes": 5,
-    "repeatMinutes": 10
+    "repeatMinutes": 10,
+    "obstructive": {
+      "allowed": true,
+      "buttonDelaySeconds": 10,
+      "snoozeMinutes": 5,
+      "maxSnoozes": 3,
+      "returnAfterTakeBreakSeconds": 60
+    }
   },
   "focus": {
     "durationMinutes": {

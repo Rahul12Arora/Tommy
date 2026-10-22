@@ -66,7 +66,23 @@ data class StretchLimit(val minutes: Setting, val categories: List<Category>)
 data class NagsConfig(val repeatMinutes: Setting, val snoozeMinutes: Setting, val maxSnoozesPerDay: Int)
 
 @Serializable
-data class BreaksConfig(val afterMinutes: Setting, val breakMinutes: Int, val repeatMinutes: Int)
+data class BreaksConfig(
+    val afterMinutes: Setting,
+    val breakMinutes: Int,
+    val repeatMinutes: Int,
+    /** Added in M7 with a default, so a document without it stays valid and `schemaVersion` stays 1 (§14.7). */
+    val obstructive: ObstructiveConfig = ObstructiveConfig(),
+)
+
+/** The break screen users can opt into (CR-10, D-88, D-98). [allowed] `false` turns the option off for everyone. */
+@Serializable
+data class ObstructiveConfig(
+    val allowed: Boolean = true,
+    val buttonDelaySeconds: Int = 10,
+    val snoozeMinutes: Int = 5,
+    val maxSnoozes: Int = 3,
+    val returnAfterTakeBreakSeconds: Int = 60,
+)
 
 @Serializable
 data class FocusConfig(val durationMinutes: Setting, val checkinMinutes: Setting)

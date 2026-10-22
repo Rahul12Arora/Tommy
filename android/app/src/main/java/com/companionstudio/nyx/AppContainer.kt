@@ -2,8 +2,10 @@ package com.companionstudio.nyx
 
 import android.app.usage.UsageStatsManager
 import android.content.Context
+import android.media.AudioManager
 import android.util.Log
 import androidx.datastore.preferences.preferencesDataStoreFile
+import com.companionstudio.nyx.config.Category
 import com.companionstudio.nyx.config.ConfigManager
 import com.companionstudio.nyx.config.ConfigUserValues
 import com.companionstudio.nyx.config.EffectiveConfig
@@ -16,6 +18,10 @@ import com.companionstudio.nyx.home.SummaryRepository
 import com.companionstudio.nyx.home.TrackingSummaryRepository
 import com.companionstudio.nyx.pet.PetSettings
 import com.companionstudio.nyx.pet.PetVisibility
+import com.companionstudio.nyx.rules.AudioCallState
+import com.companionstudio.nyx.rules.CallState
+import com.companionstudio.nyx.rules.NagLabels
+import com.companionstudio.nyx.rules.ReactionSettings
 import com.companionstudio.nyx.rules.Reactions
 import com.companionstudio.nyx.setup.PermissionChecks
 import com.companionstudio.nyx.setup.SetupSettings
@@ -26,6 +32,7 @@ import com.companionstudio.nyx.tracking.SystemUsageSource
 import com.companionstudio.nyx.tracking.Tracker
 import com.companionstudio.nyx.tracking.UsageSource
 import com.companionstudio.nyx.tracking.excludedPackages
+import com.companionstudio.nyx.ui.labelRes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -62,6 +69,8 @@ class AppContainer(private val context: Context) {
     val appCategories = AppCategoryRepository(database.appCategoryDao())
     val installedApps = InstalledApps(context.packageManager, context.packageName)
     val configUserValues = ConfigUserValues(settingsStore)
+    val reactionSettings = ReactionSettings(settingsStore)
+    val callState: CallState = AudioCallState(context.getSystemService(AudioManager::class.java))
 
     // Read from disk once, the first time something collects. M12 swaps this for a flow that follows the fetched document
     private val baseConfig by lazy { configManager.loadBase() }
@@ -89,8 +98,17 @@ class AppContainer(private val context: Context) {
         androidCategoryOf = installedApps::androidCategory,
     )
 
-    /** One per service run, like the tracker: the bubble arbiter and the recent lines live in memory (§14.6). */
-    fun newReactions() = Reactions(database.petEventDao(), clock)
+    /** One per service run, like the tracker: nags, breaks, the arbiter and the recent lines live in memory (§14.7). */
+    fun newReactions(): Reactions {
+        val appLabels = HashMap<String, String>()
+        val labels = object : NagLabels {
+            override fun app(packageName: String) = appLabels.getOrPut(packageName) { installedApps.label(packageName) }
+
+            override fun category(category: Category?) =
+                context.getString(category?.labelRes ?: R.string.limit_total_name)
+        }
+        return Reactions(database.petEventDao(), clock, labels)
+    }
 
     private companion object {
         const val TAG = "Nyx"

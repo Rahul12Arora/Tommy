@@ -27,5 +27,15 @@ class DurationFormatTest {
     @Test
     fun negative_isRejected() {
         assertThrows(IllegalArgumentException::class.java) { formatDuration(-1) }
+        assertThrows(IllegalArgumentException::class.java) { formatShort(-1) }
+    }
+
+    @Test
+    fun D101_short_fitsTheRingsSlots() {
+        assertEquals("0m", formatShort(59))
+        assertEquals("47m", formatShort(47 * 60))
+        assertEquals("2h", formatShort(2 * 3600))
+        assertEquals("1h05", formatShort(3600 + 5 * 60))
+        assertEquals("3h12", formatShort(11_520))
     }
 }
