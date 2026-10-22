@@ -621,6 +621,7 @@ Tests: every admin route is checked for `401` without a session (M11).
 | Add a new setting | `shared/config.schema.json` + `shared/default-config.json` + `android/…/config/` (model, validator) + a fixture in `shared/fixtures/` + the feature package that uses it |
 | Change the defaults the app ships with | `shared/default-config.json` |
 | Change a config validation rule | `android/…/config/ConfigValidator.kt` + a fixture in `shared/fixtures/invalid/` + the backend's `config.validation.js` (M10) |
+| Add a bubble trigger | `android/…/config/BubbleTrigger.kt` + the trigger list in `backend/src/features/config/config.validation.js` + its lines in `shared/default-config.json` |
 | Change how usage is counted, categories, stretches | `android/…/tracking/` |
 | Change when the pet nags, reminds or talks | `android/…/rules/` |
 | Change mood math | `android/…/mood/` (weights and bands are config) |
@@ -631,7 +632,7 @@ Tests: every admin route is checked for `401` without a session (M11).
 | Change day boundaries or time-zone handling | `android/…/data/DayClock` |
 | Add an API endpoint | `backend/src/features/<feature>/<feature>.routes.js` |
 | Change admin login or session | `backend/src/features/auth/` + `backend/src/middleware/` |
-| Change the database schema | a new `backend/migrations/NNN_<name>.sql` |
+| Change the database schema | a new `backend/migrations/NNN_<name>.sql` (applied at start-up by `backend/src/lib/migrate.js`) |
 | Change a console screen | `admin/src/features/<feature>/` |
 | Change seed or test data | `shared/fixtures/` · `backend/seeds/` · Android debug scenarios in `android/app/src/debug/` |
 | Change what CI runs | `.github/workflows/android.yml` (Node workflow from M10) |
@@ -649,11 +650,12 @@ backend/
 │   │   ├── stats/     ← stats.routes.js, stats.service.js, stats.model.js, stats.test.js
 │   │   └── health/
 │   ├── middleware/    ← requireAdmin.js, errorHandler.js
-│   ├── lib/           ← db.js, password.js (scrypt), schema.js (loads shared schema)
+│   ├── lib/           ← db.js, env.js, migrate.js, sharedFiles.js, httpError.js, password.js (scrypt, M11)
 │   ├── app.js         ← builds the Fastify app (used by tests)
 │   └── server.js      ← starts it
 ├── migrations/        ← 001_init.sql …
-├── scripts/           ← migrate.js, hash-password.js
+├── scripts/           ← create-test-db.sql, hash-password.js (M11)
+├── test/              ← testDb.js (test helper)
 ├── seeds/
 ├── Dockerfile
 ├── .env.example
@@ -695,7 +697,7 @@ Written at the start of each milestone, before code.
 | Limits, nags, breaks, idle lines, actions ring, break screen | M7 | done 2026-10-21 (§14.7) |
 | Focus sessions | M8 | done 2026-10-22 (§14.8) |
 | Week-1 check fixes | M9 | not a module; changes listed in §14.9 |
-| Backend foundation + config API | M10 | pending |
+| Backend foundation + config API | M10 | drafted 2026-10-22, awaiting approval (§14.10) |
 | Admin auth + console | M11 | pending |
 | App remote config | M12 | pending |
 | Trends + positive goals | M13 | pending |
@@ -2235,3 +2237,228 @@ M9 builds no module; these are the screen changes from its checks (PROGRESS 2026
 | A-01 | S-03's "Some things won't work" list scrolls | `setup/PermissionsScreen.kt` | `US01_PermissionsScreenTest` A01 |
 | A-02 | Sub-headings marked as headings: S-04 Pet/Personality, S-07 What's shared/Never shared, Home Goals | `setup/ChoosePetScreen.kt`, `setup/StatsOptInScreen.kt`, `home/SummaryNumbers.kt` | `SetupSubheadingsTest`, `US28_HomeScreenTest` A02 |
 | A-03 | Sliders already give TalkBack their name and value; no change. Material's slider is 44 dp tall (below the 48 dp guideline); left as Material draws it | — | `US05_LimitsScreenTest` A03 |
+
+### 14.10 M10 — Backend foundation + config API
+
+Written 2026-10-22. D-121 to D-130 and CR-11 proposed, waiting for approval.
+
+**Purpose:** the backend serves the published config to any phone with an ETag and `304`, runs locally in Docker, and checks config documents exactly like the phone does. Nothing here logs anyone in or changes the config (→ M11) or takes stats (→ M14). Stories: US-19 (serving side), US-21 (the fixtures agree, so a document the phone would reject can't be published).
+
+**What gets installed** (`backend/package.json`)
+- `fastify` 5.12.7, `pg` 8.23.1, `@biomejs/biome` 2.5.15 (dev) — already in the register.
+- **`ajv` 8.20.0 (MIT) — new, CR-11.** Validates documents against `shared/config.schema.json`. Fastify already installs Ajv 8 for its own use (through `@fastify/ajv-compiler` 4, `ajv ^8.12.0`), so npm reuses one copy; listing it ourselves only makes the import legitimate and pins it. Without it: either import a package we don't declare (it can disappear in any Fastify update) or hand-write a JSON Schema checker.
+- The other register packages (`@fastify/cookie`, `rate-limit`, `helmet`, `static`) are installed by the milestone that uses them (M11).
+- Node **26.12.1** (21 Oct 2026 security release) in `engines`, CI and the image `node:26.12.1-alpine3.24`; Postgres image `postgres:18.6-alpine3.24` (D-128). nodejs.org still lists Node 26 as "Current" today; when it's promoted to LTS (planned for this month) we move to that patch, which needs no code change.
+
+**Files**
+
+| File | Responsibility |
+|---|---|
+| `backend/package.json` | `"type": "module"`, `engines`, scripts below |
+| `backend/biome.json` | Biome lint + format settings |
+| `backend/.env.example` | The M10 variables (below) |
+| `backend/README.md` | What it is · how to run · how to test |
+| `backend/Dockerfile` | One stage in M10: Node image, `npm ci --omit=dev`, copies `backend/` code and `shared/config.schema.json` + `shared/default-config.json`, runs as user `node`. The console build stage is added in M11 (D-42) |
+| `.dockerignore` (repo root) | Keeps `android/`, `docs/`, `.git`, `node_modules` and `.env` out of the build context (the context is the repo root, D-42) |
+| `docker-compose.yml` (repo root) | `db` + `api` (below) |
+| `src/server.js` | Start-up: read env → pool → migrations → initial config → `buildApp` → listen; closes cleanly on `SIGTERM`/`SIGINT` |
+| `src/app.js` | `buildApp({ pool, logLevel, trustProxy })`: Fastify with the logger settings, error and not-found handlers, the health and config routes. Tests build it with their own pool |
+| `src/lib/env.js` | `readEnv(process.env)`: checks the variables, returns typed values or throws one error listing every problem |
+| `src/lib/db.js` | `createPool(url)` |
+| `src/lib/migrate.js` | `runMigrations(pool, dir)` (D-126) |
+| `src/lib/sharedFiles.js` | Paths to `shared/` resolved from `import.meta.url` — `../../../shared/` both in the repo and in the image, which keeps the same layout (`/app/backend`, `/app/shared`) |
+| `src/lib/httpError.js` | `HttpError(statusCode, code, message, details)` — what our own code throws |
+| `src/middleware/errorHandler.js` | `errorHandler` and `notFoundHandler`: every error becomes the §7 shape |
+| `src/features/health/health.routes.js` | `GET /health` |
+| `src/features/config/config.routes.js` | `GET /v1/config` — query check, ETag / `304`, headers |
+| `src/features/config/config.service.js` | `publishedConfig(pool, schemaVersion)` → `{ version, document }` or `HttpError` 404 |
+| `src/features/config/config.model.js` | The SQL: `findPublished`, `insertFirstPublished` |
+| `src/features/config/config.validation.js` | `parseConfig(text)` and `validateConfig(document)` → `[{ rule, path, message }]`; the rule IDs; the bubble triggers and their placeholders (the phone's `BubbleTrigger`) |
+| `seeds/initial-config.js` | `seedInitialConfig(pool)`: if `config_versions` is empty, validate `shared/default-config.json` and insert it as version 1, published |
+| `migrations/001_init.sql` | `config_versions` |
+| `scripts/create-test-db.sql` | `CREATE DATABASE nyx_test;` — mounted into the `db` container's init folder |
+| `test/testDb.js` | Test helper: pool on `TEST_DATABASE_URL`, migrations once, `TRUNCATE config_versions` before each test |
+| `*.test.js` next to the code they test | Below |
+| `.github/workflows/backend.yml` | CI (below) |
+
+- Fits AGENTS §4: every file has one job and stays well under ~250 lines; `config.validation.js` is the biggest (~170 lines, a port of `ConfigValidator.kt`'s cross-field half).
+- The repo map (§13) changes in one place: the migration runner is `src/lib/migrate.js`, called at start-up, not `scripts/migrate.js` (D-126).
+
+**npm scripts**
+
+| Script | Runs |
+|---|---|
+| `npm run dev` | `node --watch --env-file=.env src/server.js` — API on the host against the `db` container |
+| `npm start` | `node src/server.js` — in the container; env comes from Compose or the host |
+| `npm test` | `node --env-file-if-exists=.env --test --test-concurrency=1` — one file at a time, since the DB tests share one database |
+| `npm run test:coverage` | the same + `--experimental-test-coverage --test-coverage-include='src/features/**' --test-coverage-lines=80` (ROADMAP §2: ≥ 80% on `features/`) |
+| `npm run lint` | `biome check .` |
+
+(Flags checked against Node 26.12.1's CLI docs.)
+
+**Environment** (`readEnv`, mirrored in `.env.example`; §12 lists the full set)
+
+| Variable | Rule | Default |
+|---|---|---|
+| `PORT` | integer 1–65535 | `3000` |
+| `DATABASE_URL` | required | — (`.env.example`: `postgres://nyx:nyx@localhost:5432/nyx`) |
+| `TRUST_PROXY` | `true` or `false` | `false` |
+| `LOG_LEVEL` | one of pino's levels | `info` |
+| `TEST_DATABASE_URL` | tests only | — (`postgres://nyx:nyx@localhost:5432/nyx_test`) |
+
+- Start-up stops with every problem listed (`DATABASE_URL is required; PORT must be 1–65535`), never with a stack trace from deep inside `pg`.
+- `NODE_ENV`, `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH` and `SESSION_SECRET` arrive in M11, where they're first read (the cookie's `Secure` flag needs `NODE_ENV`).
+- The Compose file sets `DATABASE_URL` to the `db` host for the `api` container, so the one `.env` works for both `npm run dev` (localhost) and Compose.
+
+**Docker Compose** (§12)
+- `db`: `postgres:18.6-alpine3.24`, `POSTGRES_USER/PASSWORD/DB = nyx` (dev-only values, written in the Compose file; production gets its own in M15), port 5432, volume `pgdata`, health check `pg_isready`, `backend/scripts/create-test-db.sql` mounted in `/docker-entrypoint-initdb.d/` (runs once, when the volume is new).
+- `api`: built from `backend/Dockerfile` with the repo root as context, port 3000, `env_file: backend/.env`, starts when `db` is healthy.
+- The dev database user is the image's superuser. A least-privilege user for production is set up in M15 (§9).
+
+**Data model** (`migrations/001_init.sql`)
+
+```sql
+CREATE TABLE config_versions (
+  id             integer PRIMARY KEY CHECK (id >= 1),          -- = configVersion = the ETag
+  schema_version integer NOT NULL CHECK (schema_version >= 1),
+  status         text    NOT NULL CHECK (status IN ('draft', 'published', 'superseded')),
+  document       jsonb   NOT NULL,
+  created_at     timestamptz NOT NULL DEFAULT now(),
+  published_at   timestamptz,
+  -- The row and the document it holds can't disagree about the version phones see
+  CHECK ((document->>'configVersion')::integer = id),
+  CHECK ((document->>'schemaVersion')::integer = schema_version)
+);
+-- At most one live and one draft document per schema version (§6); the first also serves GET /v1/config
+CREATE UNIQUE INDEX config_versions_one_published ON config_versions (schema_version) WHERE status = 'published';
+CREATE UNIQUE INDEX config_versions_one_draft     ON config_versions (schema_version) WHERE status = 'draft';
+```
+
+```mermaid
+erDiagram
+  config_versions {
+    integer id PK "configVersion, ETag"
+    integer schema_version "1 today"
+    text status "draft | published | superseded"
+    jsonb document "the whole config"
+    timestamptz created_at
+    timestamptz published_at "null for a draft"
+  }
+  schema_migrations {
+    text name PK "001_init.sql"
+    timestamptz applied_at
+  }
+```
+
+- `id` is set by the server, not a sequence: the seed inserts 1, and M11's publish takes the next number inside a transaction. Only M11 writes drafts and supersedes rows; M10 only reads `published`.
+- `daily_stats` is **not** created here: its columns come from M14's payload design, so M14 adds `002_stats.sql` (D-125).
+- `jsonb` keeps the document as data, not text. Reading it back through `pg` gives a JavaScript object, and Fastify writes it out with `JSON.stringify`, so a stored `3.0` is served as `3` (D-54). The config route has **no response schema**: Fastify's serializer would drop the keys the schema doesn't list, and unknown keys must reach phones (D-52).
+
+**Migrations** (`runMigrations`, D-126)
+- Reads `migrations/*.sql` in name order and runs each one not yet in `schema_migrations`, each inside its own transaction together with its `schema_migrations` row. A failing file rolls back and stops start-up.
+- Holds a Postgres advisory lock (`pg_advisory_lock` on a fixed key) for the whole run, so two containers starting at once can't apply the same file twice.
+- Forward only: no down migrations. A mistake is fixed by the next numbered file.
+- Runs in `server.js` before listening, followed by `seedInitialConfig`. There's no separate migrate command to forget in production.
+
+**Initial config** (`seedInitialConfig`, Track A)
+- Only when `config_versions` has no rows at all: parse and validate `shared/default-config.json` (it must pass, or start-up stops with the errors), insert it as `id` 1, `schema_version` 1, `published`, `published_at = now()`.
+- Re-running is a no-op; it never overwrites a newer version. It's the same in every environment: production's first boot gets version 1 too.
+
+**Config validation** (`config.validation.js`, D-121 to D-123)
+- `parseConfig(text)`: `JSON.parse`; a syntax error becomes one `schema` error at path `/`. Then `validateConfig`. Used by the seed and the fixture tests; M11's draft route gets an already-parsed body and calls `validateConfig`.
+- `validateConfig(document)`:
+  1. **Schema:** one Ajv instance compiled once from `shared/config.schema.json` with `allErrors: true` and Ajv's own defaults otherwise: no type coercion (so `"3"` is rejected, D-54), no default filling, nothing removed. Each Ajv error → `{ rule: "schema", path: instancePath || "/", message }`.
+  2. **Cross-field rules, only if the schema passed** (D-122): `setting-range`, `tick-order`, `duplicate-id`, `mood-bands-coverage`, `pet-faces`, `line-references`, `line-coverage`, `line-placeholders`, `nothing-enabled` — the same checks, in the same order, as `ConfigValidator.kt` (§14.2, §14.6). Number bounds, ids and blank texts aren't repeated here: the schema has them.
+  - Returns every error found, not just the first (US-19).
+- **Why schema first:** the cross-field rules can then trust the types (no `undefined.from` crashes on a half-formed document). The phone reports bounds and cross-field errors together; the backend reports schema errors first and cross-field ones once those are fixed. Whether a document is accepted, and the rule a fixture is rejected with, is the same on both sides.
+- **Paths are JSON Pointers** on the backend (`/nags/snoozeMinutes`, `/lines/cheerful/idle/any/2`, `/mood/bands`): Ajv gives them that way and §7's error shape uses them (D-123). The phone keeps its dotted paths; fixtures compare rule IDs, not paths.
+- **Settings checked by `setting-range`:** the same list as the phone's `SettingPaths`: `day.resetHour`, `limits.categories.<each>.dailyMinutes`, `limits.totalDailyMinutes`, `limits.stretch.minutes`, `nags.repeatMinutes`, `nags.snoozeMinutes`, `breaks.afterMinutes`, `focus.durationMinutes`, `focus.checkinMinutes`.
+- **Bubble triggers and placeholders** are a constant in this file, copied from `BubbleTrigger.kt`. Adding a trigger now means: Kotlin enum + this constant + the default config's lines; the fixture tests on both sides catch a mismatch on the coverage rule (repo map row added). Moving the list into `shared/` is in the parking lot.
+
+**`GET /v1/config?schema=<n>`** (US-19, D-124)
+
+```mermaid
+sequenceDiagram
+  participant APP as Phone (M12)
+  participant R as config.routes
+  participant S as config.service
+  participant M as config.model
+  participant PG as PostgreSQL
+  APP->>R: GET /v1/config?schema=1, If-None-Match: "6"
+  R->>R: query check (Fastify schema)
+  R->>S: publishedConfig(pool, 1)
+  S->>M: findPublished(pool, 1)
+  M->>PG: SELECT id, document … WHERE schema_version = $1 AND status = 'published'
+  PG-->>M: row (or none)
+  alt no row
+    S-->>R: HttpError 404 NOT_FOUND
+    R-->>APP: 404 { error } — the phone keeps its last good config
+  else If-None-Match matches "7"
+    R-->>APP: 304, ETag "7", no body
+  else
+    R-->>APP: 200, ETag "7", the document
+  end
+```
+
+- **Query:** `schema` required, integer ≥ 1 (Fastify's route schema; its default coercion turns the query string `"1"` into 1). Missing, `abc` or `0` → `400 VALIDATION_FAILED`, `details: [{ path: "/querystring/schema", message }]`.
+- **Response headers:** `ETag: "7"` (strong, quoted, = `configVersion`); `Cache-Control: no-cache` (any cache must ask again before reusing it); `Content-Type: application/json; charset=utf-8`.
+- **`If-None-Match`:** split on commas; each value trimmed and any `W/` dropped (RFC 9110 compares weakly for this header); a match or `*` → `304` with the same ETag and Cache-Control and no body.
+- **Load:** every request reads Postgres through the unique index. 10,000 installs × 4 fetches a day ≈ 0.5 requests a second, so no in-memory cache (AGENTS: cache only where measured).
+- No auth, no identifiers read or logged beyond Fastify's standard request line (§9 Privacy). No CORS: the phone isn't a browser and the console is same-origin.
+- `HEAD` comes free with Fastify's GET routes; nothing extra to build.
+
+**`GET /health`**
+- `SELECT 1` on the pool. → `200 { "status": "ok" }`.
+- Database unreachable or slower than the pool's 5 s connection timeout → `503 UNAVAILABLE` in the standard shape (D-127). The hosting platform restarts or alerts on it.
+
+**Errors** (`errorHandler.js`, §7)
+
+| Source | Status | `code` | `details` |
+|---|---|---|---|
+| `HttpError` from our code | its own | its own | its own |
+| Fastify route-schema failure (`error.validation`) | 400 | `VALIDATION_FAILED` | `[{ path: "/<context><instancePath>", message }]` |
+| Fastify's other 4xx (bad JSON body, wrong content type, body too large…) | Fastify's | `BAD_REQUEST` (D-127), except 404 → `NOT_FOUND`, 429 → `RATE_LIMITED` | — |
+| No route (`notFoundHandler`) | 404 | `NOT_FOUND` | — |
+| Anything else | 500 | `INTERNAL`, message "Something went wrong" — the real error is logged, never returned | — |
+
+- Codes after D-127: `VALIDATION_FAILED` 400 · `BAD_REQUEST` 400/413/415… · `UNAUTHENTICATED` 401 · `NOT_FOUND` 404 · `CONFLICT` 409 · `RATE_LIMITED` 429 · `INTERNAL` 500 · `UNAVAILABLE` 503.
+- 5xx are logged at `error` with the stack; 4xx at `info` (Fastify's default).
+
+**Logging** (§9)
+- Fastify's logger: JSON to stdout at `LOG_LEVEL`. Request IDs from `genReqId: () => crypto.randomUUID()` with `requestIdHeader: false`, so a client can't choose its own ID.
+- Fastify's default request serializer: method, URL, host, remote address — no headers, no bodies, so no cookies (M11) or install IDs (M14) reach the logs. Nothing in M10 logs a request body.
+- `trustProxy: TRUST_PROXY` (real client IPs behind the host's proxy, §9).
+
+**Start-up and shutdown** (`server.js`)
+1. `readEnv` → 2. `createPool` → 3. `runMigrations` → 4. `seedInitialConfig` → 5. `buildApp` → 6. `listen({ host: "0.0.0.0", port })` (the container's port has to be reachable from outside it).
+- `SIGTERM` / `SIGINT` → `app.close()` → `pool.end()` → exit 0. The image runs `node` directly (exec form `CMD`), so it receives the signal itself.
+
+**CI** (`.github/workflows/backend.yml`)
+- On push touching `backend/**`, `shared/**` or the workflow file. Ubuntu runner, `postgres:18.6-alpine3.24` as a service container with `POSTGRES_DB=nyx_test`.
+- Steps: `actions/checkout` (SHA as in `android.yml`) → `actions/setup-node` v7.1.0 pinned to `949feb2413d6458794dcd2491c4babbbce0c15c1`, Node 26.12.1, npm cache → `npm ci` → `npm run lint` → `npm run test:coverage` with `TEST_DATABASE_URL` set.
+- The console build joins this workflow in M11.
+
+**Tests** (`node:test`; names start with the story ID where there is one)
+
+| Test file | Checks |
+|---|---|
+| `features/config/config.validation.test.js` | **US-21 contract:** every `fixtures/valid/` file → no errors · every `fixtures/invalid/` file → errors whose rule set is exactly the one in its file name · both folders non-empty · `shared/default-config.json` valid. **Rules:** several errors at once with their pointers · schema errors stop the cross-field rules · one case per cross-field rule the fixtures don't show (e.g. `min > max`, a band ending early, a pool key that's neither `any` nor a band, a placeholder another trigger allows) · unknown keys and unknown triggers ignored. **D-54 pinned:** `"3"` for a number → `schema`; `3.0` → accepted |
+| `features/config/config.test.js` (DB) | **US-19:** 200 with the document, `ETag: "1"`, `Cache-Control: no-cache` · `If-None-Match: "1"`, `W/"1"`, `"0", "1"` and `*` → 304 with no body · `"0"` → 200 · schema 2 → 404 `NOT_FOUND` · missing / `abc` / `0` → 400 `VALIDATION_FAILED` with details · a document stored with `3.0` is served with `3` · unknown keys come through · a draft or superseded row is never served |
+| `features/health/health.test.js` | DB up → 200 `{ status: "ok" }` · a pool whose query fails → 503 `UNAVAILABLE` |
+| `middleware/errorHandler.test.js` | Unknown route → 404 shape · a thrown `Error("secret detail")` → 500 `INTERNAL` without the detail · an `HttpError` → its status and code (test routes registered on a test app) |
+| `lib/migrate.test.js` (DB) | Applies `001` once · second run applies nothing · a failing file rolls back and isn't recorded (temporary folder) |
+| `lib/env.test.js` | Defaults · every bad value reported together · `DATABASE_URL` required |
+| `seeds/initial-config.test.js` (DB) | Empty table → version 1 published, equal to `default-config.json` · second run → still one row · a table that already has rows → untouched |
+
+- DB tests need the `db` container (`docker compose up db`); CI uses its service container.
+- Coverage: ≥ 80% lines on `src/features/`, enforced by `test:coverage`.
+
+**Manual check (Done when, ROADMAP M10)**
+```bash
+docker compose up --build
+curl -i "localhost:3000/v1/config?schema=1"                        # 200, ETag "1"
+curl -i -H 'If-None-Match: "1"' "localhost:3000/v1/config?schema=1" # 304
+curl -i localhost:3000/health                                      # 200
+```
+
+**Not in M10:** admin routes, login, cookies, helmet, rate limits, the console and its Docker stage (→ M11) · the phone fetching (→ M12) · `daily_stats` and `/v1/stats` (→ M14) · a least-privilege DB user, HTTPS, production deploy (→ M15).

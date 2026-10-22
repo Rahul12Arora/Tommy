@@ -1,8 +1,8 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M10 Backend + config API (next; branch `feat/m10-backend` from `main`)
-- Last done: M9 done 2026-10-22 — PR #16 merged, tagged `m9-done` and `week1-build` (`b4c7832`)
-- Next step: M10 in a new session, LLD first (tables, migrations, config endpoints, validation, error handler, logging, health)
-- Blockers: none
+- Phase: 5 — Build · Milestone: M10 Backend + config API (in progress, branch `feat/m10-backend`)
+- Last done: M10 LLD drafted as ARCHITECTURE §14.10; D-121 to D-130 and CR-11 (`ajv`) proposed
+- Next step: the developer approves the LLD + CR-11; install Node 26.12.1 and Docker on the Mac; then the `backend/` scaffold
+- Blockers: Node and Docker aren't installed on the Mac (no `node`, `npm`, `docker` on PATH)
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37; start it with `-gpu swiftshader_indirect`, see log 2026-10-22 M9) + Pixel 7a
 - Build setup: Homebrew JDK on PATH starts Gradle; daemon runs on JDK 25 (`android/README.md`). With the phone plugged in, set `ANDROID_SERIAL` for device tasks
@@ -211,3 +211,11 @@
 - Verified: Android CI green on `feat/m9-week1` (PR #16); PR open, not merged. Merging from this session was blocked by the permission check, so the developer merges; then tag `m9-done` and `week1-build` on the merge
 - Done: the developer merged PR #16; tagged `m9-done` and `week1-build` on the merge (`b4c7832`). M9 closed; `feat/m10-backend` started from `main` for the close-out docs
 - Next: M10 Backend + config API
+
+### 2026-10-22 (M10)
+- Done: M10 LLD as ARCHITECTURE §14.10 — files, scripts, env, Compose, `config_versions` (+ ERD), migrations and initial config at start-up, config validation (Ajv schema, then the cross-field rules ported from `ConfigValidator.kt`), `GET /v1/config` with ETag/304, `/health`, error mapping, logging, shutdown, CI, tests. Repo map updated (migration runner in `lib/`, bubble trigger row)
+- Proposed: D-121 to D-130; CR-11 adds `ajv` 8.20.0 (already installed by Fastify); `daily_stats` moves to M14 (D-125). Parking lot +2
+- Verified against sources: npm registry (fastify 5.12.7 deps, ajv 8.20.0 MIT, pg 8.23.1), nodejs.org (26.12.1 security release 2026-10-21, not yet LTS), Docker Hub tags, setup-node v7.1.0 SHA, Node 26.12.1 CLI flags (`--env-file-if-exists`, `--test-concurrency`, coverage flags)
+- Found: no Node or Docker on the Mac
+- Next: approval → install Node + Docker → scaffold
+

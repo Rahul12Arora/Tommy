@@ -315,7 +315,7 @@ Verify with: manual QA checklist · Android battery usage screen
 
 ## 5. Milestones — week 2
 
-### M10 — Backend + config API            status: pending
+### M10 — Backend + config API            status: in-progress
 Goal: the backend serves the published config with ETags, locally in Docker.
 Depends on: M2 (schema + default config)
 Stories: US-19 (serving), US-21
