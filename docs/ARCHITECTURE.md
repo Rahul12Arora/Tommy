@@ -125,7 +125,7 @@ flowchart LR
 | `focus/` | S-09 Focus setup, focus sessions (SM-04) |
 | `service/` | `PetService`, boot and screen-on/off receivers, notifications (N-01 to N-04) |
 | `tracking/` | Usage events → foreground app → per-app/category totals, stretches, app categories |
-| `rules/` | Triggers, nags (SM-02), breaks (SM-03), idle lines, bubble arbiter, line picker |
+| `rules/` | Triggers, nags (SM-02), breaks (SM-03), idle lines, goals (limit + positive, `daily_goals`), bubble arbiter, line picker |
 | `mood/` | Mood calculation (SM-01), bands → pet face |
 | `pet/` | Overlay windows: pet, speech bubble, summary panel |
 | `stats/` | Daily aggregates + uploader (week 2) |
@@ -281,6 +281,7 @@ Full fields, indexes and ERDs are written in each milestone's LLD.
 | `tracking_cursor` | One row: the moment usage has been credited up to (D-62) | `id` = 0 |
 | `events` (M6, §14.6, D-64) | Engine event log in log order: doomscroll_10min, ran_away, pet_returned (M6); limit_exceeded, snoozed, break_taken… (M7 on). Mood is recomputed from it | `id`, index on `day` |
 | `focus_sessions` | Goal, allowed apps, pet mode, start/end, outcome, switch count | `id` |
+| `daily_goals` (M13, §14.13, D-148) | The goals on each day (limit and positive) with their targets, for Trends | `(day, goal_key)` |
 | `app_categories` | Category per package, only where the user chose one; suggestions are computed when needed (D-58) | `package_name` |
 
 **Phone — DataStore**
@@ -705,7 +706,7 @@ Written at the start of each milestone, before code.
 | Backend foundation + config API | M10 | done 2026-10-22 (§14.10) |
 | Admin login, draft/publish, console | M11 | done 2026-10-22 (§14.11) |
 | App remote config | M12 | done 2026-10-22 (§14.12) |
-| Trends + positive goals | M13 | proposed 2026-10-23 (§14.13) |
+| Trends + positive goals | M13 | done 2026-10-23 (§14.13) |
 | Opt-in stats | M14 | pending |
 
 ### 14.1 M1 — App shell, storage, DayClock
@@ -900,7 +901,7 @@ Approved 2026-10-19, with D-51 to D-53 and A-28.
 | `categoryDefaults`, `androidCategoryMap` | Suggested categories (US-04) | M3 |
 
 - **Categories are fixed** (D-51): `social` (Social & scrolling), `games`, `entertainment`, `productive`, `neutral`. They're an enum in the schema and in Kotlin; Home's "productive vs doomscrolling" depends on what they mean. Adding a category is a breaking change and bumps `schemaVersion`. Display names live in `strings.xml`.
-- **Positive goals** (US-17, M13) aren't in v1 of the document. They arrive as an additive block with a Kotlin default, so `schemaVersion` stays 1.
+- **Positive goals** (US-17, M13) aren't in v1 of the document. They arrive as an additive block with a Kotlin default, so `schemaVersion` stays 1 (`goals`, §14.13).
 
 **Bubble triggers** — the trigger catalog (§4) entries that show a bubble, as `BubbleTrigger` in `config/`:
 `limit_reached`, `limit_repeat`, `stretch_reached`, `break_due`, `break_taken`, `goal_met`, `focus_started`, `focus_drift`, `focus_checkin`, `focus_completed`, `focus_broken`, `idle`, `pet_returned`.
@@ -2892,7 +2893,7 @@ sequenceDiagram
 
 ### 14.13 M13 — Trends + positive goals
 
-Written 2026-10-23; D-147 to D-155 proposed, awaiting approval.
+Written 2026-10-23; D-147 to D-155 approved 2026-10-23.
 
 **Purpose:** the user can set two positive goals (focus sessions per day, productive minutes per day). Meeting one raises mood once that day. S-10 Trends shows 7 or 30 days of time per category and how many goals were met each day: limit goals kept or missed (CR-05), positive goals met or not. Days before Nyx was tracking show as empty, not as zero. Stories: US-17 (positive goals; limit goals' kept/missed), US-18.
 
@@ -3127,7 +3128,7 @@ fun trendDays(today: LocalDate, range: TrendRange, firstDay: LocalDate?, totals:
 2. S-11 → Limits & goals: Productive ≥ 30 min. Play `productive-40min` at 60×: at about 30 min the log shows `GOAL_MET` once, mood +10, and a `goal_met` bubble. Home and the ring's Limits list say "met". It plays on to 40 min with no second event; Trends' today row says the goal is met.
 3. Ring → 📱 opens Trends; back → Home. Turn `features.trends` off from the console (local Docker, M12): no Trends button, 📱 does nothing.
 
-**Decisions** (proposed)
+**Decisions** (approved 2026-10-23)
 
 | ID | Decision | Why | Alternatives |
 |---|---|---|---|

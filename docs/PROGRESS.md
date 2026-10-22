@@ -1,7 +1,7 @@
 ## Current state
 - Phase: 5 — Build · Milestone: M13 Trends + positive goals (in progress, branch `feat/m13-trends`)
-- Last done: M13 LLD written (ARCHITECTURE §14.13), D-147 to D-155 proposed — awaiting approval
-- Next step: the developer reviews §14.13 and D-147 to D-155; on approval → decisions into DISCUSSION, HLD §3/§6 updated, then build
+- Last done: M13 LLD approved (ARCHITECTURE §14.13, D-147 to D-155)
+- Next step: build M13
 - Blockers: none. Docker note: Homebrew's `docker` CLI comes first on PATH and can't find Docker Desktop's credential helper (`docker pull` fails); put `/Applications/Docker.app/Contents/Resources/bin` first or `brew uninstall docker`
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37; start it with `-gpu swiftshader_indirect`, see log 2026-10-22 M9) + Pixel 7a
@@ -282,4 +282,4 @@
 - Done: branch `feat/m13-trends`; M13 LLD written in ARCHITECTURE §14.13 — positive goals as two additive settings (`goals.*`, 0 = off), `GoalStep` per tick (records `daily_goals`, logs `GOAL_MET` once per goal per day), `daily_goals` (Room v6, auto-migration), trend queries, `trendDays` judging (kept/missed/met from the event log, "before install" = before the first stored day), S-10 layout (Canvas stacked bars + legend + day list as the table view), Trends from the ring's 📱 slot, Home/ring positive rows, debug seed `trends-30d`, files, tests, manual check
 - Proposed: D-147 to D-155 (in the LLD; go into DISCUSSION on approval). No new dependency. Category colours will be checked with the dataviz palette validator (light + dark) before commit
 - Next: approval of §14.13, then build
-
+- Approved: the LLD and D-147 to D-155 (the developer); decisions in DISCUSSION, HLD §3, §5 note and §6 follow D-147, D-148
