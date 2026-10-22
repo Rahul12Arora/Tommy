@@ -1,7 +1,7 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M12 App fetches remote config (next)
+- Phase: 5 — Build · Milestone: M12 App fetches remote config (in progress, branch `feat/m12-remote-config`)
 - Last done: M11 done 2026-10-22 — PR #18 merged, tagged `m11-done` (`cdd0f84`)
-- Next step: M12 in a new session, LLD first (`ConfigClient` with ETag, 6-hour check, atomic cache, debug build → `10.0.2.2:3000`). Each dev needs an admin login in `backend/.env` (`npm run hash-password`, `backend/README.md`)
+- Next step: approval of the M12 LLD (ARCHITECTURE §14.12, D-141 to D-146) → first task: check plain HTTP to `127.0.0.1` via `adb reverse` on the emulator and the Pixel. Each dev needs an admin login in `backend/.env` (`npm run hash-password`, `backend/README.md`)
 - Blockers: none. Docker note: Homebrew's `docker` CLI comes first on PATH and can't find Docker Desktop's credential helper (`docker pull` fails); put `/Applications/Docker.app/Contents/Resources/bin` first or `brew uninstall docker`
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37; start it with `-gpu swiftshader_indirect`, see log 2026-10-22 M9) + Pixel 7a
@@ -257,3 +257,8 @@
 - Known: a server error under a field can show twice (RJSF quirk; parking lot)
 - Done: PR #18 merged to `main` (`cdd0f84`), tagged `m11-done`
 - Next: M12 — app fetches remote config, LLD first
+
+### 2026-10-22 (M12)
+- Done: branch `feat/m12-remote-config`; M12 LLD written in ARCHITECTURE §14.12 — `ConfigClient` (HttpURLConnection, ETag, timeouts, 1 MiB cap, own User-Agent), `ConfigManager.base`/`accept` with an atomic cache write, `ConfigRefresher` (service start + 6 h wall clock, screen-on only), fallback chain table, debug URL via `adb reverse`, tests, manual check incl. a forced invalid published document
+- Proposed: D-141 to D-146 (in the LLD; go into DISCUSSION on approval). No new dependency
+- Next: the developer's approval
