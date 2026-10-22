@@ -31,7 +31,7 @@ class US13_FocusHoldTest {
     private val clock = TestClock(Instant.parse("2026-10-21T10:00:00Z"))
     private val events = FakePetEventDao()
     private val sessions = FakeFocusSessionDao(events)
-    private val reactions = Reactions(events, clock, TestLabels, FocusSessions(sessions, clock), Random(3))
+    private val reactions = Reactions(events, clock, TestLabels, FocusSessions(sessions, clock), GoalStep(FakeDailyGoalDao()), Random(3))
 
     private fun pool(trigger: String) = defaults.lines.getValue("cheerful").getValue(trigger).getValue("any")
 

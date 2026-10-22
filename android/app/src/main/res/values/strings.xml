@@ -81,7 +81,7 @@
     <string name="app_categories_current">%1$s (current)</string>
 
     <!-- Setup: S-06 Limits -->
-    <string name="limits_title">Limits</string>
+    <string name="limits_title">Limits and goals</string>
     <string name="limits_intro">The pet nudges you when you go past a limit. These are sensible starting points; change any you like.</string>
     <string name="limits_category_daily">%1$s per day</string>
     <string name="limits_total_daily">All apps per day</string>
@@ -89,6 +89,14 @@
     <string name="limits_stretch_covers">Continuous use of %1$s. Screen off for a few minutes counts as a break.</string>
     <string name="limits_off">Off</string>
     <string name="limits_locked">Set by Nyx</string>
+    <string name="goals_heading">Positive goals</string>
+    <string name="goals_intro">Things to do more of. The pet cheers once a day when you reach one.</string>
+    <string name="goals_focus_sessions">Focus sessions per day</string>
+    <string name="goals_productive">Productive time per day</string>
+    <plurals name="goals_sessions">
+        <item quantity="one">%d session</item>
+        <item quantity="other">%d sessions</item>
+    </plurals>
 
     <!-- Setup: S-07 Stats opt-in (A-09) -->
     <string name="stats_title">Help improve Nyx</string>
@@ -117,6 +125,9 @@
     <string name="home_goal_total">All apps</string>
     <string name="home_goal_progress">%1$s of %2$s</string>
     <string name="home_goal_over">%1$s of %2$s · over</string>
+    <string name="home_goal_at_least">%1$s ≥ %2$s</string>
+    <string name="home_goal_met">%1$s of %2$s · met</string>
+    <string name="home_goal_focus_sessions">Focus sessions</string>
     <string name="home_start_focus">Start focus</string>
     <string name="home_trends">Trends</string>
     <string name="home_settings">Settings</string>
@@ -135,8 +146,9 @@
     <string name="bubble_snooze">Snooze</string>
     <string name="bubble_dismiss">Dismiss</string>
     <string name="ring_total">Screen time today: %1$s</string>
+    <string name="ring_total_trends">%1$s · tap for trends</string>
     <string name="ring_balance">Productive %1$s · doomscrolling %2$s</string>
-    <string name="ring_limits_title">Limits</string>
+    <string name="ring_limits_title">Limits and goals</string>
     <string name="ring_limits_none">No limits set</string>
     <string name="ring_limit">%1$s: %2$s of %3$s</string>
     <string name="ring_limit_over">%1$s: %2$s of %3$s · over</string>
@@ -169,7 +181,7 @@
     <string name="settings_title">Settings</string>
     <string name="settings_pet">Pet and personality</string>
     <string name="settings_categories">App categories</string>
-    <string name="settings_limits">Limits</string>
+    <string name="settings_limits">Limits and goals</string>
     <string name="settings_nags">Nags</string>
     <string name="settings_nag_repeat">Nag again every</string>
     <string name="settings_snooze">Snooze for</string>
@@ -227,5 +239,25 @@
 
     <!-- Screens not built yet -->
     <string name="trends_title">Trends</string>
+    <string name="trends_week">7 days</string>
+    <string name="trends_month">30 days</string>
+    <string name="trends_chart_week">Screen time per day, last 7 days. Each day is listed below.</string>
+    <string name="trends_chart_month">Screen time per day, last 30 days. Each day is listed below.</string>
+    <string name="trends_empty">Nothing tracked yet. Trends fill in day by day.</string>
+    <string name="trends_today">Today so far</string>
+    <string name="trends_not_tracked">Not tracked yet</string>
+    <string name="trends_day_summary">%1$s · %2$s</string>
+    <string name="trends_goals_met">goals %1$d of %2$d</string>
+    <string name="trends_no_goals">no goals</string>
+    <string name="trends_expanded">expanded</string>
+    <string name="trends_collapsed">collapsed</string>
+    <string name="trends_category_time">%1$s: %2$s</string>
+    <string name="trends_goal_result">%1$s · %2$s</string>
+    <string name="trends_goal_kept">kept</string>
+    <string name="trends_goal_on_track">on track</string>
+    <string name="trends_goal_missed">missed</string>
+    <string name="trends_goal_met">met</string>
+    <string name="trends_goal_not_met">not met</string>
+    <string name="trends_goal_not_yet">not yet</string>
     <string name="placeholder_not_built">Not built yet.</string>
 </resources>

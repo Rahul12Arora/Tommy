@@ -96,4 +96,22 @@ class DailyUsageDaoTest {
         assertEquals(emptyList<DailyUsage>(), dao.observeDay("2026-10-21").first())
         assertNull(dao.creditedUntilMs())
     }
+
+    @Test
+    fun US18_observeTotalsSince_groupsByDayAndCategory_fromThatDayOn() = runBlocking {
+        dao.record(
+            listOf(
+                usage("2026-10-20", "com.instagram.android", Category.SOCIAL, 9_000),
+                usage("2026-10-21", "com.instagram.android", Category.SOCIAL, 1_000),
+                usage("2026-10-21", "com.zhiliaoapp.musically", Category.SOCIAL, 2_000),
+                usage("2026-10-21", "com.google.android.apps.docs", Category.PRODUCTIVE, 4_000),
+            ),
+            creditedUntilMs = 0,
+        )
+
+        assertEquals(
+            setOf(DayCategoryTotal("2026-10-21", Category.SOCIAL, 3_000), DayCategoryTotal("2026-10-21", Category.PRODUCTIVE, 4_000)),
+            dao.observeTotalsSince("2026-10-21").first().toSet(),
+        )
+    }
 }

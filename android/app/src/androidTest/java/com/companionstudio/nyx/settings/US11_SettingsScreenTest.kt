@@ -86,7 +86,7 @@ class US11_SettingsScreenTest {
     fun theLinks_openTheirScreens() {
         show(state())
 
-        listOf("Pet and personality", "App categories", "Limits", "Share anonymous stats", "Permissions")
+        listOf("Pet and personality", "App categories", "Limits and goals", "Share anonymous stats", "Permissions")
             .forEach { composeRule.onNodeWithText(it).performScrollTo().performClick() }
 
         assertEquals(listOf("pet", "categories", "limits", "stats", "permissions"), clicked)

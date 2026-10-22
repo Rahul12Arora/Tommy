@@ -21,8 +21,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.companionstudio.nyx.R
-import com.companionstudio.nyx.home.GoalProgress
 import com.companionstudio.nyx.home.GoalRow
+import com.companionstudio.nyx.home.PositiveGoalRow
+import com.companionstudio.nyx.home.TodaySummary
 import com.companionstudio.nyx.home.formatDuration
 import com.companionstudio.nyx.rules.LimitKeys
 import com.companionstudio.nyx.rules.NagPhase
@@ -30,9 +31,10 @@ import com.companionstudio.nyx.rules.NagState
 import com.companionstudio.nyx.rules.RingStatus
 import java.util.Date
 
-/** The Limits slot's list (D-90): Home's goal rows, the stretch, and each limit's nag state. */
+/** The Limits slot's list (D-90): Home's goal rows, the stretch, each limit's nag state, then positive goals (§14.13). */
 @Composable
-internal fun LimitsList(goals: List<GoalProgress>, status: RingStatus, side: Side, geometry: RingGeometry, onBack: () -> Unit) {
+internal fun LimitsList(summary: TodaySummary, status: RingStatus, side: Side, geometry: RingGeometry, onBack: () -> Unit) {
+    val goals = summary.goals
     val besidePet = PET_SIZE.value + PANEL_GAP.value
     val width = (geometry.width - besidePet).coerceAtMost(280f)
     val left = if (side == Side.LEFT) besidePet else geometry.width - besidePet - width
@@ -60,6 +62,10 @@ internal fun LimitsList(goals: List<GoalProgress>, status: RingStatus, side: Sid
                     Text(stringResource(if (over) R.string.ring_stretch_over else R.string.ring_stretch, used, target))
                     NagNote(status.nags[LimitKeys.STRETCH])
                 }
+                if (summary.positiveGoals.isNotEmpty()) {
+                    Text(stringResource(R.string.goals_heading), style = MaterialTheme.typography.titleSmall)
+                }
+                summary.positiveGoals.forEach { PositiveGoalRow(it) }
                 OutlinedButton(onClick = onBack) { Text(stringResource(R.string.ring_back)) }
             }
         }

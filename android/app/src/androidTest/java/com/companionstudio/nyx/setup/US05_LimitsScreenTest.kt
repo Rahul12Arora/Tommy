@@ -70,4 +70,27 @@ class US05_LimitsScreenTest {
 
         composeRule.onNodeWithText("Off").assertIsDisplayed()
     }
+
+    @Test
+    fun D147_positiveGoals_comeUnderTheirHeading_offAtZero_sessionsCounted_lockedReadOnly() {
+        composeRule.setContent {
+            LimitsScreen(
+                rows = listOf(
+                    LimitRow("limits.totalDailyMinutes", LimitName.TotalDaily, Setting(0, 0, 960, true), 300),
+                    LimitRow("goals.focusSessionsPerDay", LimitName.FocusSessions, Setting(0, 0, 10, true), 2),
+                    LimitRow("goals.productiveMinutesPerDay", LimitName.ProductiveMinutes, Setting(60, 0, 480, false), 0),
+                ),
+                onSet = { _, _ -> },
+                onNext = {},
+            )
+        }
+
+        composeRule.onNodeWithText("Positive goals").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Focus sessions per day").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("2 sessions").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Productive time per day").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Off").performScrollTo().assertIsDisplayed()
+        composeRule.onAllNodesWithText("Set by Nyx").assertCountEquals(1)
+        composeRule.onAllNodes(sliders).assertCountEquals(2)
+    }
 }

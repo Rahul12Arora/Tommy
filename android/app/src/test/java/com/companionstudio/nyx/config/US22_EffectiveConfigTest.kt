@@ -75,6 +75,8 @@ class US22_EffectiveConfigTest {
                 "breaks.afterMinutes",
                 "focus.durationMinutes",
                 "focus.checkinMinutes",
+                "goals.focusSessionsPerDay",
+                "goals.productiveMinutesPerDay",
             ),
             EffectiveConfig(minimal, emptyMap()).settings.keys.toList(),
         )

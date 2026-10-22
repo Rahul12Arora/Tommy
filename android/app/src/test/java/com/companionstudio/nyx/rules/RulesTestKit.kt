@@ -33,11 +33,46 @@ class FakePetEventDao : PetEventDao {
 
     override fun observeDay(day: String): Flow<List<PetEvent>> = flowOf(events.filter { it.day == day })
 
+    override fun observeGoalEventsSince(from: String): Flow<List<PetEvent>> =
+        flowOf(events.filter { it.day >= from && (it.type == PetEventType.LIMIT_EXCEEDED || it.type == PetEventType.GOAL_MET) })
+
     override suspend fun deleteBefore(day: String) {
         deletedBefore += day
     }
 
     override suspend fun clearAll() = events.clear()
+}
+
+/** `daily_goals` in memory. [writes] counts the days written, so tests can see when nothing was. */
+class FakeDailyGoalDao : DailyGoalDao() {
+    val rows = mutableListOf<DailyGoal>()
+    val writes = mutableListOf<String>()
+    val deletedBefore = mutableListOf<String>()
+
+    override suspend fun replaceDay(day: String, goals: List<DailyGoal>) {
+        writes += day
+        rows.removeAll { it.day == day }
+        rows += goals
+    }
+
+    override fun observeSince(from: String): Flow<List<DailyGoal>> = flowOf(rows.filter { it.day >= from })
+
+    override fun observeFirstDay(): Flow<String?> = flowOf(rows.minOfOrNull { it.day })
+
+    override suspend fun deleteBefore(day: String) {
+        deletedBefore += day
+        rows.removeAll { it.day < day }
+    }
+
+    override suspend fun clearAll() = rows.clear()
+
+    override suspend fun insertAll(goals: List<DailyGoal>) {
+        rows += goals
+    }
+
+    override suspend fun deleteDay(day: String) {
+        rows.removeAll { it.day == day }
+    }
 }
 
 /** A clock tests move by hand. */

@@ -25,7 +25,7 @@ class ReactionsTest {
     private val config = EffectiveConfig(defaults, emptyMap())
     private val today = LocalDate.parse("2026-10-21")
     private val dao = FakePetEventDao()
-    private val reactions = Clock.fixed(Instant.parse("2026-10-21T10:00:00Z"), ZoneOffset.UTC).let { clock -> Reactions(dao, clock, TestLabels, FocusSessions(FakeFocusSessionDao(dao), clock), Random(5)) }
+    private val reactions = Clock.fixed(Instant.parse("2026-10-21T10:00:00Z"), ZoneOffset.UTC).let { clock -> Reactions(dao, clock, TestLabels, FocusSessions(FakeFocusSessionDao(dao), clock), GoalStep(FakeDailyGoalDao()), Random(5)) }
 
     // Nothing counted in front, so no limit nags: these tests are about the log and mood (M6)
     private fun snapshot(socialMinutes: Long, day: LocalDate = today) = TrackerSnapshot(

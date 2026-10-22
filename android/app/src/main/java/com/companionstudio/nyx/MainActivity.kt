@@ -45,6 +45,9 @@ class MainActivity : ComponentActivity() {
 
         /** Focus setup from the pet's panel (§14.5), in a fresh task over Home. */
         FOCUS,
+
+        /** S-10 Trends from the ring's total (D-153), in a fresh task over Home. */
+        TRENDS,
     }
 
     companion object {

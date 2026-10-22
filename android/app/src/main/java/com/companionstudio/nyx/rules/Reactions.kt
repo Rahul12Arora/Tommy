@@ -28,6 +28,7 @@ class Reactions(
     private val clock: Clock,
     private val labels: NagLabels,
     private val focus: FocusSessions,
+    private val goals: GoalStep,
     random: Random = Random.Default,
 ) {
     private val lines = LinePicker(random)
@@ -58,6 +59,7 @@ class Reactions(
         if (snapshot.day != cleanedUpDay) {
             dao.deleteBefore(snapshot.day.minusDays(RETENTION_DAYS).toString())
             focus.deleteBefore(snapshot.day.minusDays(RETENTION_DAYS))
+            goals.deleteBefore(snapshot.day.minusDays(RETENTION_DAYS))
             cleanedUpDay = snapshot.day
         }
 
@@ -79,6 +81,8 @@ class Reactions(
 
         val nagStep = stepNags(snapshot, config, logged, now)
         nagStep.exceeded.forEach { log(PetEventType.LIMIT_EXCEEDED, subject = it) }
+        val metGoals = goals.afterTick(snapshot.day, config, snapshot.todayMs, logged)
+        metGoals.forEach { log(PetEventType.GOAL_MET, subject = it.key) }
 
         val mode = effectiveBreakMode(prefs, document.breaks.obstructive.allowed)
         val breakStep = advanceBreaks(
@@ -120,6 +124,8 @@ class Reactions(
             val completed = focusTick.offers.any { it.trigger == BubbleTrigger.FOCUS_COMPLETED }
             if (returned && !completed) add(BubbleRequest(BubbleTrigger.PET_RETURNED))
             if (breakStep.taken && !returned) add(BubbleRequest(BubbleTrigger.BREAK_TAKEN))
+            // One line however many goals were met (D-154)
+            if (metGoals.isNotEmpty() && !returned) add(BubbleRequest(BubbleTrigger.GOAL_MET))
         }.toMutableList()
         val totalMs = snapshot.todayMs.values.sum()
         val idle = idleStep(

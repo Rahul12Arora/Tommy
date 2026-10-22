@@ -72,7 +72,7 @@ class US01_SetupGatingTest {
         }
         next(onScreen = "Choose your pet", tap = "Continue")
         next(onScreen = "Your apps", tap = "Continue", scroll = false) // Continue sits below the list, always on screen
-        next(onScreen = "Limits", tap = "Continue")
+        next(onScreen = "Limits and goals", tap = "Continue")
         next(onScreen = "Help improve Nyx", tap = "Finish")
 
         composeRule.waitUntilDisplayed("Goals") // Home

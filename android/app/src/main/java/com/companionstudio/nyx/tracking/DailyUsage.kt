@@ -26,3 +26,6 @@ data class TrackingCursor(
 
 /** One category's total for a day. */
 data class CategoryTotal(val category: Category, val durationMs: Long)
+
+/** One category's total on one day, for Trends (§14.13). */
+data class DayCategoryTotal(val day: String, val category: Category, val durationMs: Long)

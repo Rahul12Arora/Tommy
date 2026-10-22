@@ -11,6 +11,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -19,7 +20,10 @@ import com.companionstudio.nyx.focus.FocusGoal
 import com.companionstudio.nyx.focus.FocusPhase
 import com.companionstudio.nyx.focus.FocusStatus
 import com.companionstudio.nyx.home.GoalProgress
+import com.companionstudio.nyx.home.PositiveGoalProgress
 import com.companionstudio.nyx.home.TodaySummary
+import com.companionstudio.nyx.rules.Goal
+import com.companionstudio.nyx.rules.GoalKind
 import com.companionstudio.nyx.rules.LimitKeys
 import com.companionstudio.nyx.rules.NagPhase
 import com.companionstudio.nyx.rules.NagState
@@ -119,6 +123,29 @@ class US07_ActionsRingTest {
         composeRule.onNodeWithText("Snoozed until", substring = true).assertIsDisplayed()
         composeRule.onNodeWithText("Back").performClick()
         composeRule.onNodeWithContentDescription("Open Nyx").assertIsDisplayed()
+    }
+
+    @Test
+    fun D153_withTrendsOn_theTotalSlotOpensTrends() {
+        showRing(RingActions(hideMinutes = 30, onFocus = {}, onOpenApp = {}, onHide = {}, onTrends = { clicked += "trends" }))
+
+        composeRule.onNodeWithContentDescription("Screen time today: 3 h 12 min · tap for trends").performClick()
+
+        assertEquals(listOf("trends"), clicked)
+    }
+
+    @Test
+    fun US17_theLimitsList_showsPositiveGoalsUnderTheirOwnHeading() {
+        val withGoals = today.copy(positiveGoals = listOf(PositiveGoalProgress(Goal(GoalKind.FOCUS_SESSIONS, null, 2), used = 1, target = 2)))
+        composeRule.setContent {
+            NyxTheme { ActionsRing(withGoals, status, glowing = true, actions, Side.RIGHT, maxWidth = 400.dp, onPetClick = {}, onClose = {}) }
+        }
+
+        composeRule.onNodeWithContentDescription("Social & scrolling: 52 min of 45 min · over").performClick()
+
+        composeRule.onNodeWithText("Positive goals").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Focus sessions ≥ 2").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("1 of 2").performScrollTo().assertIsDisplayed()
     }
 
     @Test

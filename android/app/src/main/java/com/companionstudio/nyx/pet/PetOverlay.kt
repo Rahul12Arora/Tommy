@@ -59,6 +59,7 @@ class PetOverlay(
     private var ringMaxWidth by mutableStateOf(0.dp)
     private var hideMinutes by mutableIntStateOf(0)
     private var focusEnabled by mutableStateOf(false)
+    private var trendsEnabled by mutableStateOf(false)
     private var glowing by mutableStateOf(false)
     private var status by mutableStateOf(RingStatus())
     private var bubble by mutableStateOf<ShownBubble?>(null)
@@ -109,6 +110,7 @@ class PetOverlay(
                                     hideMinutes = hideMinutes,
                                     onFocus = if (focusEnabled) ::openFocus else null,
                                     onOpenApp = ::openApp,
+                                    onTrends = if (trendsEnabled) ::openTrends else null,
                                     onHide = ::hide,
                                     onEndFocus = ::endFocus,
                                 ),
@@ -137,6 +139,7 @@ class PetOverlay(
             container.effectiveConfig.collect {
                 hideMinutes = it.document.hide.minutes
                 focusEnabled = it.document.features.focus
+                trendsEnabled = it.document.features.trends
                 bubbleSeconds = it.document.bubbles.showSeconds
             }
         }
@@ -312,6 +315,8 @@ class PetOverlay(
     private fun openFocus() = open(MainActivity.Open.FOCUS, focusApp = status.frontPackage)
 
     private fun openApp() = open(MainActivity.Open.HOME)
+
+    private fun openTrends() = open(MainActivity.Open.TRENDS)
 
     // Allowed from the service because the user granted "display over other apps" (§14.5)
     private fun open(target: MainActivity.Open, focusApp: String? = null) {

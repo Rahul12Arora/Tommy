@@ -95,6 +95,13 @@ function settingsOf(document) {
     [["focus", "durationMinutes"], document.focus.durationMinutes],
     [["focus", "checkinMinutes"], document.focus.checkinMinutes],
   );
+  // Optional block (D-147): a document without it gets the phone's defaults, which are in range
+  if (document.goals) {
+    settings.push(
+      [["goals", "focusSessionsPerDay"], document.goals.focusSessionsPerDay],
+      [["goals", "productiveMinutesPerDay"], document.goals.productiveMinutesPerDay],
+    );
+  }
   return settings;
 }
 
