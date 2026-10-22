@@ -10,6 +10,10 @@ The Nyx API (Node.js + Fastify, plain JavaScript ES modules). It serves the one 
 | GET | `/health` | `200 {"status":"ok"}`, or `503` when the database doesn't answer within 5 s |
 | POST | `/admin/login` | `{"username","password"}` → `204` + the `nyx_session` cookie (12 h, `Path=/admin`). `401` when wrong; 5 attempts a minute per IP, then `429` |
 | POST | `/admin/logout` | `{}` → `204`, clears the cookie |
+| GET | `/admin/config/published` | The live document (session needed, like every route below) |
+| GET | `/admin/config/draft` | The draft, or `404` when there is none |
+| PUT | `/admin/config/draft` | The whole document → `200` with what was saved. The server sets `configVersion` and `schemaVersion`. `400 VALIDATION_FAILED` lists every problem as a JSON Pointer |
+| POST | `/admin/config/publish` | `{}` → `200 {"configVersion":n}`: the draft goes live and `/v1/config` serves it with `ETag "n"`. `409` when there's no draft |
 
 Every non-GET request under `/admin` must be sent as `Content-Type: application/json`, or it gets `415` (the CSRF rule, D-133).
 

@@ -1,4 +1,4 @@
-import { publishedConfig } from "./config.service.js";
+import { CURRENT_SCHEMA_VERSION, draftConfig, publishDraft, publishedConfig, saveDraft } from "./config.service.js";
 
 const querySchema = {
   type: "object",
@@ -19,6 +19,32 @@ export function configRoutes(app, pool) {
     reply.header("etag", etag).header("cache-control", "no-cache");
     if (matchesEtag(request.headers["if-none-match"], etag)) return reply.code(304).send();
     return document;
+  });
+}
+
+/**
+ * The console's config routes (US-19, US-20, ARCHITECTURE §14.11), registered in the scope behind requireAdmin.
+ * No response schemas, for the same reason as /v1/config. Saves and publishes are logged: v1's audit trail.
+ */
+export function adminConfigRoutes(signedIn, pool) {
+  signedIn.get("/config/published", async () => {
+    const { document } = await publishedConfig(pool, CURRENT_SCHEMA_VERSION);
+    return document;
+  });
+
+  signedIn.get("/config/draft", () => draftConfig(pool));
+
+  // Only "is it an object" here; validateConfig reports everything else with JSON Pointers, like the phone
+  signedIn.put("/config/draft", { schema: { body: { type: "object" } } }, async (request) => {
+    const saved = await saveDraft(pool, request.body);
+    request.log.info({ version: saved.configVersion }, "config draft saved");
+    return saved;
+  });
+
+  signedIn.post("/config/publish", async (request) => {
+    const configVersion = await publishDraft(pool);
+    request.log.info({ version: configVersion }, "config published");
+    return { configVersion };
   });
 }
 

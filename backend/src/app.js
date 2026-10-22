@@ -4,7 +4,7 @@ import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 import Fastify from "fastify";
 import { authRoutes } from "./features/auth/auth.routes.js";
-import { configRoutes } from "./features/config/config.routes.js";
+import { adminConfigRoutes, configRoutes } from "./features/config/config.routes.js";
 import { healthRoutes } from "./features/health/health.routes.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import { requireAdmin } from "./middleware/requireAdmin.js";
@@ -43,6 +43,7 @@ export function buildApp({ pool, auth, logLevel = "info", trustProxy = false }) 
       authRoutes(admin, auth);
       admin.register(async (signedIn) => {
         signedIn.addHook("onRequest", requireAdmin);
+        adminConfigRoutes(signedIn, pool);
       });
     },
     { prefix: "/admin" },
