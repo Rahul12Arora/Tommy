@@ -273,3 +273,4 @@
 - Learned: the forced v3 breaks two rules (schema bound and setting-range); README and §14.12 wording fixed
 - Device tests: 76/77 on the emulator; `US21_BuiltInConfigTest` failed because it asserted "no cache file yet", which M12 makes untrue. Rewritten to load the asset through its own `ConfigManager` with no cache (same checks: version 1, Cat and Blob) → passes. Flagged for the developer
 - Done: ROADMAP M12 ticked, status done; HLD diagram: `ConfigClient · ConfigRefresher` done, `StatsUploader` split out as pending (M14)
+- Verified: PR #19 opened; Android CI green (run 39840852683, 4 min 42 s). Backend CI not triggered (no `backend/` or `shared/` change)
