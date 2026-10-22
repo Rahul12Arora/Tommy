@@ -259,5 +259,4 @@
     <string name="trends_goal_met">met</string>
     <string name="trends_goal_not_met">not met</string>
     <string name="trends_goal_not_yet">not yet</string>
-    <string name="placeholder_not_built">Not built yet.</string>
 </resources>

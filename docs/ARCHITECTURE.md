@@ -746,7 +746,7 @@ Written at the start of each milestone, before code.
 | `MainActivity.kt` | `enableEdgeToEdge()`, `NyxTheme`, `AppNavigation()`. Nothing else |
 | `AppNavigation.kt` | Navigation 3: `@Serializable` `NavKey` objects, back stack, `NavDisplay` |
 | `ui/theme/` | Theme from the wizard, kept as is (Material 3, dynamic colour on Android 12+). Unused imports and commented-out boilerplate removed |
-| `ui/PlaceholderScreen.kt` | "Not built yet" screen for destinations whose milestone hasn't happened yet |
+| `ui/PlaceholderScreen.kt` | "Not built yet" screen for destinations whose milestone hasn't happened yet. Deleted in M13, when Trends replaced its last use |
 | `data/DayClock.kt` | Day keys (below) |
 | `home/TodaySummary.kt` | Data shown on Home: `TodaySummary`, `GoalProgress` |
 | `home/SummaryRepository.kt` | `interface SummaryRepository { fun observeToday(): Flow<TodaySummary> }` |

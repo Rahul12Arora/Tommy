@@ -1,7 +1,7 @@
 ## Current state
 - Phase: 5 — Build · Milestone: M13 Trends + positive goals (in progress, branch `feat/m13-trends`)
 - Last done: M13 built and checked on the emulator (2 commits on `feat/m13-trends`, not pushed)
-- Next step: the developer's go to push `feat/m13-trends` and open the PR (CI), then merge + tag `m13-done`; Pixel check once the phone has free storage
+- Next step: PR CI green → merge + tag `m13-done`; Pixel check once the phone has free storage; then M14 (LLD first)
 - Blockers: none. Docker note: Homebrew's `docker` CLI comes first on PATH and can't find Docker Desktop's credential helper (`docker pull` fails); put `/Applications/Docker.app/Contents/Resources/bin` first or `brew uninstall docker`
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37; start it with `-gpu swiftshader_indirect`, see log 2026-10-22 M9) + Pixel 7a
@@ -290,4 +290,5 @@
 - Not verified: the Pixel 7a (`adb install -r` failed: the phone is out of storage — "Failed to free 570929668"), TalkBack by ear, `features.trends` off end to end
 - Tried & abandoned: Productive in yellow beside Neutral orange (normal-vision ΔE 12.9 < 15) → kept the reference palette order
 - Note: `ui/PlaceholderScreen.kt` has no users now that Trends exists; left in place (deleting a file needs the developer's OK)
+- Done: `ui/PlaceholderScreen.kt` and its string deleted (the developer's OK)
 
