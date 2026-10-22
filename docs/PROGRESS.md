@@ -1,7 +1,7 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M13 Trends + positive goals (in progress, branch `feat/m13-trends`)
-- Last done: M13 built and checked on the emulator (2 commits on `feat/m13-trends`, not pushed)
-- Next step: PR CI green → merge + tag `m13-done`; Pixel check once the phone has free storage; then M14 (LLD first)
+- Phase: 5 — Build · Milestone: M14 Opt-in stats (next)
+- Last done: M13 done 2026-10-23 — PR #20 merged, tagged `m13-done` (`8372043`)
+- Next step: M14 in a new session, LLD first. Pending from M13: the Pixel check once the phone has ~570 MB free (`adb install -r` keeps data)
 - Blockers: none. Docker note: Homebrew's `docker` CLI comes first on PATH and can't find Docker Desktop's credential helper (`docker pull` fails); put `/Applications/Docker.app/Contents/Resources/bin` first or `brew uninstall docker`
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37; start it with `-gpu swiftshader_indirect`, see log 2026-10-22 M9) + Pixel 7a
@@ -292,3 +292,5 @@
 - Note: `ui/PlaceholderScreen.kt` has no users now that Trends exists; left in place (deleting a file needs the developer's OK)
 - Done: `ui/PlaceholderScreen.kt` and its string deleted (the developer's OK)
 - Verified: PR #20 opened; CI green — Android build 2 min 27 s (run 39851696361), backend test 43 s and console 14 s (run 39851696402)
+- Done: PR #20 merged to `main` by the developer (`8372043`), tagged `m13-done`
+- Next: M14 — Opt-in stats, LLD first

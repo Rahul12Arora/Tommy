@@ -361,7 +361,7 @@ Done when:
 - [x] Publish a new limit → the app uses it after restart; an invalid published fixture (forced in dev) is ignored
 Verify with: `./gradlew test` · emulator against local Docker
 
-### M13 — Trends + positive goals            status: in-progress
+### M13 — Trends + positive goals            status: done
 Goal: 7- and 30-day trends and positive goals.
 Depends on: M9
 Stories: US-17 (positive goals), US-18
