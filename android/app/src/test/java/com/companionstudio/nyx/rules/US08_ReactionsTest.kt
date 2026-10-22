@@ -5,6 +5,8 @@ import com.companionstudio.nyx.config.ConfigResult
 import com.companionstudio.nyx.config.EffectiveConfig
 import com.companionstudio.nyx.config.SharedFiles
 import com.companionstudio.nyx.config.parseConfig
+import com.companionstudio.nyx.focus.FakeFocusSessionDao
+import com.companionstudio.nyx.focus.FocusSessions
 import com.companionstudio.nyx.tracking.EndedBreak
 import com.companionstudio.nyx.tracking.TrackerSnapshot
 import kotlinx.coroutines.test.runTest
@@ -26,7 +28,7 @@ class US08_ReactionsTest {
     private val config = EffectiveConfig(defaults, emptyMap())
     private val clock = TestClock(Instant.parse("2026-10-21T10:00:00Z"))
     private val dao = FakePetEventDao()
-    private val reactions = Reactions(dao, clock, TestLabels, Random(7))
+    private val reactions = Reactions(dao, clock, TestLabels, FocusSessions(FakeFocusSessionDao(dao), clock), Random(7))
 
     private fun pool(trigger: String) = defaults.lines.getValue("cheerful").getValue(trigger).getValue("any")
 
@@ -209,7 +211,7 @@ class US08_ReactionsTest {
         reactions.afterTick(inChrome(continuousMinutes = 0, neutralMinutes = 10), config, null, petOnScreen = true)
         later(30)
         val idle = reactions.afterTick(inChrome(continuousMinutes = 30, neutralMinutes = 40), config, null, petOnScreen = true)
-        val off = Reactions(FakePetEventDao(), clock, TestLabels)
+        val off = FakePetEventDao().let { log -> Reactions(log, clock, TestLabels, FocusSessions(FakeFocusSessionDao(log), clock)) }
         off.afterTick(inChrome(continuousMinutes = 0, neutralMinutes = 10), config, null, true, prefs = ReactionPrefs(idleEnabled = false))
         val quiet = off.afterTick(inChrome(continuousMinutes = 30, neutralMinutes = 40), config, null, true, prefs = ReactionPrefs(idleEnabled = false))
 

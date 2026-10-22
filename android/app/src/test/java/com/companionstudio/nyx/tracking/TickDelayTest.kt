@@ -71,6 +71,13 @@ class TickDelayTest {
     }
 
     @Test
+    fun US13_aRunningFocusSession_isFast_evenWithNothingCountedInFront() {
+        val snapshot = snapshot(category = null)
+        assertEquals(30, tickDelaySeconds(snapshot, config()))
+        assertEquals(5, tickDelaySeconds(snapshot, config(), focusRunning = true))
+    }
+
+    @Test
     fun D107_continuousUseWithinOneSlowTickOfTheBreakLimit_isFast_evenWithNothingCountedInFront() {
         val near = snapshot(category = null).copy(continuousMs = minutes(44, 40))
         val far = snapshot(category = null).copy(continuousMs = minutes(40))

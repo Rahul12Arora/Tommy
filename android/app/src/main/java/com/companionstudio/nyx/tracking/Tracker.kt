@@ -25,6 +25,10 @@ data class TrackerSnapshot(
     val continuousMs: Long = 0,
     /** Breaks that ended since the previous tick (§14.7). */
     val endedBreaks: List<EndedBreak> = emptyList(),
+    /** Time credited at this tick per counted app, whatever its day: focus time and drift come from it (D-110, D-111). */
+    val creditedMs: Map<String, Long> = emptyMap(),
+    /** The tracker's view of the screen, so debug scenarios pause focus sessions too (§14.8). */
+    val screenOn: Boolean = true,
 )
 
 /**
@@ -109,6 +113,8 @@ class Tracker(
             todayMs = dao.categoryTotals(today.toString()).associate { it.category to it.durationMs },
             continuousMs = state.continuousMs,
             endedBreaks = result.breaks,
+            creditedMs = result.credits.groupBy { it.packageName }.mapValues { (_, parts) -> parts.sumOf { it.durationMs } },
+            screenOn = state.screenOn,
         )
     }
 

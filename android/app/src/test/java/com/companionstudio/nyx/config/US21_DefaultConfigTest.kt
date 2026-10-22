@@ -28,6 +28,16 @@ class US21_DefaultConfigTest {
     }
 
     @Test
+    fun D120_theDefaultDocument_spellsOutTheFocusDefaults_andADocumentWithoutThemGetsTheSame() {
+        val defaults = defaultConfig().focus
+        assertEquals(5, defaults.minDoneMinutes)
+        assertEquals(30, defaults.abandonAfterMinutes)
+        assertTrue("minimal.json has no minDoneMinutes", "minDoneMinutes" !in SharedFiles.fixture("valid", "minimal"))
+        assertEquals(5, SharedFiles.minimalConfig.focus.minDoneMinutes)
+        assertEquals(30, SharedFiles.minimalConfig.focus.abandonAfterMinutes)
+    }
+
+    @Test
     fun catAndBlob_andAtLeastTwoPersonalities_areEnabled() {
         val config = defaultConfig()
 

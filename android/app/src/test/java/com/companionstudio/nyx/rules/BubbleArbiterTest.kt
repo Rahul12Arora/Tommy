@@ -28,12 +28,13 @@ class BubbleArbiterTest {
 
         assertEquals(
             listOf(
-                // focus tier: in the order offered (reversed here)
-                BubbleTrigger.FOCUS_BROKEN, BubbleTrigger.FOCUS_CHECKIN, BubbleTrigger.FOCUS_DRIFT, BubbleTrigger.FOCUS_STARTED,
+                // focus tier, the end lines included (D-115): in the order offered (reversed here)
+                BubbleTrigger.FOCUS_BROKEN, BubbleTrigger.FOCUS_COMPLETED, BubbleTrigger.FOCUS_CHECKIN, BubbleTrigger.FOCUS_DRIFT,
+                BubbleTrigger.FOCUS_STARTED,
                 BubbleTrigger.STRETCH_REACHED,
                 BubbleTrigger.LIMIT_REPEAT, BubbleTrigger.LIMIT_REACHED,
                 BubbleTrigger.BREAK_DUE,
-                BubbleTrigger.PET_RETURNED, BubbleTrigger.FOCUS_COMPLETED, BubbleTrigger.GOAL_MET, BubbleTrigger.BREAK_TAKEN,
+                BubbleTrigger.PET_RETURNED, BubbleTrigger.GOAL_MET, BubbleTrigger.BREAK_TAKEN,
                 BubbleTrigger.IDLE,
             ),
             order,
