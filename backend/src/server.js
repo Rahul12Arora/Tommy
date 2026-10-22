@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { seedInitialConfig } from "../seeds/initial-config.js";
 import { buildApp } from "./app.js";
 import { createPool } from "./lib/db.js";
@@ -5,9 +7,13 @@ import { readEnv } from "./lib/env.js";
 import { runMigrations } from "./lib/migrate.js";
 
 const env = readEnv(process.env);
+// The image copies the console build here (Dockerfile); locally it's absent and Vite serves the console
+const builtConsole = fileURLToPath(new URL("../console/", import.meta.url));
+const consoleDir = existsSync(builtConsole) ? builtConsole : undefined;
 // The pool is made before the app (which needs it), so its error handler reaches the app's logger through a closure
 const pool = createPool(env.databaseUrl, (error) => app.log.error({ err: error }, "idle database connection lost"));
-const app = buildApp({ pool, auth: env.auth, logLevel: env.logLevel, trustProxy: env.trustProxy });
+const app = buildApp({ pool, auth: env.auth, consoleDir, logLevel: env.logLevel, trustProxy: env.trustProxy });
+app.log.info({ consoleDir: consoleDir ?? "not built" }, "console files");
 
 // Before listening, so no request ever sees an old schema (D-126)
 const applied = await runMigrations(pool);

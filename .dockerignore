@@ -1,12 +1,19 @@
-# The build context is the repo root (backend/Dockerfile); only backend/ and shared/ are needed
+# The build context is the repo root (backend/Dockerfile); only backend/, admin/ and shared/ are needed
 **
 !backend/package.json
 !backend/package-lock.json
 !backend/src/
 !backend/migrations/
 !backend/seeds/
+!admin/package.json
+!admin/package-lock.json
+!admin/index.html
+!admin/vite.config.js
+!admin/scripts/
+!admin/src/
 !shared/config.schema.json
 !shared/default-config.json
 **/*.test.js
 **/node_modules
 **/.env
+admin/src/generated

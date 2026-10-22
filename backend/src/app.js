@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import cookie from "@fastify/cookie";
 import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
+import fastifyStatic from "@fastify/static";
 import Fastify from "fastify";
 import { authRoutes } from "./features/auth/auth.routes.js";
 import { adminConfigRoutes, configRoutes } from "./features/config/config.routes.js";
@@ -15,8 +16,9 @@ import { requireJson } from "./middleware/requireJson.js";
  * Fastify's default request serializer logs method, URL, host and remote address only: no headers, no bodies,
  * so no cookies or passwords reach the logs.
  * `auth` = { username, passwordHash, sessionSecret, secureCookie } from readEnv; tests use testing/testAuth.js.
+ * `consoleDir`: the built console (only in the image, D-42); without it the console runs on Vite's dev server.
  */
-export function buildApp({ pool, auth, logLevel = "info", trustProxy = false }) {
+export function buildApp({ pool, auth, consoleDir, logLevel = "info", trustProxy = false }) {
   const app = Fastify({
     logger: { level: logLevel },
     // Our own IDs only: a client can't pick the ID its request is logged under
@@ -48,6 +50,12 @@ export function buildApp({ pool, auth, logLevel = "info", trustProxy = false }) 
     },
     { prefix: "/admin" },
   );
+
+  if (consoleDir) {
+    app.register(fastifyStatic, { root: consoleDir, prefix: "/console/" });
+    // The prefix route doesn't match the bare path; index.html sits at /console/
+    app.get("/console", (_request, reply) => reply.redirect("/console/", 301));
+  }
 
   return app;
 }
