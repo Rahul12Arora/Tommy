@@ -3,7 +3,7 @@
 > Phase 4 output. One milestone at a time; each is a vertical slice that can be verified on its own.
 > Every milestone starts by writing its LLD in `ARCHITECTURE.md` §14, before code.
 > Status values: `pending` · `in-progress` · `done`. Tick tasks as they finish.
-> Last updated: 2026-10-22
+> Last updated: 2026-10-23
 
 ---
 
@@ -361,7 +361,7 @@ Done when:
 - [x] Publish a new limit → the app uses it after restart; an invalid published fixture (forced in dev) is ignored
 Verify with: `./gradlew test` · emulator against local Docker
 
-### M13 — Trends + positive goals            status: pending
+### M13 — Trends + positive goals            status: in-progress
 Goal: 7- and 30-day trends and positive goals.
 Depends on: M9
 Stories: US-17 (positive goals), US-18

@@ -705,7 +705,7 @@ Written at the start of each milestone, before code.
 | Backend foundation + config API | M10 | done 2026-10-22 (§14.10) |
 | Admin login, draft/publish, console | M11 | done 2026-10-22 (§14.11) |
 | App remote config | M12 | done 2026-10-22 (§14.12) |
-| Trends + positive goals | M13 | pending |
+| Trends + positive goals | M13 | proposed 2026-10-23 (§14.13) |
 | Opt-in stats | M14 | pending |
 
 ### 14.1 M1 — App shell, storage, DayClock
@@ -2889,3 +2889,256 @@ sequenceDiagram
 | D-146 | Release `CONFIG_BASE_URL` stays blank until M15; a blank URL means no refresher | No guessed production address in the code | A placeholder URL that fails at runtime |
 
 **Not in M12:** the production URL and HTTPS (→ M15) · stats upload (→ M14) · a "check now" button or quicker retry after a failure · certificate pinning · a rate limit on `GET /v1/config` (parking lot).
+
+### 14.13 M13 — Trends + positive goals
+
+Written 2026-10-23; D-147 to D-155 proposed, awaiting approval.
+
+**Purpose:** the user can set two positive goals (focus sessions per day, productive minutes per day). Meeting one raises mood once that day. S-10 Trends shows 7 or 30 days of time per category and how many goals were met each day: limit goals kept or missed (CR-05), positive goals met or not. Days before Nyx was tracking show as empty, not as zero. Stories: US-17 (positive goals; limit goals' kept/missed), US-18.
+
+**What gets installed:** nothing. The chart is drawn with Compose `Canvas` and `rememberTextMeasurer` (both part of `ui`, already in the register).
+
+**Positive goals** (D-147)
+- They're two ordinary settings in a new `goals` block, added with Kotlin defaults like `breaks.obstructive` (§14.7). So `schemaVersion` stays 1, and a document without the block (everything published before M13) still passes validation.
+
+```json
+"goals": {
+  "focusSessionsPerDay":     { "default": 0, "min": 0, "max": 10,  "userEditable": true },
+  "productiveMinutesPerDay": { "default": 0, "min": 0, "max": 480, "userEditable": true }
+}
+```
+
+- `0` = off, the same rule as limits (§5). Both are off by default: someone who never touches them sees no change in mood.
+- Schema bounds: sessions 0–20, minutes 0–960 (like the total daily limit).
+- S-06 (setup) and S-11's Limits & goals page (the same screen) get a "Positive goals" heading under the limits, with one slider each. Off shows "Off"; sessions show "2 sessions a day", minutes show "1 h a day". A locked setting shows "Set by Nyx" (US-05). These sliders are S-06's "add goal" action.
+- The goal key is what events and `daily_goals` rows store. Limit goals keep their M7 keys:
+
+| Goal | Kind | Key | Target | Met / kept when |
+|---|---|---|---|---|
+| A category's daily limit | `LIMIT` | `limit:social` … | minutes | no `LIMIT_EXCEEDED` with its key that day (D-105) |
+| Total daily limit | `LIMIT` | `limit:total` | minutes | the same |
+| Focus sessions | `FOCUS_SESSIONS` | `goal:focus_sessions` | sessions | today's log has ≥ target `FOCUS_COMPLETED` events (D-150) |
+| Productive minutes | `PRODUCTIVE_MINUTES` | `goal:productive_minutes` | minutes | today's Productive time ≥ target |
+
+- The stretch limit isn't a goal: it isn't one on Home today, and it can be crossed several times a day.
+
+```kotlin
+enum class GoalKind { LIMIT, FOCUS_SESSIONS, PRODUCTIVE_MINUTES }
+
+/** [target]: minutes, or sessions for FOCUS_SESSIONS. [category] only for LIMIT; `null` = the total limit. */
+data class Goal(val kind: GoalKind, val category: Category?, val target: Int) {
+    val key: String
+}
+
+fun goalsOn(config: EffectiveConfig): List<Goal>        // limits that are on (Home's order), then positive goals that are on
+fun goalOf(key: String, target: Int): Goal?             // back from a stored key; an unknown key → null (skipped)
+fun positiveGoalsReached(goals: List<Goal>, todayMs: Map<Category, Long>, logged: List<PetEvent>): List<Goal>
+                                                        // reached and not already logged as GOAL_MET today
+```
+
+**Per tick** (`rules/Goals.kt`, called from `Reactions.afterTick` after the nag step)
+
+```kotlin
+class GoalStep(private val dao: DailyGoalDao) {
+    /** Records today's goals when they changed and returns the positive goals met just now. */
+    suspend fun afterTick(day: LocalDate, config: EffectiveConfig, todayMs: Map<Category, Long>, logged: List<PetEvent>): List<Goal>
+    suspend fun deleteBefore(day: LocalDate)
+}
+```
+
+1. **Record which goals are on** (D-148). `goalsOn(config)` becomes `daily_goals` rows for today. If they differ from what this run last wrote, `replaceDay` swaps them in one transaction. So there's one write on the first tick of a day (and after a restart), and one after each slider change. A day's goals are the ones on at its last tick.
+2. **Positive goals:** for each positive goal that's on, reached, and with no `GOAL_MET` carrying its key in today's log → log `GOAL_MET` with `subject` = its key. That's +10 through `moodOf` (`mood.weights.goal_met`), once per goal per day (US-17).
+   - `FOCUS_COMPLETED` written by `focus.step` this tick is already in `logged` (it runs first, D-109), so the second session's completion meets "2 sessions" on that very tick.
+   - Raising a target after it was met doesn't take the reward back. Lowering it below today's progress meets the goal on the next tick.
+   - The day reset starts over: new day key, no `GOAL_MET` yet.
+3. **Bubble** (D-154): if any goal was met this tick → one `goal_met` request, even when two were met together. It's skipped when the same tick brought the pet back, which already says `pet_returned` (one line per moment, as `break_taken` does today). It's a Reward-tier bubble, so it waits during focus (D-25) and is dropped while the pet is hidden (D-24). The existing lines are generic ("Goal met! You're on a roll!"), so no new placeholder.
+4. **Retention:** `deleteBefore` runs with the other tables at the day change (A-13, 31 days).
+
+`Reactions` gains about 8 lines (constructor parameter, call, logging, offer). It's at 243 lines now, so the logic stays in `Goals.kt`, not in `Reactions`.
+
+```mermaid
+sequenceDiagram
+  participant E as Engine tick
+  participant R as Reactions
+  participant F as FocusSessions
+  participant G as GoalStep
+  participant DB as Room
+  E->>R: afterTick(snapshot, config)
+  R->>F: step → may log FOCUS_COMPLETED
+  R->>DB: eventsOn(today)
+  R->>R: doomscroll, nags → events
+  R->>G: afterTick(day, config, todayMs, logged)
+  G->>DB: replaceDay(today, goals) — only if changed
+  G-->>R: goals met now (not yet logged today)
+  R->>R: log GOAL_MET(key) each · mood +10 each
+  R->>DB: insertAll(added)
+  R->>R: offer goal_met (unless pet_returned) → arbiter
+```
+
+**Storage — `daily_goals`** (Room version 5 → 6, `AutoMigration`, D-148)
+
+| Column | Type | Notes |
+|---|---|---|
+| `day` | TEXT, ISO day key | PK part 1 |
+| `goal_key` | TEXT | PK part 2; a key from the table above |
+| `target` | INTEGER | minutes, or sessions |
+
+```mermaid
+erDiagram
+  daily_goals ||..o{ events : "LIMIT_EXCEEDED / GOAL_MET with subject = goal_key, same day"
+  daily_app_usage }o..|| daily_goals : "same day"
+  daily_goals { TEXT day PK  TEXT goal_key PK  INTEGER target }
+```
+
+- No foreign keys: rows are joined by day and key in Kotlin, and each table is cleaned up by day.
+- **New queries** (all ranges are ≤ 30 days; the PK or the `day` index covers them):
+
+| DAO | Query | For |
+|---|---|---|
+| `DailyGoalDao.replaceDay(day, goals)` | `DELETE … WHERE day = :day` + insert, one transaction | GoalStep |
+| `DailyGoalDao.observeSince(from)` | `SELECT * FROM daily_goals WHERE day >= :from` | Trends |
+| `DailyGoalDao.observeFirstDay()` | `SELECT MIN(day) FROM (SELECT day FROM daily_app_usage UNION ALL SELECT day FROM daily_goals)` | Trends (D-151) |
+| `DailyGoalDao.deleteBefore(day)`, `clearAll()` | retention; debug only | |
+| `DailyUsageDao.observeTotalsSince(from)` | `SELECT day, category, SUM(duration_ms) AS durationMs FROM daily_app_usage WHERE day >= :from GROUP BY day, category` → `DayCategoryTotal` | Trends |
+| `PetEventDao.observeGoalEventsSince(from)` | `SELECT * FROM events WHERE day >= :from AND type IN ('LIMIT_EXCEEDED', 'GOAL_MET')` | Trends |
+
+**Judging a day** (D-149, `home/Trends.kt`, a pure function)
+
+```kotlin
+enum class TrendRange(val days: Int) { WEEK(7), MONTH(30) }
+
+/** [goals]: `null` for a day Nyx wasn't tracking yet. Seconds per category; categories with no time are left out. */
+data class TrendDay(val day: LocalDate, val isToday: Boolean, val tracked: Boolean, val seconds: Map<Category, Long>, val goals: List<GoalResult>)
+data class GoalResult(val goal: Goal, val achieved: Boolean)
+
+fun trendDays(today: LocalDate, range: TrendRange, firstDay: LocalDate?, totals: List<DayCategoryTotal>,
+              goals: List<DailyGoal>, goalEvents: List<PetEvent>): List<TrendDay>  // oldest first, exactly range.days
+```
+
+- **Tracked** = on or after `firstDay` (D-151). Before it: `tracked = false`, nothing else. On or after it with no rows: tracked, 0 min (the phone was off all day, or usage access was missing).
+- **Goals of a day** = that day's `daily_goals` rows (unknown keys skipped). A day with no rows has no goals to show ("No goals"), not "all kept".
+- A `LIMIT` goal is achieved (kept) unless the day has `LIMIT_EXCEEDED` with its key. A positive goal is achieved (met) if the day has `GOAL_MET` with its key. `GOAL_MET` without a subject (the debug event extra) matches nothing.
+- **Today** is judged so far: a limit not crossed yet is "on track", a positive goal not met yet is "not yet". Its row says "Today so far".
+- "Goals met" for a day = achieved / all of that day's goals, e.g. "2 of 3".
+
+**S-10 Trends** (`home/TrendsScreen.kt`, `home/TrendsChart.kt`, D-152)
+
+```text
+┌──────────────────────────────────┐
+│ ← Trends                         │
+│ [ 7 days | 30 days ]             │  segmented buttons
+│ 4 h ┤                            │
+│ 2 h ┤    ▆        ▆              │  one stacked bar per day:
+│   0 ┼─▃──█──▅──┊┊──█──▂──▇──     │  Social, Games, Entertainment,
+│     Fr Sa Su Mo Tu We Th         │  Productive, Neutral (bottom up)
+│ ■ Social ■ Games ■ Entertainment │  legend, always shown
+│ ■ Productive ■ Neutral           │
+│ Today so far · 2 h 10 min · 1/2  ▾│  one row per day, newest first
+│ Wed 21 Oct · 3 h 12 min · 2 of 3 ▴│
+│   Social 1 h 20 min · Productive…│  expanded: time per category
+│   Social ≤ 1 h — missed          │  and each goal in words
+│   Focus sessions ≥ 2 — met       │
+│ Fri 16 Oct · Not tracked yet     │
+└──────────────────────────────────┘
+```
+
+- **One `LazyColumn`:** range toggle, chart, legend, then the day rows. 30 rows scroll; large text wraps (§9).
+- **Chart** (Canvas, 180 dp high):
+  - One bar per day; 8 dp gaps for 7 days, 2 dp for 30.
+  - Segments stacked bottom up in the fixed `Category` order with a 2 dp gap between segments, and the top end rounded 4 dp. Colour follows the category, so it's the same in both ranges.
+  - The y axis tops out at the longest day rounded up to a whole hour (at least 1 h). Recessive grid lines and labels at 0, half and top.
+  - x labels: weekday initials for 7 days; for 30 days, the day of the month on every 7th bar counting back from today.
+  - A day before tracking is a dashed outline column with no fill ("empty", not a bar of 0). A tracked day with 0 min draws nothing above the baseline.
+  - Tapping a bar expands that day's row and scrolls to it.
+- **Colours:** five category colours plus their dark-mode steps in `ui/theme/Color.kt`. Before they're committed, the palette goes through the dataviz validator in light and dark mode (lightness band, colour-blind separation of neighbouring segments, contrast against the surface); results go in the PR. Status colours (error red) aren't used for categories.
+- **Not colour alone** (§9): the legend names every colour, and the day rows hold every number as text. That's the chart's table view.
+- **TalkBack:** the chart is one node: "Screen time per day, last 7 days. Each day is listed below." Each row is a button with "expanded"/"collapsed" state.
+- **Data flow:** `TrendsViewModel(range: MutableStateFlow<TrendRange>)` → `TrendsRepository.observe(range)` combines the four Room flows above with today's day key, which updates each minute (`DayClock` gets `todayUpdates(resetHour)`, moved out of `TrackingSummaryRepository`, which now uses it too). Today's bar grows as the tracker credits. The range lives in the ViewModel (it survives rotation; after process death it's 7 days again).
+- **States:** loading (`null`) → progress indicator. Every day in range untracked → the chart's dashed columns and "Nothing tracked yet — trends fill in day by day". There's no error state: everything is local Room, like Home (§14.1).
+
+**Opening Trends** (US-18, D-153)
+- From Home: the Trends button (it opens the placeholder today).
+- **From the actions ring:** tapping 📱 (total today, which has no action today) opens Trends through a new `MainActivity.Open.TRENDS`: a fresh task with back stack `[Home, Trends]`, like `Open.FOCUS`. Its caption gets "· tap for trends". The ring keeps its 7 slots. An 8th would need a larger ring: at the 120 dp radius, 8 slots' centres are 53 dp apart, less than the 56 dp slot circles (7 slots: 62 dp).
+- `features.trends` off → no Trends button on Home, and 📱 has no action. Positive goals don't depend on it (F-12 ≠ F-13).
+
+**Home and the ring show positive goals** (US-17 "progress shows in the summary panel")
+- `GoalProgress` becomes `GoalProgress(goal: Goal, used: Long, target: Long)`: used and target are in seconds for minute goals and in sessions for the focus goal. `isOver` applies to `LIMIT` goals only; `isMet` = a positive goal with `used ≥ target`.
+- `todaySummary` builds the rows from `goalsOn(config)`. The focus count is today's `FOCUS_COMPLETED` events, which Home already observes.
+- `GoalRow` shows a positive goal as "Productive ≥ 1 h", "45 min of 1 h", or "1 h 05 min of 1 h · met"; "met" is spelled out like "over".
+- The ring's 🚦 value and alert use limit goals only, as now. The Limits list shows the positive rows under a "Positive goals" subheading.
+
+**Debug seed** (Track A, D-155)
+- `adb shell am broadcast -n com.companionstudio.nyx/.debug.ScenarioReceiver --es seed trends-30d` clears usage, events, focus sessions and `daily_goals`, then writes 24 past days (today − 24 … today − 1) through the real entities and DAOs. Today is left to the real tracker. It's deterministic (`Random(13)`) and safe to rerun.
+- **It covers:**
+  - 5 untracked days at the start of the 30-day view;
+  - one tracked day with 0 min (today − 3);
+  - one 9 h day (axis scaling);
+  - days with Social over its 60 min limit (`LIMIT_EXCEEDED`, missed) and days under it (kept);
+  - positive goals switched on from today − 14 (2 sessions, 60 min), so earlier days show only the limit goal;
+  - days with 0–3 `FOCUS_COMPLETED` (met at ≥ 2) and Productive ≥ 60 min (met);
+  - one day with every goal met, and one with none.
+- `GOAL_MET` and `LIMIT_EXCEEDED` come from the same rules the engine uses (`positiveGoalsReached`, the limit comparison), so the seed can't disagree with the app's judging.
+- The receiver logs one line per seeded day (`2026-10-21: 3 h 12 min, goals 2 of 3`), which the manual check compares with the screen.
+- Scenarios and `--ez stop` also clear `daily_goals`, so every run starts from the same place.
+- New scenario `productive-40min.txt`: 40 min of `com.google.android.apps.docs` (Productive in `categoryDefaults`).
+
+**Files** (`android/…` = `android/app/src/main/java/com/companionstudio/nyx/`)
+
+| File | New / changed | Responsibility |
+|---|---|---|
+| `shared/config.schema.json` · `shared/default-config.json` | changed | Optional `goals` block with bounds; the defaults above |
+| `shared/fixtures/invalid/setting-range--goal-default-above-max.json` | new | Rejected the same way by the phone and the backend |
+| `backend/src/features/config/config.validation.js` | changed | `settingsOf` adds the two goal settings when `goals` is present |
+| `config/NyxConfig.kt` · `config/EffectiveConfig.kt` | changed | `GoalsConfig` with defaults; two `SettingPaths`; `settingsByPath` includes them |
+| `rules/Goals.kt` | new | `GoalKind`, `Goal`, `GoalKeys`, `goalsOn`, `goalOf`, `positiveGoalsReached`, `GoalStep` |
+| `rules/DailyGoal.kt` · `rules/DailyGoalDao.kt` | new | `daily_goals` entity and DAO |
+| `rules/Reactions.kt` | changed | Calls `GoalStep`, logs `GOAL_MET`, offers `goal_met`, retention |
+| `rules/PetEventDao.kt` · `tracking/DailyUsageDao.kt` · `tracking/DailyUsage.kt` | changed | Trend queries; `DayCategoryTotal` |
+| `data/AppDatabase.kt` · `data/DayClock.kt` | changed | Version 6 + `AutoMigration(5, 6)`; `todayUpdates(resetHour)` |
+| `AppContainer.kt` | changed | `DailyGoalDao` into `Reactions`; `TrendsRepository` |
+| `home/TodaySummary.kt` · `home/TrackingSummaryRepository.kt` · `home/SummaryNumbers.kt` | changed | `GoalProgress` over `Goal`; positive goal rows |
+| `home/Trends.kt` · `home/TrendsRepository.kt` · `home/TrendsViewModel.kt` · `home/TrendsScreen.kt` · `home/TrendsChart.kt` | new | S-10 as above; the chart in its own file |
+| `home/HomeScreen.kt` · `AppNavigation.kt` · `MainActivity.kt` | changed | Trends button follows `features.trends`; `Trends` entry replaces the placeholder; `Open.TRENDS` |
+| `pet/ActionsRing.kt` · `pet/RingLimitsList.kt` · `pet/PetOverlay.kt` | changed | 📱 opens Trends; limit-only worst value; positive rows in the list |
+| `setup/LimitsViewModel.kt` · `setup/LimitsScreen.kt` | changed | Two goal rows under "Positive goals" |
+| `ui/theme/Color.kt` · `res/values/strings.xml` | changed | Category colours (light + dark); strings |
+| `src/debug/…/debug/TrendSeed.kt` · `src/debug/…/ScenarioReceiver.kt` · `src/debug/assets/scenarios/productive-40min.txt` | new / changed / new | Seed generator, `seed` extra, clearing `daily_goals` |
+| `android/README.md` | changed | The seed command and the manual check |
+
+**Tests**
+
+| Test | Where | Checks |
+|---|---|---|
+| `US17_PositiveGoalsTest` | `src/test/` | Through `Reactions` with fake DAOs. Off (0) → nothing · Productive at target − 1 s → no event, at target → `GOAL_MET(goal:productive_minutes)` and mood +10 · later ticks → no second event · next day → met again · second `FOCUS_COMPLETED` of the day meets "2 sessions" on the same tick · a session completing after the reset counts for the new day · target raised after met → no second event; lowered below progress → met on the next tick · both met on one tick → two events, one bubble · from mood 0 → `pet_returned` line only · during focus → bubble waits; hidden → no bubble, event still logged |
+| `US17_DailyGoalsTest` | `src/test/` | First tick writes today's goals · unchanged → no write · a slider change → replaced · a new day → its own rows · `goalsOn`: limits in Home's order then positive goals; 0 = off; user values applied · `goalOf` round-trips every key; an unknown key → `null` |
+| `US18_TrendsTest` | `src/test/` | `trendDays`: exactly 7 / 30 days, oldest first, ending today · before `firstDay` untracked; a day after it with no rows → tracked, 0 · `firstDay` null → all untracked · category sums per day · limit kept / missed from `LIMIT_EXCEEDED` with its key only · positive met from `GOAL_MET` with its key; a subject-less one matches nothing · a goal not on that day isn't listed · today marked · a reset hour of 4 decides which day is today (via `DayClock`) |
+| `US28_TrackingSummaryTest` (extended) | `src/test/` | Positive rows: focus count from today's `FOCUS_COMPLETED`, productive seconds, `isMet`; `isOver` stays limit-only |
+| `US05_LimitsViewModelTest` (extended) | `src/test/` | The two goal rows after the limits; locked rows not editable |
+| Config tests (extended) | `src/test/` | The default document has `goals`; a document without it gets the defaults (valid fixtures already lack it); the new invalid fixture → `setting-range` at `goals.productiveMinutesPerDay`. The backend's fixture test picks the fixture up as well |
+| `TrendSeedTest` | `src/testDebug/` | Same output twice · 24 days · covers untracked, zero, missed, kept, met, not met, goals switched on mid-range · every seeded `GOAL_MET` agrees with `positiveGoalsReached` |
+| `DailyGoalDaoTest` | `src/androidTest/` | `replaceDay` swaps one day only · `observeSince` · `observeFirstDay` over both tables, `null` when empty · `deleteBefore` |
+| `DailyUsageDaoTest` (extended) | `src/androidTest/` | `observeTotalsSince` groups by day and category |
+| `US18_TrendsScreenTest` | `src/androidTest/` | Fake days: 7/30 toggle changes the rows · "Not tracked yet" vs "0 min" · expand shows category times and goal results in words · legend names all five categories · loading and all-untracked states |
+| `US07_ActionsRingTest` (extended) | `src/androidTest/` | 📱 calls `onTrends`; with trends off it has no click action |
+| `US05_LimitsScreenTest` (extended) | `src/androidTest/` | "Positive goals" sliders show "Off" at 0 and "Set by Nyx" when locked |
+
+**Manual check — ROADMAP "Done when"** (emulator, then the Pixel)
+1. `--es seed trends-30d`, open Trends: the 7- and 30-day views match the receiver's logged lines day by day; the 5 oldest days are dashed and say "Not tracked yet"; today − 3 says 0 min; TalkBack reads the chart's summary and each row; large text (200%) wraps without clipping.
+2. S-11 → Limits & goals: Productive ≥ 30 min. Play `productive-40min` at 60×: at about 30 min the log shows `GOAL_MET` once, mood +10, and a `goal_met` bubble. Home and the ring's Limits list say "met". It plays on to 40 min with no second event; Trends' today row says the goal is met.
+3. Ring → 📱 opens Trends; back → Home. Turn `features.trends` off from the console (local Docker, M12): no Trends button, 📱 does nothing.
+
+**Decisions** (proposed)
+
+| ID | Decision | Why | Alternatives |
+|---|---|---|---|
+| D-147 | Positive goals are two user-editable settings in an additive `goals` block, `0` = off, both off by default: focus sessions per day (0–10) and productive minutes per day (0–480). S-06/S-11 show them as sliders under "Positive goals"; that's S-06's "add goal" | Same shape, layering, clamping, console editing and validation as every other setting, with no new storage or UI pattern. US-17 names exactly these two | A user-built list of goals in Room with add/remove UI (more screens and storage, and no requirement asks for other goal types); defaults on (changes everyone's mood maths without asking) |
+| D-148 | New `daily_goals` table: the goals on each day with their targets, written by the engine when today's set changes; a day's goals are the ones on at its last tick | Trends must judge each past day against the goals of that day (D-105 left this to M13); limits can change at any time | Judge past days against today's config (wrong after any change); write at the day reset (the engine may not be running then, and a day could be lost) |
+| D-149 | Kept/missed/met come from the event log: `LIMIT_EXCEEDED` / `GOAL_MET` with the goal's key that day. Today shows "so far" | One source of truth, the same one mood uses (H-03); nothing new to store | A per-day result table written at the reset (duplicates the log; missing if the engine wasn't running) |
+| D-150 | The focus goal counts `FOCUS_COMPLETED` events in today's log, i.e. by the day a session completed, not `focus_sessions.day` (its start day, A-25) | The reward goes into the mood of the day it fires on; a session completed after the reset can't help a day that's already over | Count by start day (the goal of a finished day could change after the reset) |
+| D-151 | "Before install" = before the earliest day with any `daily_app_usage` or `daily_goals` row | Needs no new stored value; the engine writes `daily_goals` on the first tick of every day, so the first tracked day always has a row; the debug seed works without faking an install date | `PackageInfo.firstInstallTime` (the seed would need to fake it; a restored backup brings older data than the install); a "first day" key in DataStore (one more thing to keep in step) |
+| D-152 | S-10 = 7/30 toggle, a stacked bar per day in fixed category order (Canvas), a legend, and a list of day rows holding every number as text, expandable to categories and goal results | The day list is the chart's table view, so TalkBack and colour-blind users get everything; one chart, no axis tricks | Separate charts per category (5 charts, small bars); a line chart (hides the split between categories); tap-a-bar only (not usable with TalkBack) |
+| D-153 | Trends opens from Home and from the ring's 📱 slot (fresh task, `[Home, Trends]`); no 8th ring slot; `features.trends` off hides both | US-18 asks for the panel; 📱 has no action today; 8 slots' 56 dp circles would overlap at the 120 dp radius | An 8th slot with a larger ring (changes D-101 placement maths); only via Open Nyx → Trends (two taps, misses US-18's wording) |
+| D-154 | One `goal_met` bubble per tick however many goals were met; skipped when the pet came back on the same tick; no new placeholder | One line per moment (as `break_taken` and `focus_completed`); the existing lines are generic | A `{goal}` placeholder naming the goal (new line rules and lines for every personality; parking lot) |
+| D-155 | `--es seed trends-30d` writes 24 deterministic past days through the real entities and judging rules, logs a line per day, and leaves today to the tracker; scenarios also clear `daily_goals` | Done-when needs 30 days of data on a phone installed today; the logged lines make the check exact | Playing 30 days through a scenario (the tracker credits only around now; it would take hours even at 60×) |
+
+**Not in M13:** focus-session counts or averages as their own chart, week-over-week comparisons, export (parking lot) · opt-in stats (→ M14) · a `{goal}` placeholder in lines (parking lot) · goals for other categories.
