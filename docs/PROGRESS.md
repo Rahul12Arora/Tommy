@@ -1,8 +1,8 @@
 ## Current state
 - Phase: 5 — Build · Milestone: M10 Backend + config API (in progress, branch `feat/m10-backend`)
-- Last done: M10 LLD, D-121 to D-130 and CR-11 approved; `backend/` scaffold (env check, error handler, app/server, Biome, README)
-- Next step: `docker-compose.yml` (Postgres 18 + API) and `backend/Dockerfile`
-- Blockers: Docker on the Mac is the CLI only (Homebrew `docker` 29.9.2): no daemon and no `compose` plugin. Needs a runtime (Docker Desktop, OrbStack or Colima + `docker-compose`) before the Compose and DB tasks
+- Last done: `docker-compose.yml` (Postgres 18.6 + API), `backend/Dockerfile`, root `.dockerignore`
+- Next step: migration runner + `001_init.sql`
+- Blockers: none. Docker note: Homebrew's `docker` CLI comes first on PATH and can't find Docker Desktop's credential helper (`docker pull` fails); put `/Applications/Docker.app/Contents/Resources/bin` first or `brew uninstall docker`
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37; start it with `-gpu swiftshader_indirect`, see log 2026-10-22 M9) + Pixel 7a
 - Build setup: Homebrew JDK on PATH starts Gradle; daemon runs on JDK 25 (`android/README.md`). With the phone plugged in, set `ANDROID_SERIAL` for device tasks
@@ -222,4 +222,7 @@
 - Done: `backend/` scaffold — `package.json` (ESM, Node 26.12.1, exact pins fastify 5.12.7, pg 8.23.1, Biome 2.5.15), `biome.json` (2 spaces, 120 cols, repo-root `.gitignore` via `vcs.root`), `.env.example`, `README.md`, `src/lib/env.js`, `db.js`, `httpError.js`, `src/middleware/errorHandler.js`, `src/app.js`, `src/server.js`. `ajv` is installed with the validation task, where it's first used
 - Verified: Node 26.12.1 + npm 11.20.0 on the Mac; `npm test` 10/10 (env, error shapes: 404, 500 without detail, HttpError, route-schema 400 with pointer, bad JSON 400 and 415 → BAD_REQUEST); `npm run lint` clean; `test:coverage` runs; `node src/server.js` boots, answers `/nope` with the 404 shape, logs request IDs as UUIDs, shuts down on SIGTERM; bad `PORT` stops start-up with the message
 - Found: Docker is the CLI only — no daemon, no `docker compose`
+- Done: Docker Desktop installed by the developer (Engine 29.9.2, Compose v5.6.1). `docker-compose.yml`: `db` (`postgres:18.6-alpine3.24`, volume at `/var/lib/postgresql` as the 18 image expects, health check, init script creates `nyx_test`) and `api` (built from the repo root, `DATABASE_URL` pointed at `db`, starts when `db` is healthy). `backend/Dockerfile`: Node 26.12.1 alpine, `npm ci --omit=dev`, `/app/backend` + `/app/shared` layout, user `node`, exec-form `CMD`. Root `.dockerignore` lets in only what the image needs (no tests)
+- Verified: `docker compose up --build` → `db` healthy, PostgreSQL 18.6, databases `nyx` and `nyx_test`; API answers on :3000 (404 shape), runs as `node`, image holds no test files (284 MB); `docker compose stop api` → "shutting down" logged, exit 0 in 0.3 s
+- Learned: Homebrew's `docker` CLI shadows Docker Desktop's; with it first on PATH `docker pull` fails ("docker-credential-desktop not found")
 

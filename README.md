@@ -39,7 +39,12 @@ docs/      ← the docs above
 - Run ▶ on an emulator or a USB-connected phone with developer options and USB debugging on.
 - Terminal builds, all test commands and coverage: [`android/README.md`](android/README.md).
 
-**Backend and console** — instructions arrive with M10 and M11 (Node 26 LTS, Docker).
+**Backend** (from M10)
+- Node 26.12.1 and Docker Desktop.
+- `docker compose up --build` (from the repo root) starts Postgres and the API on port 3000.
+- Running the API on the host, tests and lint: [`backend/README.md`](backend/README.md).
+
+**Console** — instructions arrive with M11.
 
 ## Test
 

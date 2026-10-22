@@ -28,12 +28,23 @@ Every variable is explained in `.env.example` and `docs/ARCHITECTURE.md` §12. S
 
 ## Run
 
+Everything in Docker (from the repo root):
+
 ```bash
-npm run dev      # restarts on file changes; reads .env
-npm start        # what the container runs; env comes from outside
+docker compose up --build    # Postgres 18 (port 5432) + the API (port 3000)
+docker compose down          # stop; add -v to also delete the database volume
 ```
 
-The API listens on `PORT` (3000).
+Or only the database in Docker and the API on your machine, which restarts on every file change:
+
+```bash
+docker compose up -d db
+npm run dev                  # reads .env (localhost database)
+```
+
+- The `db` container has two databases: `nyx` (the app) and `nyx_test` (`npm test`, emptied before each test). `nyx_test` is created when the volume is first made; on an older volume, run `docker compose down -v` once.
+- The image is built from the repo root (`backend/Dockerfile`), so it can include `shared/config.schema.json` and `shared/default-config.json`. `.dockerignore` at the root keeps everything else, tests included, out of it.
+- Dev database login: `nyx` / `nyx` — local only.
 
 ## Test and lint
 

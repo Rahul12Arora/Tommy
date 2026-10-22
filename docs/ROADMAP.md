@@ -322,7 +322,7 @@ Stories: US-19 (serving), US-21
 Tasks:
 - [x] LLD: tables, migrations, config endpoints, validation, error handler, logging, health (§14.10, 2026-10-22)
 - [x] `backend/` scaffold per ARCHITECTURE §13; Biome; `.env.example`; `README.md` (2026-10-22)
-- [ ] `docker-compose.yml`: Postgres 18 + API
+- [x] `docker-compose.yml`: Postgres 18 + API (2026-10-22)
 - [ ] Migration runner + `001_init.sql` (`config_versions`; `daily_stats` → M14, D-125)
 - [ ] Seed: publish `shared/default-config.json` as version 1
 - [ ] `GET /v1/config?schema=` with ETag / 304; `GET /health`. Serve the re-serialised document, not stored text, so `3.0` can't reach phones (D-54)
