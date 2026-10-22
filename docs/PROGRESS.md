@@ -1,7 +1,7 @@
 ## Current state
 - Phase: 5 — Build · Milestone: M8 Focus sessions (in progress; branch `feat/m8-focus`)
 - Last done: M8 built; 66/66 device tests and all three focus scenarios on the Pixel 7a
-- Next step: CI on the PR → the developer merges → tag `m8-done`, close M8
+- Next step: the developer merges PR #14 → tag `m8-done`, close M8 → M9 Week-1 check
 - Blockers: none (Pixel 7a connected). The API 37 emulator still hangs at boot, also on a cold boot from the command line (2026-10-22) ("hanging thread 'QEMU2 main loop'"); it needs a cold boot or wipe from Android Studio before it's used again
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
@@ -178,3 +178,4 @@
 - Verified by the developer on the Pixel 7a: the done-when session with real YouTube and Instagram (Instagram installed for it) — no switching broke on Instagram; a set-time session completed with the reward and +15
 - Open from M8: TalkBack by ear
 - Next: push `feat/m8-focus`, open the PR, CI
+- Verified: Android CI green on `feat/m8-focus` (run 39765596636); PR #14 open, not merged
