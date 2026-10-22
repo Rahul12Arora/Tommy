@@ -237,3 +237,4 @@
 - Verified: Backend CI green on GitHub (run 39785639070): lint, 73/73 tests, 100% lines on `src/features/`, Docker image builds. Android CI not triggered (no `android/` or `shared/` change)
 - Done: ROADMAP M10 ticked and status done; AGENTS card on M11
 
+- Done: PR #17 opened (M10 → main) with the manual QA checklist; merging is the developer's step
