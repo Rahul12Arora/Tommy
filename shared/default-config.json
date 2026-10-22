@@ -117,6 +117,20 @@
     "minDoneMinutes": 5,
     "abandonAfterMinutes": 30
   },
+  "goals": {
+    "focusSessionsPerDay": {
+      "default": 0,
+      "min": 0,
+      "max": 10,
+      "userEditable": true
+    },
+    "productiveMinutesPerDay": {
+      "default": 0,
+      "min": 0,
+      "max": 480,
+      "userEditable": true
+    }
+  },
   "bubbles": {
     "minGapSeconds": 60,
     "showSeconds": 8

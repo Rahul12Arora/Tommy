@@ -81,6 +81,8 @@ private class ConfigChecks {
         setting(SettingPaths.BREAK_AFTER_MINUTES, breaks.afterMinutes, 1..1440)
         setting(SettingPaths.FOCUS_DURATION_MINUTES, focus.durationMinutes, 1..1440)
         setting(SettingPaths.FOCUS_CHECKIN_MINUTES, focus.checkinMinutes, 1..240)
+        setting(SettingPaths.GOAL_FOCUS_SESSIONS, goals.focusSessionsPerDay, 0..20)
+        setting(SettingPaths.GOAL_PRODUCTIVE_MINUTES, goals.productiveMinutesPerDay, 0..1440)
 
         number("tracking.fastTickSeconds", tracking.fastTickSeconds, 1..60)
         number("tracking.slowTickSeconds", tracking.slowTickSeconds, 1..60)

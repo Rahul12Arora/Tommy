@@ -20,10 +20,12 @@ import com.companionstudio.nyx.focus.FocusRepository
 import com.companionstudio.nyx.focus.FocusSessions
 import com.companionstudio.nyx.home.SummaryRepository
 import com.companionstudio.nyx.home.TrackingSummaryRepository
+import com.companionstudio.nyx.home.TrendsRepository
 import com.companionstudio.nyx.pet.PetSettings
 import com.companionstudio.nyx.pet.PetVisibility
 import com.companionstudio.nyx.rules.AudioCallState
 import com.companionstudio.nyx.rules.CallState
+import com.companionstudio.nyx.rules.GoalStep
 import com.companionstudio.nyx.rules.NagLabels
 import com.companionstudio.nyx.rules.ReactionSettings
 import com.companionstudio.nyx.rules.Reactions
@@ -101,6 +103,9 @@ class AppContainer(private val context: Context) {
     val summaryRepository: SummaryRepository =
         TrackingSummaryRepository(database.dailyUsageDao(), database.petEventDao(), effectiveConfig, petSettings, dayClock)
 
+    val trendsRepository =
+        TrendsRepository(database.dailyUsageDao(), database.petEventDao(), database.dailyGoalDao(), effectiveConfig, dayClock)
+
     val focusSessionDao = database.focusSessionDao()
     val focusRepository = FocusRepository(focusSessionDao, effectiveConfig, dayClock, clock)
 
@@ -128,7 +133,7 @@ class AppContainer(private val context: Context) {
             override fun category(category: Category?) =
                 context.getString(category?.labelRes ?: R.string.limit_total_name)
         }
-        return Reactions(database.petEventDao(), clock, labels, FocusSessions(focusSessionDao, clock))
+        return Reactions(database.petEventDao(), clock, labels, FocusSessions(focusSessionDao, clock), GoalStep(database.dailyGoalDao()))
     }
 
     private companion object {

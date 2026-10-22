@@ -28,6 +28,10 @@ abstract class DailyUsageDao {
     @Query("SELECT category, SUM(duration_ms) AS durationMs FROM daily_app_usage WHERE day = :day GROUP BY category")
     abstract suspend fun categoryTotals(day: String): List<CategoryTotal>
 
+    /** Each day's total per category from [from] on (at most 31 days are kept, A-13). */
+    @Query("SELECT day, category, SUM(duration_ms) AS durationMs FROM daily_app_usage WHERE day >= :from GROUP BY day, category")
+    abstract fun observeTotalsSince(from: String): Flow<List<DayCategoryTotal>>
+
     /** Retention (A-13): day keys are ISO dates, so comparing them as text compares the dates. */
     @Query("DELETE FROM daily_app_usage WHERE day < :day")
     abstract suspend fun deleteBefore(day: String)

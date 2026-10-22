@@ -12,7 +12,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -44,7 +47,13 @@ fun LimitsScreen(rows: List<LimitRow>?, onSet: (LimitRow, Int) -> Unit, onNext: 
             CircularProgressIndicator()
             return@SetupStep
         }
-        rows.forEach { row -> LimitCard(row, onSet = { onSet(row, it) }) }
+        val (goals, limits) = rows.partition { it.isGoal }
+        limits.forEach { row -> LimitCard(row, onSet = { onSet(row, it) }) }
+        if (goals.isNotEmpty()) {
+            Text(stringResource(R.string.goals_heading), style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() })
+            Text(stringResource(R.string.goals_intro))
+        }
+        goals.forEach { row -> LimitCard(row, onSet = { onSet(row, it) }) }
         Button(onClick = onNext, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.setup_continue))
         }
@@ -60,7 +69,13 @@ private fun LimitCard(row: LimitRow, onSet: (Int) -> Unit) {
             if (row.name is LimitName.Stretch) {
                 Text(stringResource(R.string.limits_stretch_covers, row.name.categories.map { stringResource(it.labelRes) }.joinToString()))
             }
-            SettingSlider(name, row.setting, row.value, format = { minutesText(it) }, onSet = onSet)
+            SettingSlider(
+                name,
+                row.setting,
+                row.value,
+                format = { if (row.name == LimitName.FocusSessions) sessionsText(it) else minutesText(it) },
+                onSet = onSet,
+            )
         }
     }
 }
@@ -70,11 +85,17 @@ private fun limitName(name: LimitName): String = when (name) {
     is LimitName.CategoryDaily -> stringResource(R.string.limits_category_daily, stringResource(name.category.labelRes))
     LimitName.TotalDaily -> stringResource(R.string.limits_total_daily)
     is LimitName.Stretch -> stringResource(R.string.limits_stretch)
+    LimitName.FocusSessions -> stringResource(R.string.goals_focus_sessions)
+    LimitName.ProductiveMinutes -> stringResource(R.string.goals_productive)
 }
 
 @Composable
 private fun minutesText(minutes: Int): String =
     if (minutes == 0) stringResource(R.string.limits_off) else formatDuration(minutes * 60L)
+
+@Composable
+private fun sessionsText(sessions: Int): String =
+    if (sessions == 0) stringResource(R.string.limits_off) else pluralStringResource(R.plurals.goals_sessions, sessions, sessions)
 
 @Preview(showBackground = true)
 @Composable
@@ -84,6 +105,7 @@ private fun LimitsScreenPreview() {
             rows = listOf(
                 LimitRow("limits.categories.social.dailyMinutes", LimitName.CategoryDaily(Category.SOCIAL), Setting(60, 0, 240, true), 60),
                 LimitRow("limits.totalDailyMinutes", LimitName.TotalDaily, Setting(0, 0, 960, false), 0),
+                LimitRow("goals.focusSessionsPerDay", LimitName.FocusSessions, Setting(0, 0, 10, true), 2),
             ),
             onSet = { _, _ -> },
             onNext = {},

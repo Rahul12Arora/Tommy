@@ -7,6 +7,8 @@ import com.companionstudio.nyx.config.SettingPaths
 import com.companionstudio.nyx.config.SharedFiles
 import com.companionstudio.nyx.config.parseConfig
 import com.companionstudio.nyx.pet.PetChoice
+import com.companionstudio.nyx.rules.Goal
+import com.companionstudio.nyx.rules.GoalKind
 import com.companionstudio.nyx.rules.PetEvent
 import com.companionstudio.nyx.rules.PetEventType
 import com.companionstudio.nyx.tracking.DailyUsage
@@ -72,6 +74,29 @@ class US28_TrackingSummaryTest {
             goals,
         )
         assertEquals(true, goals.last().isOver)
+    }
+
+    @Test
+    fun US17_positiveGoals_showTodaysProgress_sessionsFromTheLog_productiveFromTheRows() {
+        val config = EffectiveConfig(defaults, mapOf(SettingPaths.GOAL_FOCUS_SESSIONS to 2, SettingPaths.GOAL_PRODUCTIVE_MINUTES to 10))
+        val completed = PetEvent(id = 1, day = "2026-10-21", atMs = 0, type = PetEventType.FOCUS_COMPLETED)
+
+        val summary = todaySummary(rows, listOf(completed), config, noChoice)
+
+        assertEquals(
+            listOf(
+                PositiveGoalProgress(Goal(GoalKind.FOCUS_SESSIONS, null, 2), used = 1, target = 2),
+                PositiveGoalProgress(Goal(GoalKind.PRODUCTIVE_MINUTES, null, 10), used = 10 * 60L, target = 10 * 60L),
+            ),
+            summary.positiveGoals,
+        )
+        assertEquals(listOf(false, true), summary.positiveGoals.map { it.isMet })
+        assertEquals("limit goals stay as they were", 3, summary.goals.size)
+    }
+
+    @Test
+    fun US17_positiveGoalsOff_areNotShown() {
+        assertEquals(emptyList<PositiveGoalProgress>(), todaySummary(rows, noEvents, EffectiveConfig(defaults, emptyMap()), noChoice).positiveGoals)
     }
 
     @Test

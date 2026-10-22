@@ -39,7 +39,7 @@ class US05_LimitsViewModelTest {
 
 
     @Test
-    fun onlyLimits_inDisplayOrder_withTheirEffectiveValues() {
+    fun limitsThenPositiveGoals_inDisplayOrder_withTheirEffectiveValues() {
         val rows = limitRows(EffectiveConfig(defaults, mapOf(social to 45)))
 
         assertEquals(
@@ -49,17 +49,23 @@ class US05_LimitsViewModelTest {
                 LimitName.CategoryDaily(Category.ENTERTAINMENT),
                 LimitName.TotalDaily,
                 LimitName.Stretch(listOf(Category.SOCIAL, Category.GAMES)),
+                LimitName.FocusSessions,
+                LimitName.ProductiveMinutes,
             ),
             rows.map { it.name },
         )
-        assertEquals(listOf(45, 120, 120, 0, 30), rows.map { it.value })
+        assertEquals(listOf(45, 120, 120, 0, 30, 0, 0), rows.map { it.value })
+        assertEquals(listOf(false, false, false, false, false, true, true), rows.map { it.isGoal })
     }
 
     @Test
     fun categoryWithoutALimit_hasNoRow() {
         val rows = limitRows(EffectiveConfig(SharedFiles.minimalConfig, emptyMap())) // only Social has a limit
 
-        assertEquals(listOf(social, SettingPaths.TOTAL_DAILY_MINUTES, SettingPaths.STRETCH_MINUTES), rows.map { it.path })
+        assertEquals(
+            listOf(social, SettingPaths.TOTAL_DAILY_MINUTES, SettingPaths.STRETCH_MINUTES, SettingPaths.GOAL_FOCUS_SESSIONS, SettingPaths.GOAL_PRODUCTIVE_MINUTES),
+            rows.map { it.path },
+        )
     }
 
     @Test

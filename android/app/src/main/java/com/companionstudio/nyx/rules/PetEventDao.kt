@@ -20,6 +20,10 @@ interface PetEventDao {
     @Query("SELECT * FROM events WHERE day = :day ORDER BY id")
     fun observeDay(day: String): Flow<List<PetEvent>>
 
+    /** What Trends judges goals by (D-149): limits exceeded and positive goals met, from [from] on. */
+    @Query("SELECT * FROM events WHERE day >= :from AND type IN ('LIMIT_EXCEEDED', 'GOAL_MET')")
+    fun observeGoalEventsSince(from: String): Flow<List<PetEvent>>
+
     /** Retention (A-13): day keys are ISO dates, so comparing them as text compares the dates. */
     @Query("DELETE FROM events WHERE day < :day")
     suspend fun deleteBefore(day: String)

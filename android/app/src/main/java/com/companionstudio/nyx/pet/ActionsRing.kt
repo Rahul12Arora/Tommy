@@ -45,8 +45,8 @@ import com.companionstudio.nyx.ui.labelRes
 import com.companionstudio.nyx.ui.theme.NyxTheme
 
 /**
- * The ring's actions (O-03). [onFocus] is `null` when focus sessions are switched off in config. [onEndFocus]: Done
- * (`true`) or End on the running session's card (D-118).
+ * The ring's actions (O-03). [onFocus] and [onTrends] are `null` when focus sessions or trends are switched off in
+ * config. [onEndFocus]: Done (`true`) or End on the running session's card (D-118).
  */
 class RingActions(
     val hideMinutes: Int,
@@ -54,6 +54,7 @@ class RingActions(
     val onOpenApp: () -> Unit,
     val onHide: () -> Unit,
     val onEndFocus: (done: Boolean) -> Unit = {},
+    val onTrends: (() -> Unit)? = null,
 )
 
 /**
@@ -88,7 +89,7 @@ fun ActionsRing(
         // Behind everything: only taps that miss every slot land here
         Box(Modifier.matchParentSize().pointerInput(Unit) { detectTapGestures(onTap = { onClose() }) })
         if (showLimits) {
-            LimitsList(summary.goals, status, side, geometry, onBack = { showLimits = false })
+            LimitsList(summary, status, side, geometry, onBack = { showLimits = false })
         } else if (showFocus && focus != null) {
             RingFocusCard(focus, side, geometry, onEnd = actions.onEndFocus, onBack = { showFocus = false })
         } else {
@@ -114,7 +115,10 @@ private fun ringSlots(summary: TodaySummary, status: RingStatus, actions: RingAc
     val worst = summary.goals.maxByOrNull { it.usedSeconds.toDouble() / it.targetSeconds }
     val continuous = formatDuration(status.continuousMs / 1000)
     return buildList {
-        add(RingSlot("📱", formatShort(summary.totalSeconds), stringResource(R.string.ring_total, formatDuration(summary.totalSeconds)), null))
+        // Total today opens Trends: US-18's way in from the ring, without an 8th slot (D-153)
+        val total = stringResource(R.string.ring_total, formatDuration(summary.totalSeconds))
+        val totalCaption = if (actions.onTrends == null) total else stringResource(R.string.ring_total_trends, total)
+        add(RingSlot("📱", formatShort(summary.totalSeconds), totalCaption, actions.onTrends))
         add(
             RingSlot(
                 "🌱",

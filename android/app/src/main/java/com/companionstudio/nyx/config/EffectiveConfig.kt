@@ -13,6 +13,8 @@ object SettingPaths {
     const val BREAK_AFTER_MINUTES = "breaks.afterMinutes"
     const val FOCUS_DURATION_MINUTES = "focus.durationMinutes"
     const val FOCUS_CHECKIN_MINUTES = "focus.checkinMinutes"
+    const val GOAL_FOCUS_SESSIONS = "goals.focusSessionsPerDay"
+    const val GOAL_PRODUCTIVE_MINUTES = "goals.productiveMinutesPerDay"
 
     fun categoryDailyMinutes(category: Category) = "limits.categories.${category.id}.dailyMinutes"
 }
@@ -30,6 +32,8 @@ fun NyxConfig.settingsByPath(): Map<String, Setting> = buildMap {
     put(SettingPaths.BREAK_AFTER_MINUTES, breaks.afterMinutes)
     put(SettingPaths.FOCUS_DURATION_MINUTES, focus.durationMinutes)
     put(SettingPaths.FOCUS_CHECKIN_MINUTES, focus.checkinMinutes)
+    put(SettingPaths.GOAL_FOCUS_SESSIONS, goals.focusSessionsPerDay)
+    put(SettingPaths.GOAL_PRODUCTIVE_MINUTES, goals.productiveMinutesPerDay)
 }
 
 /**

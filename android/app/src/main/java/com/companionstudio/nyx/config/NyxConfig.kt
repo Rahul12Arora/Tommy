@@ -21,6 +21,8 @@ data class NyxConfig(
     val nags: NagsConfig,
     val breaks: BreaksConfig,
     val focus: FocusConfig,
+    /** Added in M13 with defaults, like [ObstructiveConfig] (D-147). */
+    val goals: GoalsConfig = GoalsConfig(),
     val bubbles: BubblesConfig,
     val idle: IdleConfig,
     val hide: HideConfig,
@@ -92,6 +94,13 @@ data class FocusConfig(
     val minDoneMinutes: Int = 5,
     /** A session with no focus time for this long ends early by itself (D-114). */
     val abandonAfterMinutes: Int = 30,
+)
+
+/** Positive goals (US-17, D-147). `0` = off, like a limit; both off unless the admin or the user sets them. */
+@Serializable
+data class GoalsConfig(
+    val focusSessionsPerDay: Setting = Setting(default = 0, min = 0, max = 10, userEditable = true),
+    val productiveMinutesPerDay: Setting = Setting(default = 0, min = 0, max = 480, userEditable = true),
 )
 
 @Serializable

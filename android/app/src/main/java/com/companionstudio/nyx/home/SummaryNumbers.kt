@@ -13,6 +13,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.companionstudio.nyx.R
+import com.companionstudio.nyx.config.Category
 import com.companionstudio.nyx.ui.labelRes
 
 /** Today's totals and goals. Home (S-08) and the pet's summary panel (O-03) both show this, so they always agree. */
@@ -25,11 +26,12 @@ fun SummaryNumbers(summary: TodaySummary, modifier: Modifier = Modifier) {
         )
         Text(stringResource(R.string.home_productive, formatDuration(summary.productiveSeconds)))
         Text(stringResource(R.string.home_doomscrolling, formatDuration(summary.doomscrollSeconds)))
-        // No heading over nothing when every limit is off (E-02)
-        if (summary.goals.isNotEmpty()) {
+        // No heading over nothing when every limit and goal is off (E-02)
+        if (summary.goals.isNotEmpty() || summary.positiveGoals.isNotEmpty()) {
             Text(stringResource(R.string.home_goals), style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
         }
         summary.goals.forEach { GoalRow(it) }
+        summary.positiveGoals.forEach { PositiveGoalRow(it) }
     }
 }
 
@@ -49,6 +51,27 @@ fun GoalRow(goal: GoalProgress) {
         )
         LinearProgressIndicator(
             progress = { (goal.usedSeconds.toFloat() / goal.targetSeconds).coerceIn(0f, 1f) },
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
+/** One positive goal (US-17); also in the ring's list. "met" is spelled out, like "over". */
+@Composable
+fun PositiveGoalRow(goal: PositiveGoalProgress) {
+    val format: (Long) -> String = { if (goal.inSeconds) formatDuration(it) else it.toString() }
+    val name = if (goal.inSeconds) stringResource(Category.PRODUCTIVE.labelRes) else stringResource(R.string.home_goal_focus_sessions)
+    val used = format(goal.used)
+    val target = format(goal.target)
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(stringResource(R.string.home_goal_at_least, name, target))
+        Text(
+            if (goal.isMet) stringResource(R.string.home_goal_met, used, target)
+            else stringResource(R.string.home_goal_progress, used, target),
+            style = MaterialTheme.typography.bodySmall,
+        )
+        LinearProgressIndicator(
+            progress = { (goal.used.toFloat() / goal.target).coerceIn(0f, 1f) },
             modifier = Modifier.fillMaxWidth(),
         )
     }

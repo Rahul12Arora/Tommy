@@ -3,7 +3,7 @@
 > Phase 4 output. One milestone at a time; each is a vertical slice that can be verified on its own.
 > Every milestone starts by writing its LLD in `ARCHITECTURE.md` §14, before code.
 > Status values: `pending` · `in-progress` · `done`. Tick tasks as they finish.
-> Last updated: 2026-10-22
+> Last updated: 2026-10-23
 
 ---
 
@@ -361,17 +361,17 @@ Done when:
 - [x] Publish a new limit → the app uses it after restart; an invalid published fixture (forced in dev) is ignored
 Verify with: `./gradlew test` · emulator against local Docker
 
-### M13 — Trends + positive goals            status: pending
+### M13 — Trends + positive goals            status: in-progress
 Goal: 7- and 30-day trends and positive goals.
 Depends on: M9
 Stories: US-17 (positive goals), US-18
 Tasks:
-- [ ] LLD: queries, chart drawing (plain Compose Canvas), positive goal types
-- [ ] S-10 Trends: daily time per category, goals met per day (limit goals kept/missed, CR-05), empty days before install
-- [ ] Positive goals: focus sessions per day, productive minutes per day → `goal_met`
-- [ ] Tests: aggregation queries, empty-day handling, goal met once per day
+- [x] LLD (ARCHITECTURE §14.13; D-147 to D-155 approved 2026-10-23): queries, chart drawing (plain Compose Canvas), positive goal types
+- [x] S-10 Trends: daily time per category, goals met per day (limit goals kept/missed, CR-05), empty days before install
+- [x] Positive goals: focus sessions per day, productive minutes per day → `goal_met`
+- [x] Tests: aggregation queries, empty-day handling, goal met once per day
 Done when:
-- [ ] 30 days of seeded debug data show correctly; a positive goal raises mood once
+- [x] 30 days of seeded debug data show correctly; a positive goal raises mood once
 Verify with: `./gradlew test` · debug seed
 
 ### M14 — Opt-in stats            status: pending

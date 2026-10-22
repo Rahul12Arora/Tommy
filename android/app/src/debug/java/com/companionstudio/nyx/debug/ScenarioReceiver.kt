@@ -10,8 +10,10 @@ import com.companionstudio.nyx.config.SettingPaths
 import com.companionstudio.nyx.focus.FocusGoal
 import com.companionstudio.nyx.focus.FocusRequest
 import com.companionstudio.nyx.focus.PetMode
+import com.companionstudio.nyx.rules.DailyGoal
 import com.companionstudio.nyx.rules.PetEvent
 import com.companionstudio.nyx.rules.PetEventType
+import com.companionstudio.nyx.rules.goalsOn
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -34,6 +36,10 @@ import java.time.temporal.ChronoUnit
  * --es focus_mode check_in [--ei focus_checkin 10]` also starts a focus session through the same path as S-09 (D-119).
  * Goals: `fixed_time`, `until_done`, `no_switching`; modes: `quiet`, `reward_at_end`, `check_in`. Starting a scenario
  * or stopping one also clears the focus sessions.
+ *
+ * `--es seed trends-30d` clears the same, then writes [SEEDED_DAYS] past days for Trends (D-155) and logs one line per
+ * day to compare with S-10. Real usage and the real clock carry on for today. Every path that clears also records
+ * today's goals again, as the engine does on a new day, since a running engine only writes them when they change.
  */
 class ScenarioReceiver : BroadcastReceiver() {
 
@@ -49,6 +55,13 @@ class ScenarioReceiver : BroadcastReceiver() {
                 container.database.dailyUsageDao().clearAll()
                 container.database.petEventDao().clearAll()
                 container.focusSessionDao.clearAll()
+                container.database.dailyGoalDao().clearAll()
+                recordTodaysGoals(container)
+                intent.getStringExtra(EXTRA_SEED)?.let { name ->
+                    require(name == TRENDS_SEED) { "Unknown seed $name; the one seed is $TRENDS_SEED" }
+                    seedTrends(container)
+                    return@launch
+                }
                 if (intent.getBooleanExtra(EXTRA_STOP, false)) {
                     container.clock.reset()
                     container.usageSource.value = container.systemUsageSource
@@ -86,6 +99,24 @@ class ScenarioReceiver : BroadcastReceiver() {
         Log.i(TAG, if (started) "Focus session started: $request" else "Focus session not started")
     }
 
+    private suspend fun recordTodaysGoals(container: AppContainer) {
+        val config = container.effectiveConfig.first()
+        val today = container.dayClock.today(checkNotNull(config.valueOf(SettingPaths.RESET_HOUR))).toString()
+        container.database.dailyGoalDao().replaceDay(today, goalsOn(config).map { DailyGoal(today, it.key, it.target) })
+    }
+
+    private suspend fun seedTrends(container: AppContainer) {
+        val resetHour = checkNotNull(container.effectiveConfig.first().valueOf(SettingPaths.RESET_HOUR))
+        val seed = trendSeed(container.dayClock.today(resetHour))
+        val database = container.database
+        // The cursor moves to now: today was just cleared, so there's nothing earlier to credit
+        database.dailyUsageDao().record(seed.usage, creditedUntilMs = container.clock.instant().toEpochMilli())
+        database.dailyGoalDao().insertAll(seed.goals)
+        database.petEventDao().insertAll(seed.events)
+        Log.i(TAG, "Seeded $TRENDS_SEED: ${seed.lines.size} days")
+        seed.lines.forEach { Log.i(TAG, "Seed $it") }
+    }
+
     private suspend fun logEvent(container: AppContainer, type: PetEventType) {
         val resetHour = checkNotNull(container.effectiveConfig.first().valueOf(SettingPaths.RESET_HOUR))
         val now = container.clock.instant()
@@ -100,6 +131,8 @@ class ScenarioReceiver : BroadcastReceiver() {
         const val EXTRA_SPEED = "speed"
         const val EXTRA_STOP = "stop"
         const val EXTRA_EVENT = "event"
+        const val EXTRA_SEED = "seed"
+        const val TRENDS_SEED = "trends-30d"
         const val EXTRA_FOCUS = "focus"
         const val EXTRA_FOCUS_MINUTES = "focus_minutes"
         const val EXTRA_FOCUS_APPS = "focus_apps"

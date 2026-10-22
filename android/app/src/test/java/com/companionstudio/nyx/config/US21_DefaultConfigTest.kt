@@ -38,6 +38,14 @@ class US21_DefaultConfigTest {
     }
 
     @Test
+    fun D147_theDefaultDocument_spellsOutTheGoalDefaults_andADocumentWithoutThemGetsTheSame() {
+        assertEquals(GoalsConfig(), defaultConfig().goals)
+        assertTrue("minimal.json has no goals block", "\"goals\"" !in SharedFiles.fixture("valid", "minimal"))
+        val off = Setting(default = 0, min = 0, max = 10, userEditable = true)
+        assertEquals(GoalsConfig(off, off.copy(max = 480)), SharedFiles.minimalConfig.goals)
+    }
+
+    @Test
     fun catAndBlob_andAtLeastTwoPersonalities_areEnabled() {
         val config = defaultConfig()
 

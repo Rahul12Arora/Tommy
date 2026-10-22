@@ -1,0 +1,2 @@
+# 40 minutes in Google Docs (Productive in categoryDefaults): meets a "Productive ≥ 30 min" goal once (§14.13)
+app com.google.android.apps.docs 40m

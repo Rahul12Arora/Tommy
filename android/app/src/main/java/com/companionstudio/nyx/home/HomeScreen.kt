@@ -53,7 +53,7 @@ fun HomeRoute(
     permissionChecks: PermissionChecks,
     onFixPermissions: () -> Unit,
     onFocus: () -> Unit,
-    onTrends: () -> Unit,
+    onTrends: (() -> Unit)?,
     onSettings: () -> Unit,
 ) {
     val viewModel = viewModel { HomeViewModel(summaryRepository, petVisibility, focusRepository) }
@@ -85,13 +85,16 @@ fun HomeRoute(
 /** Watched permissions that are off (US-26), with a way to S-03. Without it Home would show 0 min and no reason (E-01). */
 class HomePermissions(val missing: List<SetupPermission>, val onFix: () -> Unit)
 
-/** S-08. [summary] is `null` while loading. [onShowPet] is `null` unless the pet is hidden (US-29). */
+/**
+ * S-08. [summary] is `null` while loading. [onShowPet] is `null` unless the pet is hidden (US-29). [onTrends] is `null`
+ * when trends are switched off in config (D-153).
+ */
 @Composable
 fun HomeScreen(
     summary: TodaySummary?,
     onShowPet: (() -> Unit)?,
     focus: HomeFocus,
-    onTrends: () -> Unit,
+    onTrends: (() -> Unit)?,
     onSettings: () -> Unit,
     permissions: HomePermissions? = null,
 ) {
@@ -125,8 +128,8 @@ fun HomeScreen(
                     Button(onClick = it, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.home_start_focus)) }
                 }
             }
-            OutlinedButton(onClick = onTrends, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.home_trends))
+            onTrends?.let {
+                OutlinedButton(onClick = it, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.home_trends)) }
             }
             OutlinedButton(onClick = onSettings, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.home_settings))

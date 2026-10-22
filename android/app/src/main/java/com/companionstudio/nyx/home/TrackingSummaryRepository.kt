@@ -8,18 +8,17 @@ import com.companionstudio.nyx.mood.bandAt
 import com.companionstudio.nyx.mood.moodOf
 import com.companionstudio.nyx.pet.PetChoice
 import com.companionstudio.nyx.pet.PetSettings
+import com.companionstudio.nyx.rules.GoalKind
 import com.companionstudio.nyx.rules.PetEvent
 import com.companionstudio.nyx.rules.PetEventDao
+import com.companionstudio.nyx.rules.goalsOn
+import com.companionstudio.nyx.rules.positiveProgress
 import com.companionstudio.nyx.tracking.DailyUsage
 import com.companionstudio.nyx.tracking.DailyUsageDao
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flow
-import java.time.LocalDate
 
 /**
  * Today's real numbers from the tracker's table (§14.4) and the pet's face from the event log (§14.6).
@@ -36,35 +35,30 @@ class TrackingSummaryRepository(
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeToday(): Flow<TodaySummary> = config.flatMapLatest { effective ->
         val resetHour = checkNotNull(effective.valueOf(SettingPaths.RESET_HOUR))
-        today(resetHour).flatMapLatest { day ->
+        dayClock.todayUpdates(resetHour).flatMapLatest { day ->
             combine(dao.observeDay(day.toString()), events.observeDay(day.toString()), petSettings.choice) { rows, logged, choice ->
                 todaySummary(rows, logged, effective, choice)
             }
         }
     }
-
-    // Checked every minute: cheap, and Home turns over to the new day within a minute of the reset
-    private fun today(resetHour: Int): Flow<LocalDate> = flow {
-        while (true) {
-            emit(dayClock.today(resetHour))
-            delay(60_000)
-        }
-    }.distinctUntilChanged()
 }
 
-/** Totals by category, the limit goals that are on, and the chosen pet's face for today's mood (US-15). */
+/** Totals by category, the goals that are on, and the chosen pet's face for today's mood (US-15). */
 fun todaySummary(rows: List<DailyUsage>, events: List<PetEvent>, config: EffectiveConfig, choice: PetChoice): TodaySummary {
     val document = config.document
-    val byCategory = rows.groupBy { it.category }.mapValues { (_, parts) -> parts.sumOf { it.durationMs } / 1000 }
+    val msByCategory = rows.groupBy { it.category }.mapValues { (_, parts) -> parts.sumOf { it.durationMs } }
+    val byCategory = msByCategory.mapValues { it.value / 1000 }
     val totalSeconds = byCategory.values.sum()
 
-    val goals = buildList {
-        for (category in Category.entries) {
-            val limit = config.valueOf(SettingPaths.categoryDailyMinutes(category)) ?: continue
-            if (limit > 0) add(GoalProgress(category, byCategory[category] ?: 0, limit * 60L))
-        }
-        val totalLimit = checkNotNull(config.valueOf(SettingPaths.TOTAL_DAILY_MINUTES))
-        if (totalLimit > 0) add(GoalProgress(category = null, totalSeconds, totalLimit * 60L))
+    val (positive, limits) = goalsOn(config).partition { it.isPositive }
+    val goals = limits.map { goal ->
+        val used = if (goal.category == null) totalSeconds else byCategory[goal.category] ?: 0
+        GoalProgress(goal.category, used, goal.target * 60L)
+    }
+    val positiveGoals = positive.map { goal ->
+        val progress = positiveProgress(goal, msByCategory, events)
+        if (goal.kind == GoalKind.PRODUCTIVE_MINUTES) PositiveGoalProgress(goal, progress / 1000, goal.target * 60L)
+        else PositiveGoalProgress(goal, progress, goal.target.toLong())
     }
 
     val pet = document.pets.firstOrNull { it.id == choice.petId && it.enabled } ?: document.pets.first { it.enabled }
@@ -75,5 +69,6 @@ fun todaySummary(rows: List<DailyUsage>, events: List<PetEvent>, config: Effecti
         doomscrollSeconds = document.tracking.doomscrollCategories.sumOf { byCategory[it] ?: 0 },
         goals = goals,
         petFace = pet.faces.getValue(band),
+        positiveGoals = positiveGoals,
     )
 }

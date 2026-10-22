@@ -20,14 +20,19 @@ sealed interface LimitName {
     data class CategoryDaily(val category: Category) : LimitName
     data object TotalDaily : LimitName
     data class Stretch(val categories: List<Category>) : LimitName
+
+    // Positive goals share the screen and the slider (D-147)
+    data object FocusSessions : LimitName
+    data object ProductiveMinutes : LimitName
 }
 
-/** One limit on S-06. [value] is the effective value in minutes (0 = off for daily limits). */
+/** One limit or goal on S-06. [value] is the effective value in minutes, or sessions; 0 = off except for the stretch. */
 data class LimitRow(val path: String, val name: LimitName, val setting: Setting, val value: Int) {
     val editable: Boolean get() = setting.userEditable
+    val isGoal: Boolean get() = name == LimitName.FocusSessions || name == LimitName.ProductiveMinutes
 }
 
-/** The limit settings in display order: category daily limits, the total, the stretch (§14.3). */
+/** The settings in display order: category daily limits, the total, the stretch (§14.3), then positive goals (§14.13). */
 fun limitRows(effective: EffectiveConfig): List<LimitRow> = buildList {
     fun add(path: String, name: LimitName) {
         val setting = effective.settings[path] ?: return // a category without a limit can't get one (A-14)
@@ -36,6 +41,8 @@ fun limitRows(effective: EffectiveConfig): List<LimitRow> = buildList {
     for (category in Category.entries) add(SettingPaths.categoryDailyMinutes(category), LimitName.CategoryDaily(category))
     add(SettingPaths.TOTAL_DAILY_MINUTES, LimitName.TotalDaily)
     add(SettingPaths.STRETCH_MINUTES, LimitName.Stretch(effective.document.limits.stretch.categories))
+    add(SettingPaths.GOAL_FOCUS_SESSIONS, LimitName.FocusSessions)
+    add(SettingPaths.GOAL_PRODUCTIVE_MINUTES, LimitName.ProductiveMinutes)
 }
 
 class LimitsViewModel(config: Flow<EffectiveConfig>, private val userValues: ConfigUserValues) : ViewModel() {

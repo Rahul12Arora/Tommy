@@ -35,9 +35,11 @@ Scripted usage instead of real usage, optionally with time running faster, so tr
 | Walk the mood down to 🐾 (4 h of Instagram, ~4 min at 60×) | `adb shell am broadcast -n com.companionstudio.nyx/.debug.ScenarioReceiver --es scenario instagram-4h --ei speed 60` |
 | Log one mood event now (e.g. to bring a pet that ran away back) | `adb shell am broadcast -n com.companionstudio.nyx/.debug.ScenarioReceiver --es event break_taken` |
 | Back to real usage and time | `adb shell am broadcast -n com.companionstudio.nyx/.debug.ScenarioReceiver --ez stop true` |
+| Fill 24 past days for Trends (S-10); logs one `Seed …` line per day to compare with the screen | `adb shell am broadcast -n com.companionstudio.nyx/.debug.ScenarioReceiver --es seed trends-30d` |
+| Meet a "Productive ≥ 30 min" goal once (set it in Settings → Limits and goals first) | `adb shell am broadcast -n com.companionstudio.nyx/.debug.ScenarioReceiver --es scenario productive-40min --ei speed 60` |
 | Watch the tracker, mood and bubbles | `adb logcat -s Nyx` |
 
-Playing a scenario and going back to real usage both clear all tracked time and the event log first; `event` clears nothing. With more than one device connected, add `-s <serial>` after `adb` (and set `ANDROID_SERIAL` for Gradle's device tasks).
+Playing a scenario, seeding and going back to real usage all clear tracked time, the event log, focus sessions and the recorded daily goals first (today's goals are recorded again at once); `event` clears nothing. With more than one device connected, add `-s <serial>` after `adb` (and set `ANDROID_SERIAL` for Gradle's device tasks).
 
 ## Against the local backend (debug builds only)
 

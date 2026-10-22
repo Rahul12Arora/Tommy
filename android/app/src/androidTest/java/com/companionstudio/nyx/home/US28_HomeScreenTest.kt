@@ -15,6 +15,8 @@ import com.companionstudio.nyx.config.Category
 import com.companionstudio.nyx.focus.FocusGoal
 import com.companionstudio.nyx.focus.FocusPhase
 import com.companionstudio.nyx.focus.FocusStatus
+import com.companionstudio.nyx.rules.Goal
+import com.companionstudio.nyx.rules.GoalKind
 import com.companionstudio.nyx.setup.SetupPermission
 import com.companionstudio.nyx.ui.theme.NyxTheme
 import org.junit.Assert.assertEquals
@@ -53,6 +55,34 @@ class US28_HomeScreenTest {
         composeRule.onNodeWithText("47 min of 1 h").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("All apps ≤ 3 h").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("3 h 12 min of 3 h · over").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun US17_positiveGoals_showProgress_withMetSpelledOut() {
+        val withGoals = today.copy(
+            positiveGoals = listOf(
+                PositiveGoalProgress(Goal(GoalKind.FOCUS_SESSIONS, null, 2), used = 1, target = 2),
+                PositiveGoalProgress(Goal(GoalKind.PRODUCTIVE_MINUTES, null, 60), used = 65 * 60L, target = 60 * 60L),
+            ),
+        )
+        composeRule.setContent {
+            NyxTheme { HomeScreen(withGoals, onShowPet = null, focus = HomeFocus(running = null, onStart = {}), onTrends = {}, onSettings = {}) }
+        }
+
+        composeRule.onNodeWithText("Focus sessions ≥ 2").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("1 of 2").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Productive ≥ 1 h").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("1 h 5 min of 1 h · met").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun D153_trendsSwitchedOff_hidesTheTrendsButton() {
+        composeRule.setContent {
+            NyxTheme { HomeScreen(today, onShowPet = null, focus = HomeFocus(running = null, onStart = {}), onTrends = null, onSettings = {}) }
+        }
+
+        composeRule.onNodeWithText("Trends").assertDoesNotExist()
+        composeRule.onNodeWithText("Settings").performScrollTo().assertIsDisplayed()
     }
 
     @Test

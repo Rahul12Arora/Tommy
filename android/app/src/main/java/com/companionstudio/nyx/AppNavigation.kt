@@ -4,8 +4,9 @@ import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
@@ -14,6 +15,7 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.companionstudio.nyx.focus.FocusSetupRoute
 import com.companionstudio.nyx.home.HomeRoute
+import com.companionstudio.nyx.home.TrendsRoute
 import com.companionstudio.nyx.service.PetService
 import com.companionstudio.nyx.settings.SettingsLinks
 import com.companionstudio.nyx.settings.SettingsRoute
@@ -25,8 +27,8 @@ import com.companionstudio.nyx.setup.LimitsRoute
 import com.companionstudio.nyx.setup.PermissionsRoute
 import com.companionstudio.nyx.setup.StatsOptInRoute
 import com.companionstudio.nyx.setup.WelcomeScreen
-import com.companionstudio.nyx.ui.PlaceholderScreen
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
 
 // Keys are @Serializable so the back stack survives rotation and process death
@@ -71,9 +73,12 @@ fun AppNavigation(container: AppContainer, open: MainActivity.Open = MainActivit
         !completed -> arrayOf(Welcome)
         open == MainActivity.Open.PERMISSIONS -> arrayOf(Home, FixPermissions)
         open == MainActivity.Open.FOCUS -> arrayOf(Home, FocusSetup(fromRing = true, fromApp = focusApp))
+        open == MainActivity.Open.TRENDS -> arrayOf(Home, Trends)
         else -> arrayOf(Home)
     }
     val backStack = rememberNavBackStack(*start)
+    // Trends can be switched off for everyone (D-153); Home then has no Trends button
+    val trendsEnabled by remember { container.effectiveConfig.map { it.document.features.trends } }.collectAsStateWithLifecycle(initialValue = false)
     val activity = LocalActivity.current
     val context = LocalContext.current
     NavDisplay(
@@ -90,7 +95,7 @@ fun AppNavigation(container: AppContainer, open: MainActivity.Open = MainActivit
                     permissionChecks = container.permissionChecks,
                     onFixPermissions = { backStack.add(FixPermissions) },
                     onFocus = { backStack.add(FocusSetup()) },
-                    onTrends = { backStack.add(Trends) },
+                    onTrends = if (trendsEnabled) ({ backStack.add(Trends) }) else null,
                     onSettings = { backStack.add(Settings) },
                 )
             }
@@ -105,8 +110,7 @@ fun AppNavigation(container: AppContainer, open: MainActivity.Open = MainActivit
                     onStarted = { if (key.fromRing) activity?.finish() else backStack.removeLastOrNull() },
                 )
             }
-            // A placeholder until S-10 (M13) exists
-            entry<Trends> { PlaceholderScreen(stringResource(R.string.trends_title)) }
+            entry<Trends> { TrendsRoute(container.trendsRepository) }
             entry<Settings> {
                 SettingsRoute(
                     config = container.effectiveConfig,
