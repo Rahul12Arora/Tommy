@@ -1,7 +1,7 @@
 ## Current state
 - Phase: 5 — Build · Milestone: M12 App fetches remote config (in progress, branch `feat/m12-remote-config`)
-- Last done: M11 done 2026-10-22 — PR #18 merged, tagged `m11-done` (`cdd0f84`)
-- Next step: approval of the M12 LLD (ARCHITECTURE §14.12, D-141 to D-146) → first task: check plain HTTP to `127.0.0.1` via `adb reverse` on the emulator and the Pixel. Each dev needs an admin login in `backend/.env` (`npm run hash-password`, `backend/README.md`)
+- Last done: M12 code + unit tests (`5719c89`); emulator: first fetch, 304, server down checked
+- Next step: M12 manual check — the developer publishes draft v2 (Social 60 → 45) in the console and plugs in the Pixel; then the forced invalid v3, device tests, PR. Each dev needs an admin login in `backend/.env` (`npm run hash-password`, `backend/README.md`)
 - Blockers: none. Docker note: Homebrew's `docker` CLI comes first on PATH and can't find Docker Desktop's credential helper (`docker pull` fails); put `/Applications/Docker.app/Contents/Resources/bin` first or `brew uninstall docker`
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37; start it with `-gpu swiftshader_indirect`, see log 2026-10-22 M9) + Pixel 7a
@@ -262,3 +262,9 @@
 - Done: branch `feat/m12-remote-config`; M12 LLD written in ARCHITECTURE §14.12 — `ConfigClient` (HttpURLConnection, ETag, timeouts, 1 MiB cap, own User-Agent), `ConfigManager.base`/`accept` with an atomic cache write, `ConfigRefresher` (service start + 6 h wall clock, screen-on only), fallback chain table, debug URL via `adb reverse`, tests, manual check incl. a forced invalid published document
 - Proposed: D-141 to D-146 (in the LLD; go into DISCUSSION on approval). No new dependency
 - Next: the developer's approval
+- Approved: the LLD and D-141 to D-146 (the developer); decisions in DISCUSSION, HLD §9 and §12 follow D-142 and D-145
+- Verified first (emulator, API 37): plain HTTP to `127.0.0.1` through `adb reverse` works (200, then 304), `10.0.2.2` is refused — throwaway probe test, deleted
+- Done: `ConfigClient`, `ConfigManager.base`/`cachedVersion`/`accept` (temp file + fsync + atomic rename), `ConfigRefresher` (real system clock, not the scenario clock), wiring in `AppContainer` and `PetService`, `INTERNET`, debug network security config, `CONFIG_BASE_URL` per build type; README "Against the local backend" with the forced-invalid SQL
+- Learned: `InputStream.readNBytes` is API 33+ (minSdk 30), so the body is read in a loop; the JDK's `com.sun.net.httpserver` works in unit tests, no stub needed
+- Verified: `./gradlew assembleDebug test lint` — 346 unit tests (+31), lint clean; `config/` coverage 97.9% lines, 95.9% branches; mutation check (every check due) fails 4 refresher tests. Emulator against local Docker after setup: `Config 1 applied` (no cache → no ETag) → restart `Config 1 unchanged (304)` → API stopped `Config check failed: …` with the cache kept
+- Not verified yet: publish → applied, forced invalid document, the Pixel, device tests (they uninstall the app, so they run after the manual check)

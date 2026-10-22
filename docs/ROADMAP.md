@@ -356,7 +356,7 @@ Stories: US-19 (pickup), US-21, US-22
 Tasks:
 - [x] LLD: `ConfigClient`, schedule, cache, error handling, debug base URL for a USB phone (ARCHITECTURE §14.12, D-141 to D-146)
 - [ ] Fetch on service start and every 6 h; ETag; atomic cache; fallback chain
-- [ ] Tests: 200 / 304 / offline / invalid document / unknown schema version
+- [x] Tests: 200 / 304 / offline / invalid document / unknown schema version
 Done when:
 - [ ] Publish a new limit → the app uses it after restart; an invalid published fixture (forced in dev) is ignored
 Verify with: `./gradlew test` · emulator against local Docker
