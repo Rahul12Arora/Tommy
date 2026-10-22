@@ -1,7 +1,7 @@
 ## Current state
 - Phase: 5 — Build · Milestone: M8 Focus sessions (in progress; branch `feat/m8-focus`)
-- Last done: M8 built; unit tests and 58/58 device tests on the Pixel 7a; installed over M7 with data kept
-- Next step: the three setup-state device tests (they reset Nyx's setup on the phone: developer's OK needed) → the three focus scenarios → done-when session with real YouTube/Instagram → PR
+- Last done: M8 built; 66/66 device tests on the Pixel 7a; two of three focus scenarios checked there
+- Next step: re-run `youtube-instagram` (no switching + set time) when the phone isn't in a call → done-when session with real YouTube/Instagram → PR
 - Blockers: none (Pixel 7a connected). The API 37 emulator still hangs at boot, also on a cold boot from the command line (2026-10-22) ("hanging thread 'QEMU2 main loop'"); it needs a cold boot or wipe from Android Studio before it's used again
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
@@ -169,3 +169,8 @@
 - Verified on the Pixel 7a: `adb install -r` over the M7 build kept today's totals and mood 55 (Room v4 → v5). Device tests 58/58 through `am instrument` (not Gradle, which uninstalls the app): all classes except `US01_SetupGatingTest`, `US02_AgeCheckTest`, `US28_NavigationTest`, which reset setup state. First run 56/58: the two timer-text checks looked in the merged tree, where `clearAndSetSemantics` hides the text; fixed in the tests (unmerged tree; the ring shows it twice). Ring and badge classes then green twice in a row
 - Learned: `am instrument` kills the app's process, and the pet service doesn't come back by itself; opening the app restarts it. Phone's "stay awake" was on only during the runs (back to 0)
 - Next: developer's OK for the three setup-state classes; by-hand checks; PR
+- Verified (developer's OK): the three setup-state device classes, 8/8 → 66/66 in all. They clear Nyx's DataStore (pet choice, user values, settings); the service kept running
+- Verified on the Pixel by scenario: `youtube-30min` (start line, check-ins at 10/20, completed at 25, mood 70 → 85) and `youtube-screen-off` (paused while off, quiet mode silent, completed at 28 min, +15)
+- Blocked: `youtube-instagram` showed no switch, because the phone was in a call (audio mode 3, `MODE_IN_COMMUNICATION`) and A-02 doesn't count switches during calls; focus time did stop during Instagram. Re-run without a call
+- Privacy note: one screenshot taken to check the app's state showed another app the developer was using; deleted at once, no screenshots since. Scenario checks are read from the debug log only
+- Scenario stopped afterwards (`--ez stop true`): real usage and clock again; today's tracked time and events were cleared by the scenarios, as agreed
