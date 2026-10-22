@@ -2,6 +2,7 @@ package com.companionstudio.nyx.setup
 
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -40,6 +41,21 @@ class US05_LimitsScreenTest {
         composeRule.onNodeWithText("5 h").assertIsDisplayed()
         composeRule.onAllNodesWithText("Set by Nyx").assertCountEquals(1)
         composeRule.onAllNodes(sliders).assertCountEquals(1) // only the editable Social limit
+    }
+
+    @Test
+    fun A03_slider_tellsTalkBackItsNameAndValue() {
+        composeRule.setContent {
+            LimitsScreen(
+                rows = listOf(LimitRow("limits.categories.social.dailyMinutes", LimitName.CategoryDaily(Category.SOCIAL), Setting(60, 0, 240, true), 60)),
+                onSet = { _, _ -> },
+                onNext = {},
+            )
+        }
+
+        composeRule.onNode(sliders)
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.ContentDescription, listOf("Social & scrolling per day")))
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "1 h"))
     }
 
     @Test

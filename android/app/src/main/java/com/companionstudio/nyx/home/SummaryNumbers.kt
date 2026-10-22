@@ -9,6 +9,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.companionstudio.nyx.R
 import com.companionstudio.nyx.ui.labelRes
@@ -23,7 +25,10 @@ fun SummaryNumbers(summary: TodaySummary, modifier: Modifier = Modifier) {
         )
         Text(stringResource(R.string.home_productive, formatDuration(summary.productiveSeconds)))
         Text(stringResource(R.string.home_doomscrolling, formatDuration(summary.doomscrollSeconds)))
-        Text(stringResource(R.string.home_goals), style = MaterialTheme.typography.titleMedium)
+        // No heading over nothing when every limit is off (E-02)
+        if (summary.goals.isNotEmpty()) {
+            Text(stringResource(R.string.home_goals), style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
+        }
         summary.goals.forEach { GoalRow(it) }
     }
 }

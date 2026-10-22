@@ -80,6 +80,16 @@ class US01_PermissionsScreenTest {
     }
 
     @Test
+    fun A01_everythingSkipped_theListScrolls_soLargeTextNeverCutsItOff() {
+        show(PermissionStatus(emptySet()))
+
+        composeRule.onNodeWithText("Continue").performScrollTo().performClick()
+
+        composeRule.onNodeWithText("You can turn these on later from Settings.").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Continue anyway").assertIsDisplayed()
+    }
+
+    @Test
     fun skipped_goBackStaysOnTheScreen() {
         show(PermissionStatus(emptySet()))
 

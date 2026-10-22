@@ -79,8 +79,9 @@ fun AppCategoriesRoute(
 }
 
 /**
- * S-05. [rows] is `null` while the app list loads. Not built on [SetupStep]: the list scrolls on its own,
- * with the search field above it and Continue below it always in reach.
+ * S-05. [rows] is `null` while the app list loads. Not built on [SetupStep]: the list is lazy, and Continue stays
+ * below it, always in reach. The title, intro and search scroll with the list, so large text in landscape still
+ * leaves room for apps (BUG-04).
  */
 @Composable
 fun AppCategoriesScreen(
@@ -96,28 +97,34 @@ fun AppCategoriesScreen(
             modifier = Modifier.fillMaxSize().padding(innerPadding).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(
-                stringResource(R.string.app_categories_title),
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.semantics { heading() },
-            )
-            Text(stringResource(R.string.app_categories_intro))
-            OutlinedTextField(
-                value = query,
-                onValueChange = onSearch,
-                label = { Text(stringResource(R.string.app_categories_search)) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Box(Modifier.weight(1f).fillMaxWidth()) {
+            LazyColumn(Modifier.weight(1f).fillMaxWidth()) {
+                item {
+                    Text(
+                        stringResource(R.string.app_categories_title),
+                        style = MaterialTheme.typography.headlineMedium,
+                        modifier = Modifier.semantics { heading() },
+                    )
+                }
+                item { Text(stringResource(R.string.app_categories_intro), Modifier.padding(vertical = 12.dp)) }
+                item {
+                    OutlinedTextField(
+                        value = query,
+                        onValueChange = onSearch,
+                        label = { Text(stringResource(R.string.app_categories_search)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                    )
+                }
                 when {
-                    rows == null -> CircularProgressIndicator(Modifier.align(Alignment.Center))
-                    rows.isEmpty() -> Text(stringResource(R.string.app_categories_no_match))
-                    else -> LazyColumn {
-                        items(rows, key = { it.packageName }) { row ->
-                            AppCategoryRow(row, onChoose = { onChoose(row.packageName, it) }, loadIcon = loadIcon)
-                            HorizontalDivider()
-                        }
+                    rows == null -> item {
+                        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                    }
+                    rows.isEmpty() -> item {
+                        Text(stringResource(if (query.isBlank()) R.string.app_categories_none else R.string.app_categories_no_match))
+                    }
+                    else -> items(rows, key = { it.packageName }) { row ->
+                        AppCategoryRow(row, onChoose = { onChoose(row.packageName, it) }, loadIcon = loadIcon)
+                        HorizontalDivider()
                     }
                 }
             }

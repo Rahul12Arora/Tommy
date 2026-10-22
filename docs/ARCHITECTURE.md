@@ -694,6 +694,7 @@ Written at the start of each milestone, before code.
 | Lines, bubble arbiter, mood | M6 | done 2026-10-21 (§14.6) |
 | Limits, nags, breaks, idle lines, actions ring, break screen | M7 | done 2026-10-21 (§14.7) |
 | Focus sessions | M8 | done 2026-10-22 (§14.8) |
+| Week-1 check fixes | M9 | not a module; changes listed in §14.9 |
 | Backend foundation + config API | M10 | pending |
 | Admin auth + console | M11 | pending |
 | App remote config | M12 | pending |
@@ -792,7 +793,7 @@ data class GoalProgress(val label: String, val usedSeconds: Long, val targetSeco
   - Buttons: Start focus, Trends, Settings.
   - Content scrolls, and handles insets through `Scaffold`, so large text works.
   - Strings live in `strings.xml`.
-- **States:** loading (`null`) shows a progress indicator. There's no error state: the fake can't fail, and the real repository (M4) reads local Room, so an empty day is all zeros.
+- **States:** loading (`null`) shows a progress indicator. There's no error state: the fake can't fail, and the real repository (M4) reads local Room, so an empty day is all zeros. (M9 adds one for missing permissions, §14.9.)
 
 **Tests**
 
@@ -1143,7 +1144,7 @@ fun suggestCategory(packageName: String, androidCategory: Int, config: NyxConfig
 | S-01 Welcome | What the pet does, in three short lines | Nothing |
 | S-02 Age check | "Are you 18 or older?" Yes / No | Yes → `setup.ageConfirmed = true` → S-03. No → adults-only screen |
 | S-04 Choose pet | Enabled pets, each with the face for the band that contains `mood.start`. Enabled personalities, each with its `previewLine`. The current choice is preselected (the first enabled one if nothing is stored) | `pet.petId` and `pet.personalityId` when Continue is tapped |
-| S-05 App categories | Installed apps (icon, label, category) with a search field (case-insensitive match on the label). Tapping an app opens a menu with the five categories, the current one marked "(current)". Its own layout, not `SetupStep`: the list scrolls by itself between the search field and Continue | One `app_categories` upsert per change, immediately |
+| S-05 App categories | Installed apps (icon, label, category) with a search field (case-insensitive match on the label). Tapping an app opens a menu with the five categories, the current one marked "(current)". Its own layout, not `SetupStep`: title, intro and search scroll with the list (M9, BUG-04); Continue stays below | One `app_categories` upsert per change, immediately |
 | S-06 Limits | One row per limit setting in `EffectiveConfig.settings` (the category daily limits, the total, the stretch), in that order. Editable → a slider within `min..max` showing the effective value, with "Off" at 0. Locked → the value with "Set by Nyx", no slider | `ConfigUserValues.set(path, setting, value)` when the slider is released (D-61) |
 | S-07 Stats | What's shared and what isn't (A-09), a switch that starts off, and Finish | `stats.optIn` when the switch changes. Finish → `setup.completed = true` → Home. The install ID and uploads come in M14 |
 
@@ -2220,3 +2221,17 @@ stateDiagram-v2
 - **Not verified yet:** TalkBack by ear. The API 37 emulator hung again on a cold boot ("QEMU2 main loop").
 
 **Not in M8:** focus stats in Trends (→ M13) and opt-in stats (→ M14); a repeat of the drift line while you stay away (the badge shows it); "phone face down" sessions (locking pauses, as US-13 says); notifications for focus events while the pet is hidden; ring animations (parking lot).
+
+### 14.9 M9 — Week-1 check fixes
+
+M9 builds no module; these are the screen changes from its checks (PROGRESS 2026-10-22, M9). Each has a device test.
+
+| ID | Change | Where | Test |
+|---|---|---|---|
+| E-01 | Home shows a card when a watched permission (usage access, overlay; D-66) is off: the S-03 "without it" line for each, and Open permissions → S-03 (`FixPermissions`). Re-read on every resume, like S-03, so it goes away after granting. Covers the case N-03 can't: notifications skipped too | `home/HomeScreen.kt` (`HomePermissions`), `AppNavigation.kt` | `US28_HomeScreenTest` US26_E01 |
+| E-02 | No "Goals" heading when every limit is off | `home/SummaryNumbers.kt` | `US28_HomeScreenTest` E02 |
+| E-03 | S-05 with no apps and an empty search says "No apps found." ("No apps match." stays for a search) | `setup/AppCategoriesScreen.kt` | `US04_AppCategoriesScreenTest` |
+| BUG-04 | S-05's title, intro and search are the first items of the lazy list, so landscape at 200% text still leaves room for apps; Continue stays fixed below | `setup/AppCategoriesScreen.kt` | `US04_AppCategoriesScreenTest` BUG04 (915 × 411 dp at font scale 2) |
+| A-01 | S-03's "Some things won't work" list scrolls | `setup/PermissionsScreen.kt` | `US01_PermissionsScreenTest` A01 |
+| A-02 | Sub-headings marked as headings: S-04 Pet/Personality, S-07 What's shared/Never shared, Home Goals | `setup/ChoosePetScreen.kt`, `setup/StatsOptInScreen.kt`, `home/SummaryNumbers.kt` | `SetupSubheadingsTest`, `US28_HomeScreenTest` A02 |
+| A-03 | Sliders already give TalkBack their name and value; no change. Material's slider is 44 dp tall (below the 48 dp guideline); left as Material draws it | — | `US05_LimitsScreenTest` A03 |

@@ -20,6 +20,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -62,7 +64,7 @@ fun ChoosePetScreen(
             CircularProgressIndicator()
             return@SetupStep
         }
-        Text(stringResource(R.string.choose_pet_pets), style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.choose_pet_pets), style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
         Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             state.pets.forEach { pet ->
                 Choice(selected = pet.id == state.petId, onSelect = { onPickPet(pet.id) }) {
@@ -71,7 +73,7 @@ fun ChoosePetScreen(
                 }
             }
         }
-        Text(stringResource(R.string.choose_pet_personalities), style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.choose_pet_personalities), style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
         Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             state.personalities.forEach { personality ->
                 Choice(selected = personality.id == state.personalityId, onSelect = { onPickPersonality(personality.id) }) {
