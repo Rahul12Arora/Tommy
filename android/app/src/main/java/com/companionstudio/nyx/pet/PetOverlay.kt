@@ -110,6 +110,7 @@ class PetOverlay(
                                     onFocus = if (focusEnabled) ::openFocus else null,
                                     onOpenApp = ::openApp,
                                     onHide = ::hide,
+                                    onEndFocus = ::endFocus,
                                 ),
                                 side = position.side,
                                 maxWidth = ringMaxWidth,
@@ -121,7 +122,7 @@ class PetOverlay(
                         val content = bubble?.let { shown ->
                             BubbleContent(shown.line, onSnooze = shown.snoozeKey?.let { key -> { snooze(key) } }, onDismiss = ::dismissBubble)
                         }
-                        PetWindow(summary, glowing, content, panelLayout, onPetClick = ::togglePanel)
+                        PetWindow(summary, glowing, content, panelLayout, onPetClick = ::togglePanel, focus = status.focus)
                     }
                 }
             },
@@ -307,14 +308,20 @@ class PetOverlay(
         request(EngineRequest.Snooze(key))
     }
 
-    private fun openFocus() = open(MainActivity.Open.FOCUS)
+    // S-09 selects the app the user is in (D-117)
+    private fun openFocus() = open(MainActivity.Open.FOCUS, focusApp = status.frontPackage)
 
     private fun openApp() = open(MainActivity.Open.HOME)
 
     // Allowed from the service because the user granted "display over other apps" (§14.5)
-    private fun open(target: MainActivity.Open) {
+    private fun open(target: MainActivity.Open, focusApp: String? = null) {
         closePanel()
-        service.startActivity(MainActivity.intent(service, target))
+        service.startActivity(MainActivity.intent(service, target, focusApp))
+    }
+
+    private fun endFocus(done: Boolean) {
+        closePanel()
+        request(EngineRequest.EndFocus(done))
     }
 
     private fun hide() {

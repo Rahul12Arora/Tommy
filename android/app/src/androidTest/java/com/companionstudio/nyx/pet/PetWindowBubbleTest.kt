@@ -7,6 +7,9 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.companionstudio.nyx.focus.FocusGoal
+import com.companionstudio.nyx.focus.FocusPhase
+import com.companionstudio.nyx.focus.FocusStatus
 import com.companionstudio.nyx.home.TodaySummary
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -55,5 +58,14 @@ class PetWindowBubbleTest {
         composeRule.setContent { PetWindow(today, glowing = true, bubble = null, layout, onPetClick = {}) }
 
         composeRule.onNodeWithContentDescription("Nyx, your pet. Over a limit").assertIsDisplayed()
+    }
+
+    @Test
+    fun D118_duringASession_theBadgeShowsTheMinutes_andTalkBackHearsThem() {
+        val focus = FocusStatus(FocusGoal.UNTIL_DONE, null, focusMs = 34 * 60_000L, FocusPhase.RUNNING, switches = 0, canDone = true, minDoneMinutes = 5)
+        composeRule.setContent { PetWindow(today, glowing = false, bubble = null, layout, onPetClick = {}, focus = focus) }
+
+        composeRule.onNodeWithText("34m").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Nyx, your pet. Focus session, 34 min so far").assertIsDisplayed()
     }
 }

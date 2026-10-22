@@ -11,7 +11,10 @@ import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
 
-/** What the ring, the badge and the pet's description show about the running session (D-118). */
+/**
+ * What the ring, the badge, the pet's description and the Home card show about the running session (D-118). Home has
+ * no live phase (the engine keeps it in memory), so it shows [FocusPhase.RUNNING].
+ */
 data class FocusStatus(
     val goal: FocusGoal,
     val goalMinutes: Int?,
@@ -19,6 +22,17 @@ data class FocusStatus(
     val phase: FocusPhase,
     val switches: Int,
     val canDone: Boolean,
+    val minDoneMinutes: Int,
+)
+
+fun focusStatus(session: FocusSession, focus: FocusConfig, phase: FocusPhase = FocusPhase.RUNNING) = FocusStatus(
+    goal = session.goal,
+    goalMinutes = session.goalMinutes,
+    focusMs = session.focusMs,
+    phase = phase,
+    switches = session.switches,
+    canDone = canFinishAsDone(session, focus.minDoneMinutes),
+    minDoneMinutes = focus.minDoneMinutes,
 )
 
 /**
@@ -100,14 +114,7 @@ class FocusSessions(private val dao: FocusSessionDao, private val clock: Clock) 
     /** Retention (A-13), with the event log's cut-off day. */
     suspend fun deleteBefore(day: LocalDate) = dao.deleteBefore(day.toString())
 
-    private fun statusOf(session: FocusSession, focus: FocusConfig) = FocusStatus(
-        goal = session.goal,
-        goalMinutes = session.goalMinutes,
-        focusMs = session.focusMs,
-        phase = phase,
-        switches = session.switches,
-        canDone = canFinishAsDone(session, focus.minDoneMinutes),
-    )
+    private fun statusOf(session: FocusSession, focus: FocusConfig) = focusStatus(session, focus, phase)
 
     private companion object {
         fun checkinMs(session: FocusSession): Long? =

@@ -25,21 +25,35 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.companionstudio.nyx.R
 import com.companionstudio.nyx.config.Category
+import com.companionstudio.nyx.focus.FocusRepository
+import com.companionstudio.nyx.focus.FocusSessionCard
+import com.companionstudio.nyx.focus.FocusStatus
 import com.companionstudio.nyx.pet.PetVisibility
 import com.companionstudio.nyx.ui.theme.NyxTheme
+
+/** Home's focus area (§14.8): the running session with Done and End, or Start ([onStart] `null` hides it, D-120). */
+class HomeFocus(val running: FocusStatus?, val onStart: (() -> Unit)?, val onDone: () -> Unit = {}, val onEnd: () -> Unit = {})
 
 @Composable
 fun HomeRoute(
     summaryRepository: SummaryRepository,
     petVisibility: PetVisibility,
+    focusRepository: FocusRepository,
     onFocus: () -> Unit,
     onTrends: () -> Unit,
     onSettings: () -> Unit,
 ) {
-    val viewModel = viewModel { HomeViewModel(summaryRepository, petVisibility) }
+    val viewModel = viewModel { HomeViewModel(summaryRepository, petVisibility, focusRepository) }
     val summary by viewModel.summary.collectAsStateWithLifecycle()
     val petHidden by viewModel.petHidden.collectAsStateWithLifecycle()
-    HomeScreen(summary, onShowPet = if (petHidden) ({ viewModel.showPet() }) else null, onFocus, onTrends, onSettings)
+    val focusState by viewModel.focus.collectAsStateWithLifecycle()
+    val focus = HomeFocus(
+        running = focusState.running,
+        onStart = if (focusState.enabled) onFocus else null,
+        onDone = { viewModel.finishFocus(done = true) },
+        onEnd = { viewModel.finishFocus(done = false) },
+    )
+    HomeScreen(summary, onShowPet = if (petHidden) ({ viewModel.showPet() }) else null, focus, onTrends, onSettings)
 }
 
 /** S-08. [summary] is `null` while loading. [onShowPet] is `null` unless the pet is hidden (US-29). */
@@ -47,7 +61,7 @@ fun HomeRoute(
 fun HomeScreen(
     summary: TodaySummary?,
     onShowPet: (() -> Unit)?,
-    onFocus: () -> Unit,
+    focus: HomeFocus,
     onTrends: () -> Unit,
     onSettings: () -> Unit,
 ) {
@@ -72,8 +86,13 @@ fun HomeScreen(
                 OutlinedButton(onClick = onShowPet) { Text(stringResource(R.string.show_pet)) }
             }
             SummaryNumbers(summary)
-            Button(onClick = onFocus, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.home_start_focus))
+            val running = focus.running
+            if (running != null) {
+                FocusSessionCard(running, focus.onDone, focus.onEnd, Modifier.fillMaxWidth())
+            } else {
+                focus.onStart?.let {
+                    Button(onClick = it, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.home_start_focus)) }
+                }
             }
             OutlinedButton(onClick = onTrends, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.home_trends))
@@ -98,7 +117,7 @@ private fun HomeScreenPreview() {
                 petFace = "😸",
             ),
             onShowPet = null,
-            onFocus = {},
+            focus = HomeFocus(running = null, onStart = {}),
             onTrends = {},
             onSettings = {},
         )

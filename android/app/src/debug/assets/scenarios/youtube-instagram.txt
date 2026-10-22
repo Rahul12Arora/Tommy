@@ -1,0 +1,5 @@
+# YouTube 10 min, a minute of Instagram, YouTube again. A no-switching session on YouTube breaks at 10 min;
+# a set-time 25 drifts once and completes at 26 min, because Instagram time doesn't count (M8)
+app com.google.android.youtube 10m
+app com.instagram.android 1m
+app com.google.android.youtube 20m

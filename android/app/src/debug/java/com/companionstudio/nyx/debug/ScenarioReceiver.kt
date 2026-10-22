@@ -7,10 +7,14 @@ import android.util.Log
 import com.companionstudio.nyx.AppContainer
 import com.companionstudio.nyx.PetApp
 import com.companionstudio.nyx.config.SettingPaths
+import com.companionstudio.nyx.focus.FocusGoal
+import com.companionstudio.nyx.focus.FocusRequest
+import com.companionstudio.nyx.focus.PetMode
 import com.companionstudio.nyx.rules.PetEvent
 import com.companionstudio.nyx.rules.PetEventType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.time.temporal.ChronoUnit
@@ -25,6 +29,11 @@ import java.time.temporal.ChronoUnit
  *
  * `--es event break_taken` logs one event of that [PetEventType] now and clears nothing. It stands in for the
  * positive events later milestones write, so a pet that ran away can be brought back (D-86).
+ *
+ * With a scenario, `--es focus no_switching --ei focus_minutes 25 --es focus_apps com.google.android.youtube
+ * --es focus_mode check_in [--ei focus_checkin 10]` also starts a focus session through the same path as S-09 (D-119).
+ * Goals: `fixed_time`, `until_done`, `no_switching`; modes: `quiet`, `reward_at_end`, `check_in`. Starting a scenario
+ * or stopping one also clears the focus sessions.
  */
 class ScenarioReceiver : BroadcastReceiver() {
 
@@ -39,6 +48,7 @@ class ScenarioReceiver : BroadcastReceiver() {
                 }
                 container.database.dailyUsageDao().clearAll()
                 container.database.petEventDao().clearAll()
+                container.focusSessionDao.clearAll()
                 if (intent.getBooleanExtra(EXTRA_STOP, false)) {
                     container.clock.reset()
                     container.usageSource.value = container.systemUsageSource
@@ -50,12 +60,30 @@ class ScenarioReceiver : BroadcastReceiver() {
                 container.clock.runFaster(intent.getIntExtra(EXTRA_SPEED, 1))
                 container.usageSource.value = ScenarioUsageSource(scenarioEvents(steps, start = container.clock.instant().truncatedTo(ChronoUnit.MILLIS)))
                 Log.i(TAG, "Scenario $name started at ${container.clock.speed}× speed")
+                intent.getStringExtra(EXTRA_FOCUS)?.let { goal ->
+                    // The engine starts a new run for the new usage source; a session from before that run is picked
+                    // up silently, so give it a moment, or there's no focus_started line
+                    delay(500)
+                    startFocus(container, intent, FocusGoal.valueOf(goal.uppercase()))
+                }
             } catch (e: Exception) {
                 Log.e(TAG, "Scenario not started", e)
             } finally {
                 pending.finish()
             }
         }
+    }
+
+    private suspend fun startFocus(container: AppContainer, intent: Intent, goal: FocusGoal) {
+        val request = FocusRequest(
+            goal = goal,
+            goalMinutes = intent.getIntExtra(EXTRA_FOCUS_MINUTES, 25),
+            allowedApps = requireNotNull(intent.getStringExtra(EXTRA_FOCUS_APPS)) { "Pass --es $EXTRA_FOCUS_APPS <packages>" }.split(","),
+            petMode = PetMode.valueOf((intent.getStringExtra(EXTRA_FOCUS_MODE) ?: "check_in").uppercase()),
+            checkinMinutes = intent.getIntExtra(EXTRA_FOCUS_CHECKIN, 10),
+        )
+        val started = container.focusRepository.start(request)
+        Log.i(TAG, if (started) "Focus session started: $request" else "Focus session not started")
     }
 
     private suspend fun logEvent(container: AppContainer, type: PetEventType) {
@@ -72,5 +100,10 @@ class ScenarioReceiver : BroadcastReceiver() {
         const val EXTRA_SPEED = "speed"
         const val EXTRA_STOP = "stop"
         const val EXTRA_EVENT = "event"
+        const val EXTRA_FOCUS = "focus"
+        const val EXTRA_FOCUS_MINUTES = "focus_minutes"
+        const val EXTRA_FOCUS_APPS = "focus_apps"
+        const val EXTRA_FOCUS_MODE = "focus_mode"
+        const val EXTRA_FOCUS_CHECKIN = "focus_checkin"
     }
 }

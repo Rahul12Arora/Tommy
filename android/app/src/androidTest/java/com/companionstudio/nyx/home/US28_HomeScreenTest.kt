@@ -10,6 +10,9 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.companionstudio.nyx.config.Category
+import com.companionstudio.nyx.focus.FocusGoal
+import com.companionstudio.nyx.focus.FocusPhase
+import com.companionstudio.nyx.focus.FocusStatus
 import com.companionstudio.nyx.ui.theme.NyxTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -36,7 +39,7 @@ class US28_HomeScreenTest {
     @Test
     fun showsFaceTotalsAndLimitGoals_withOverSpelledOut() {
         composeRule.setContent {
-            NyxTheme { HomeScreen(today, onShowPet = null, onFocus = {}, onTrends = {}, onSettings = {}) }
+            NyxTheme { HomeScreen(today, onShowPet = null, focus = HomeFocus(running = null, onStart = {}), onTrends = {}, onSettings = {}) }
         }
 
         composeRule.onNodeWithText("😸").assertIsDisplayed()
@@ -57,7 +60,7 @@ class US28_HomeScreenTest {
                 HomeScreen(
                     today,
                     onShowPet = null,
-                    onFocus = { clicked += "focus" },
+                    focus = HomeFocus(running = null, onStart = { clicked += "focus" }),
                     onTrends = { clicked += "trends" },
                     onSettings = { clicked += "settings" },
                 )
@@ -74,7 +77,7 @@ class US28_HomeScreenTest {
     @Test
     fun loading_showsNoTotals() {
         composeRule.setContent {
-            NyxTheme { HomeScreen(summary = null, onShowPet = null, onFocus = {}, onTrends = {}, onSettings = {}) }
+            NyxTheme { HomeScreen(summary = null, onShowPet = null, focus = HomeFocus(running = null, onStart = {}), onTrends = {}, onSettings = {}) }
         }
 
         composeRule.onNodeWithText("Today:", substring = true).assertDoesNotExist()
@@ -86,7 +89,7 @@ class US28_HomeScreenTest {
         var hidden by mutableStateOf(true)
         composeRule.setContent {
             NyxTheme {
-                HomeScreen(today, onShowPet = if (hidden) ({ shown++ }) else null, onFocus = {}, onTrends = {}, onSettings = {})
+                HomeScreen(today, onShowPet = if (hidden) ({ shown++ }) else null, focus = HomeFocus(running = null, onStart = {}), onTrends = {}, onSettings = {})
             }
         }
 
@@ -96,5 +99,38 @@ class US28_HomeScreenTest {
 
         hidden = false
         composeRule.onNodeWithText("Show pet").assertDoesNotExist()
+    }
+
+    @Test
+    fun US12_aRunningSession_replacesStartFocus_withItsCard() {
+        val ended = mutableListOf<Boolean>()
+        val running = FocusStatus(FocusGoal.UNTIL_DONE, null, focusMs = 34 * 60_000L, FocusPhase.RUNNING, switches = 2, canDone = true, minDoneMinutes = 5)
+        composeRule.setContent {
+            NyxTheme {
+                HomeScreen(
+                    today,
+                    onShowPet = null,
+                    focus = HomeFocus(running, onStart = {}, onDone = { ended += true }, onEnd = { ended += false }),
+                    onTrends = {},
+                    onSettings = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Start focus").assertDoesNotExist()
+        composeRule.onNodeWithText("34 min so far · switched away 2 times").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Done").performScrollTo().performClick()
+        composeRule.onNodeWithText("End").performScrollTo().performClick()
+
+        assertEquals(listOf(true, false), ended)
+    }
+
+    @Test
+    fun D120_focusSwitchedOff_noStartFocus() {
+        composeRule.setContent {
+            NyxTheme { HomeScreen(today, onShowPet = null, focus = HomeFocus(running = null, onStart = null), onTrends = {}, onSettings = {}) }
+        }
+
+        composeRule.onNodeWithText("Start focus").assertDoesNotExist()
     }
 }

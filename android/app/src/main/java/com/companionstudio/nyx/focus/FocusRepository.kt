@@ -4,7 +4,9 @@ import com.companionstudio.nyx.config.EffectiveConfig
 import com.companionstudio.nyx.config.SettingPaths
 import com.companionstudio.nyx.data.DayClock
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import java.time.Clock
 
 /** What S-09 asks for (US-12). [goalMinutes] is ignored for until done, [checkinMinutes] outside check-in mode. */
@@ -27,6 +29,13 @@ class FocusRepository(
     private val clock: Clock,
 ) {
     fun observeActive(): Flow<FocusSession?> = dao.observeActive()
+
+    /** The running session as Home and S-09 show it; `null` when none runs. */
+    fun observeStatus(): Flow<FocusStatus?> =
+        combine(dao.observeActive(), effectiveConfig) { session, config -> session?.let { focusStatus(it, config.document.focus) } }
+
+    /** `features.focus`: off hides Start, but a running session carries on (D-120). */
+    fun observeEnabled(): Flow<Boolean> = effectiveConfig.map { it.document.features.focus }
 
     suspend fun latest(): FocusSession? = dao.latest()
 

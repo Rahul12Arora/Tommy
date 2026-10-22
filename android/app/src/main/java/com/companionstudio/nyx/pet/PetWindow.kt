@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +27,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.companionstudio.nyx.R
 import com.companionstudio.nyx.config.Category
+import com.companionstudio.nyx.focus.FocusStatus
+import com.companionstudio.nyx.focus.focusShortText
+import com.companionstudio.nyx.focus.focusSummaryText
 import com.companionstudio.nyx.home.GoalProgress
 import com.companionstudio.nyx.home.TodaySummary
 import com.companionstudio.nyx.ui.theme.NyxTheme
@@ -42,9 +46,19 @@ data class PanelLayout(val side: Side, val below: Boolean, val maxHeight: Dp)
 /** A speech bubble beside the closed pet. [onSnooze] is `null` except on a nag that can still be snoozed (US-10). */
 class BubbleContent(val line: String, val onSnooze: (() -> Unit)?, val onDismiss: () -> Unit)
 
-/** The overlay window while the ring is closed: the pet (O-01) and maybe a speech bubble (O-02) beside it. */
+/**
+ * The overlay window while the ring is closed: the pet (O-01) and maybe a speech bubble (O-02) beside it. [focus]: the
+ * running session, for the pet's badge (D-118).
+ */
 @Composable
-fun PetWindow(summary: TodaySummary?, glowing: Boolean, bubble: BubbleContent?, layout: PanelLayout, onPetClick: () -> Unit) {
+fun PetWindow(
+    summary: TodaySummary?,
+    glowing: Boolean,
+    bubble: BubbleContent?,
+    layout: PanelLayout,
+    onPetClick: () -> Unit,
+    focus: FocusStatus? = null,
+) {
     NyxTheme {
         // Physical edges, like the window's gravity, whatever the text direction
         val alignment = if (layout.side == Side.LEFT) AbsoluteAlignment.Left else AbsoluteAlignment.Right
@@ -53,16 +67,23 @@ fun PetWindow(summary: TodaySummary?, glowing: Boolean, bubble: BubbleContent?, 
                 bubble?.let { SpeechBubble(it.line, it.onSnooze, it.onDismiss, Modifier.heightIn(max = layout.maxHeight)) }
             }
             if (!layout.below) besidePet()
-            PetFace(summary?.petFace.orEmpty(), glowing, panelOpen = false, onPetClick)
+            PetFace(summary?.petFace.orEmpty(), glowing, panelOpen = false, onPetClick, focus)
             if (layout.below) besidePet()
         }
     }
 }
 
-/** The pet's face; a red ring around it while a limit is nagging, also said to TalkBack (§14.7). */
+/**
+ * The pet's face; a red ring around it while a limit is nagging (§14.7), and during a focus session a badge with the
+ * minutes, "!" while away (D-118). Both are also said to TalkBack.
+ */
 @Composable
-fun PetFace(face: String, glowing: Boolean, panelOpen: Boolean, onClick: () -> Unit) {
-    val description = stringResource(if (glowing) R.string.pet_description_over_limit else R.string.pet_description)
+fun PetFace(face: String, glowing: Boolean, panelOpen: Boolean, onClick: () -> Unit, focus: FocusStatus? = null) {
+    val description = when {
+        focus != null -> stringResource(R.string.pet_description_focus, focusSummaryText(focus))
+        glowing -> stringResource(R.string.pet_description_over_limit)
+        else -> stringResource(R.string.pet_description)
+    }
     val action = stringResource(if (panelOpen) R.string.pet_close_summary else R.string.pet_open_summary)
     Surface(
         shape = CircleShape,
@@ -79,7 +100,21 @@ fun PetFace(face: String, glowing: Boolean, panelOpen: Boolean, onClick: () -> U
             val faceSize = with(LocalDensity.current) { 34.dp.toSp() }
             // TalkBack reads the description above, not the emoji's name
             Text(face, fontSize = faceSize, modifier = Modifier.clearAndSetSemantics {})
+            // Inside the pet's circle, so the window keeps its size
+            focus?.let { FocusBadge(focusShortText(it), Modifier.align(Alignment.BottomCenter)) }
         }
+    }
+}
+
+@Composable
+private fun FocusBadge(text: String, modifier: Modifier) {
+    Surface(
+        shape = MaterialTheme.shapes.small,
+        color = MaterialTheme.colorScheme.inverseSurface,
+        contentColor = MaterialTheme.colorScheme.inverseOnSurface,
+        modifier = modifier.clearAndSetSemantics {},
+    ) {
+        Text(text, fontSize = with(LocalDensity.current) { 9.dp.toSp() }, maxLines = 1, modifier = Modifier.padding(horizontal = 4.dp))
     }
 }
 

@@ -1,0 +1,2 @@
+# 30 minutes of YouTube. With a 25-minute focus session on YouTube, it completes at 25 with +15 (M8)
+app com.google.android.youtube 30m
