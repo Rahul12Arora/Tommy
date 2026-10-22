@@ -11,7 +11,7 @@
 - **Project:** Nyx (`com.companionstudio.nyx`) — on-screen emoji pet for screen-time awareness, limits and focus · repo `github.com/Rahul12Arora/Tommy`
 - **Platform:** Android app (Kotlin + Compose) · Node.js backend · web admin console (React)
 - **Size tier:** standard — see §4 and `docs/TECH_STACK.md` §3
-- **Current phase:** 5 · **Current milestone:** M9 Week-1 check (next; M8 done 2026-10-22)
+- **Current phase:** 5 · **Current milestone:** M10 Backend + config API (next; M9 done 2026-10-22)
 - **Collaboration mode:** delivery
   - `delivery` → fix directly, explain briefly
   - `learning` → explain the root cause first, guide me to the fix, give the full patch only when I ask

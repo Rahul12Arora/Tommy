@@ -1,7 +1,7 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M9 Week-1 check (in progress; branch `feat/m9-week1`)
-- Last done: M9 fixes for BUG-04, E-01 to E-03, A-01 to A-03 (ARCHITECTURE §14.9); 316 unit tests, lint, device tests 77/77 on the emulator
-- Next step: the developer's real day on the Pixel from the ROADMAP M9 checklist (from a full charge), plus TalkBack by ear; then PR and tag `week1-build`
+- Phase: 5 — Build · Milestone: M9 Week-1 check (closing; PR from `feat/m9-week1`)
+- Last done: M9 checks — the Pixel's real day and TalkBack by ear marked passed by the developer (2026-10-22; no per-item results or battery % recorded); fixes BUG-04, E-01 to E-03, A-01 to A-03 (ARCHITECTURE §14.9)
+- Next step: merge the M9 PR, tag `m9-done` and `week1-build`, then M10 Backend + config API (LLD first)
 - Blockers: none
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37; start it with `-gpu swiftshader_indirect`, see log 2026-10-22 M9) + Pixel 7a
@@ -206,3 +206,5 @@
 - Verified: 316 unit tests, lint; device tests 77/77 on the emulator (all classes, incl. 11 new); by hand at 200% font: S-05 in landscape lists apps; Home shows the card with both permissions off, and it's gone after granting them through Open permissions → S-03 → Continue. Emulator font and rotation reset afterwards
 - Not verified: the Pixel (not used this session); TalkBack by ear
 - Next: the real day on the Pixel; TalkBack by ear
+- The developer marked the Pixel's real day (checklist incl. battery) and TalkBack by ear as passed; recorded as their result, with no per-item notes or battery % (A-19's figure stays unmeasured in the log)
+- Done: ROADMAP M9 ticked and status done; AGENTS card on M10

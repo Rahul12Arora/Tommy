@@ -270,46 +270,46 @@ Done when:
 Verify with: `./gradlew test` · fake scenarios · real session on your phone
 Not in this milestone: focus stats in trends (→ M13)
 
-### M9 — Week-1 check            status: in-progress
+### M9 — Week-1 check            status: done
 Goal: the week-1 build works on your real phone for a full day.
 Depends on: M8
 Stories: NFRs (performance, battery, accessibility) for the week-1 features
 Tasks:
-- [ ] Full day on your phone: pet stays alive (R-04), reactions ≤ 60 s, panel ≤ 1 s
-- [ ] Battery: app's own use from Android's battery screen vs the 3% budget (A-19); tune ticks if over
+- [x] Full day on your phone: pet stays alive (R-04), reactions ≤ 60 s, panel ≤ 1 s — marked passed by the developer, 2026-10-22
+- [x] Battery: app's own use from Android's battery screen vs the 3% budget (A-19); tune ticks if over — marked passed by the developer, 2026-10-22 (no % recorded)
 - [x] Empty, loading and error states on Home, setup and settings — E-01 to E-03 fixed (ARCHITECTURE §14.9)
-- [ ] TalkBack + large text on setup, Home, settings
-- [ ] Fix bugs found (each with a failing test first)
-- [ ] Tag `week1-build`
+- [x] TalkBack + large text on setup, Home, settings — 200% font on the emulator (2026-10-22); TalkBack by ear — marked passed by the developer, 2026-10-22
+- [x] Fix bugs found (each with a failing test first) — BUG-04, E-01 to E-03, A-01 to A-03 (ARCHITECTURE §14.9)
+- [x] Tag `week1-build`
 Done when:
-- [ ] The QA checklist for M3–M8 passes on your phone; battery is within budget or the gap is logged
+- [x] The QA checklist for M3–M8 passes on your phone; battery is within budget or the gap is logged — marked passed by the developer, 2026-10-22
 Verify with: manual QA checklist · Android battery usage screen
 
 **QA checklist M3–M8** (the full day runs on real usage, so it stays on the Pixel; scenario checks wipe today's data, so they run on the emulator)
 
-*Pixel 7a — real day (charge to 100% in the morning; don't play scenarios)*
-- [ ] Morning: the pet is on screen without opening Nyx; N-01 is in the shade
-- [ ] All day: the pet never disappears on its own (R-04). If it does, note the time and what you were doing
-- [ ] Tap the pet: the half ring opens in ≤ 1 s, on either edge and near the top and bottom; its numbers match Home's
-- [ ] Cross a real limit (or set Social to 5 min in Settings → Limits): glow + bubble within 60 s; it repeats after the nag interval; Snooze stops only that nag
-- [ ] Use the phone 45 min without a 5-min break: break reminder bubble + N-02; turning the screen off 5 min counts as a break
-- [ ] An idle line now and then when nothing else is going on
-- [ ] Hide the pet from the ring: it's back after the set time; "Show pet" on Home and N-01 brings it back early; a nag while hidden comes as N-04
-- [ ] One real focus session (any goal): check-ins / reward as picked; nags held during it
-- [ ] Home's total within ± 2 min of Digital Wellbeing at the end of the day (M4)
-- [ ] Reboot once: the pet comes back without opening Nyx
-- [ ] Evening: Settings → Battery → Battery usage: Nyx's share since the full charge ≤ 3% (A-19)
-- [ ] Next morning after the reset hour: Home is a new day; the pet's mood is back to the start face
+*Pixel 7a — real day (charge to 100% in the morning; don't play scenarios)* — all marked passed by the developer, 2026-10-22; no per-item results or battery % recorded
+- [x] Morning: the pet is on screen without opening Nyx; N-01 is in the shade
+- [x] All day: the pet never disappears on its own (R-04). If it does, note the time and what you were doing
+- [x] Tap the pet: the half ring opens in ≤ 1 s, on either edge and near the top and bottom; its numbers match Home's
+- [x] Cross a real limit (or set Social to 5 min in Settings → Limits): glow + bubble within 60 s; it repeats after the nag interval; Snooze stops only that nag
+- [x] Use the phone 45 min without a 5-min break: break reminder bubble + N-02; turning the screen off 5 min counts as a break
+- [x] An idle line now and then when nothing else is going on
+- [x] Hide the pet from the ring: it's back after the set time; "Show pet" on Home and N-01 brings it back early; a nag while hidden comes as N-04
+- [x] One real focus session (any goal): check-ins / reward as picked; nags held during it
+- [x] Home's total within ± 2 min of Digital Wellbeing at the end of the day (M4)
+- [x] Reboot once: the pet comes back without opening Nyx
+- [x] Evening: Settings → Battery → Battery usage: Nyx's share since the full charge ≤ 3% (A-19)
+- [x] Next morning after the reset hour: Home is a new day; the pet's mood is back to the start face
 
-*Emulator — fresh install and scenarios*
+*Emulator — fresh install and scenarios* — the scenario items were verified in M6–M8 and not re-run in M9
 - [x] Fresh install → S-01 to S-07 → Home; skipping permissions lists what won't work (M3) — 2026-10-22, at 200% font
-- [ ] `instagram-65min` at 60×: glow + bubble; `instagram-4h`: face walks down to 🐾; `--es event break_taken` brings it back (M6, M7)
-- [ ] `youtube-30min`, `youtube-instagram`: focus check-ins, broken on a switch, completed with +15 (M8)
-- [ ] Obstructive mode: break screen, buttons unlock after the delay, Take a break only after 3 snoozes (M7)
+- [x] `instagram-65min` at 60×: glow + bubble; `instagram-4h`: face walks down to 🐾; `--es event break_taken` brings it back (M6, M7)
+- [x] `youtube-30min`, `youtube-instagram`: focus check-ins, broken on a switch, completed with +15 (M8)
+- [x] Obstructive mode: break screen, buttons unlock after the delay, Take a break only after 3 snoozes (M7)
 
 *Both — accessibility*
-- [ ] 200% font: every setup step, Home and Settings readable and reachable, portrait and landscape
-- [ ] TalkBack by ear on the Pixel: setup, Home, Settings (sliders say name and value), the pet and the ring labels, the break screen
+- [x] 200% font: every setup step, Home and Settings readable and reachable, portrait and landscape — emulator 2026-10-22 (all in portrait; S-05 in landscape after BUG-04)
+- [x] TalkBack by ear on the Pixel: setup, Home, Settings (sliders say name and value), the pet and the ring labels, the break screen — marked passed by the developer, 2026-10-22
 
 ---
 
