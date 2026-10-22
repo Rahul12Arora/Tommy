@@ -2,7 +2,7 @@
 - Phase: 5 — Build · Milestone: M9 Week-1 check (next; branch `feat/m9-week1` from `main`)
 - Last done: M8 done 2026-10-22 — PR #14 merged, tagged `m8-done` (`a1d3dc7`)
 - Next step: M9 in a new session: a full day on the Pixel (pet alive, reactions ≤ 60 s, ring ≤ 1 s), battery vs the 3% budget, empty/loading/error states, TalkBack + large text (also the TalkBack checks still open from M7 and M8), bugs, tag `week1-build`
-- Blockers: none. The API 37 emulator still hangs at boot, also on a cold boot (2026-10-22); a wipe needs the developer's OK
+- Blockers: none. The API 37 emulator still hangs at boot, also on a cold boot (2026-10-22); the developer OK'd wiping it in M9
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
 - Build setup: Homebrew JDK on PATH starts Gradle; daemon runs on JDK 25 (`android/README.md`). With the phone plugged in, set `ANDROID_SERIAL` for device tasks
@@ -182,3 +182,4 @@
 - Done: the developer merged PR #14; tagged `m8-done` on the merge (`a1d3dc7`). M8 closed: ROADMAP status done, AGENTS card on M9, `feat/m9-week1` started from `main` for the close-out docs
 - Open from M8: TalkBack by ear (with M7's)
 - Next: M9 Week-1 check
+- Approved: wiping the API 37 emulator's data in M9 to get it booting again (the developer, 2026-10-22)
