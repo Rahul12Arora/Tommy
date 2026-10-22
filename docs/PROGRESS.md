@@ -1,7 +1,7 @@
 ## Current state
 - Phase: 5 — Build · Milestone: M12 App fetches remote config (next)
 - Last done: M11 done 2026-10-22 — PR #18 merged, tagged `m11-done` (`cdd0f84`)
-- Next step: M12 in a new session, LLD first (`ConfigClient` with ETag, 6-hour check, atomic cache, debug build → `10.0.2.2:3000`) Each dev needs an admin login in `backend/.env` (`npm run hash-password`, `backend/README.md`)
+- Next step: M12 in a new session, LLD first (`ConfigClient` with ETag, 6-hour check, atomic cache, debug build → `10.0.2.2:3000`). Each dev needs an admin login in `backend/.env` (`npm run hash-password`, `backend/README.md`)
 - Blockers: none. Docker note: Homebrew's `docker` CLI comes first on PATH and can't find Docker Desktop's credential helper (`docker pull` fails); put `/Applications/Docker.app/Contents/Resources/bin` first or `brew uninstall docker`
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37; start it with `-gpu swiftshader_indirect`, see log 2026-10-22 M9) + Pixel 7a
