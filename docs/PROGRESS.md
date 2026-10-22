@@ -1,8 +1,8 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M9 Week-1 check (closing; PR from `feat/m9-week1`)
-- Last done: M9 checks — the Pixel's real day and TalkBack by ear marked passed by the developer (2026-10-22; no per-item results or battery % recorded); fixes BUG-04, E-01 to E-03, A-01 to A-03 (ARCHITECTURE §14.9)
-- Next step: merge the M9 PR, tag `m9-done` and `week1-build`, then M10 Backend + config API (LLD first)
-- Blockers: none
+- Phase: 5 — Build · Milestone: M10 Backend + config API (done; PR open from `feat/m10-backend`, waiting for the developer's merge)
+- Last done: config validation (+ shared fixtures), initial config seed, `GET /v1/config`, `GET /health`, BUG-05 fixed, backend CI workflow
+- Next step: the developer merges the M10 PR → tag `m10-done` on the merge → M11 in a new session, LLD first
+- Blockers: none. Docker note: Homebrew's `docker` CLI comes first on PATH and can't find Docker Desktop's credential helper (`docker pull` fails); put `/Applications/Docker.app/Contents/Resources/bin` first or `brew uninstall docker`
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37; start it with `-gpu swiftshader_indirect`, see log 2026-10-22 M9) + Pixel 7a
 - Build setup: Homebrew JDK on PATH starts Gradle; daemon runs on JDK 25 (`android/README.md`). With the phone plugged in, set `ANDROID_SERIAL` for device tasks
@@ -209,3 +209,32 @@
 - The developer marked the Pixel's real day (checklist incl. battery) and TalkBack by ear as passed; recorded as their result, with no per-item notes or battery % (A-19's figure stays unmeasured in the log)
 - Done: ROADMAP M9 ticked and status done; AGENTS card on M10
 - Verified: Android CI green on `feat/m9-week1` (PR #16); PR open, not merged. Merging from this session was blocked by the permission check, so the developer merges; then tag `m9-done` and `week1-build` on the merge
+- Done: the developer merged PR #16; tagged `m9-done` and `week1-build` on the merge (`b4c7832`). M9 closed; `feat/m10-backend` started from `main` for the close-out docs
+- Next: M10 Backend + config API
+
+### 2026-10-22 (M10)
+- Done: M10 LLD as ARCHITECTURE §14.10 — files, scripts, env, Compose, `config_versions` (+ ERD), migrations and initial config at start-up, config validation (Ajv schema, then the cross-field rules ported from `ConfigValidator.kt`), `GET /v1/config` with ETag/304, `/health`, error mapping, logging, shutdown, CI, tests. Repo map updated (migration runner in `lib/`, bubble trigger row)
+- Proposed: D-121 to D-130; CR-11 adds `ajv` 8.20.0 (already installed by Fastify); `daily_stats` moves to M14 (D-125). Parking lot +2
+- Verified against sources: npm registry (fastify 5.12.7 deps, ajv 8.20.0 MIT, pg 8.23.1), nodejs.org (26.12.1 security release 2026-10-21, not yet LTS), Docker Hub tags, setup-node v7.1.0 SHA, Node 26.12.1 CLI flags (`--env-file-if-exists`, `--test-concurrency`, coverage flags)
+- Found: no Node or Docker on the Mac
+- Next: approval → install Node + Docker → scaffold
+- Approved: the LLD, D-121 to D-130, CR-11 (the developer). Docs marked approved; TECH_STACK register + pins updated; HLD §6, §7, §12 follow D-125, D-127, D-128, D-130
+- Done: `backend/` scaffold — `package.json` (ESM, Node 26.12.1, exact pins fastify 5.12.7, pg 8.23.1, Biome 2.5.15), `biome.json` (2 spaces, 120 cols, repo-root `.gitignore` via `vcs.root`), `.env.example`, `README.md`, `src/lib/env.js`, `db.js`, `httpError.js`, `src/middleware/errorHandler.js`, `src/app.js`, `src/server.js`. `ajv` is installed with the validation task, where it's first used
+- Verified: Node 26.12.1 + npm 11.20.0 on the Mac; `npm test` 10/10 (env, error shapes: 404, 500 without detail, HttpError, route-schema 400 with pointer, bad JSON 400 and 415 → BAD_REQUEST); `npm run lint` clean; `test:coverage` runs; `node src/server.js` boots, answers `/nope` with the 404 shape, logs request IDs as UUIDs, shuts down on SIGTERM; bad `PORT` stops start-up with the message
+- Found: Docker is the CLI only — no daemon, no `docker compose`
+- Done: Docker Desktop installed by the developer (Engine 29.9.2, Compose v5.6.1). `docker-compose.yml`: `db` (`postgres:18.6-alpine3.24`, volume at `/var/lib/postgresql` as the 18 image expects, health check, init script creates `nyx_test`) and `api` (built from the repo root, `DATABASE_URL` pointed at `db`, starts when `db` is healthy). `backend/Dockerfile`: Node 26.12.1 alpine, `npm ci --omit=dev`, `/app/backend` + `/app/shared` layout, user `node`, exec-form `CMD`. Root `.dockerignore` lets in only what the image needs (no tests)
+- Verified: `docker compose up --build` → `db` healthy, PostgreSQL 18.6, databases `nyx` and `nyx_test`; API answers on :3000 (404 shape), runs as `node`, image holds no test files (284 MB); `docker compose stop api` → "shutting down" logged, exit 0 in 0.3 s
+- Learned: Homebrew's `docker` CLI shadows Docker Desktop's; with it first on PATH `docker pull` fails ("docker-credential-desktop not found")
+- Done: `migrations/001_init.sql` (`config_versions` as in §14.10); `src/lib/migrate.js` (advisory lock, one transaction per file with its `schema_migrations` row, name order, `.sql` only; the connection is closed afterwards, which drops the lock); `server.js` runs it before listening; Dockerfile copies `migrations/`; `testing/testDb.js` (`testPool`, `emptyDatabase`); local `backend/.env` from the example (not committed)
+- Learned: Node's test runner treats every `.js` in a `test/` folder as a test file, so the helper folder is `testing/` (§14.10 and the repo map updated)
+- Verified: `npm test` 17/17 (7 new: applies once then nothing, name order and non-`.sql` ignored, a failing file rolled back with the files after it not run, two concurrent runs apply once, 001's checks refuse a document/row version mismatch and an unknown status, one published + one draft per schema version); lint clean; in Compose the API logs `applied: ["001_init.sql"]`, then `[]` after a restart; `\d config_versions` matches the LLD; with the database unreachable, start-up exits 1
+- Done: `ajv` 8.20.0 installed (deduped with Fastify's copy). `config.validation.js`: Ajv schema check, then the nine cross-field rules ported from `ConfigValidator.kt` with JSON Pointer paths; `BUBBLE_TRIGGERS` copied from `BubbleTrigger.kt`; own-key lookups so an id like `constructor` can't hit `Object.prototype`. `sharedFiles.js`. Ajv compiled `shared/config.schema.json` in its default strict mode with no changes
+- Done: `seeds/initial-config.js` + `config.model.js` (`insertFirstPublished`: only into an empty table, `ON CONFLICT DO NOTHING` for two containers); `config.service.js`, `config.routes.js` (ETag, weak `If-None-Match`, `no-cache`, no response schema, `schema` capped at Postgres' integer max so a huge number is a 400); `health.routes.js` (per-query 5 s timeout, logs the cause); `app.js` wires both; Dockerfile copies `seeds/`
+- BUG-05 · Stopping the database kills the API · Steps: `docker compose up`, then `docker compose stop db` · Expected: `/health` → 503, API recovers when the DB is back · Actual: the API exits 1 ("terminating connection due to administrator command", unhandled 'error' event on the pg pool) · Env: Compose, `nyx-api` image at the routes commit · Severity: major (any DB restart in production takes the API down). Failing test first (`lib/db.test.js`, crashed as expected); fix: `createPool(url, onIdleError)` always listens, `server.js` logs it
+- Done: `.github/workflows/backend.yml` — Postgres 18.6 service (`nyx_test`), setup-node v7.1.0 by SHA with Node 26.12.1 and npm cache, `npm ci`, lint, `test:coverage`, Docker image build from the repo root
+- Verified: `npm test` 73/73 (40 validation incl. all 3 valid and 18 invalid fixtures with the same rule IDs as the phone, 9 route, 4 seed, 2 health, 1 BUG-05); coverage 100% lines on `src/features/`; lint clean. Fresh Compose (`docker compose down -v` on the dev volume made this session, then `up --build`): `applied ["001_init.sql"]`, `seeded: true`; `curl` → 200 `ETag: "1"` 8,613 bytes, `If-None-Match: "1"` → 304, schema 2 → 404 shape, `/health` 200; restart → `seeded: false`; `docker compose stop db` → `/health` 503 in 36 ms and the API stays up (restart count 0), `start db` → 200 again
+- Not verified: CI on GitHub (not pushed yet)
+- Verified: Backend CI green on GitHub (run 39785639070): lint, 73/73 tests, 100% lines on `src/features/`, Docker image builds. Android CI not triggered (no `android/` or `shared/` change)
+- Done: ROADMAP M10 ticked and status done; AGENTS card on M11
+
+- Done: PR #17 opened (M10 → main) with the manual QA checklist; merging is the developer's step

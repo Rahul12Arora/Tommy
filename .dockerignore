@@ -1,0 +1,12 @@
+# The build context is the repo root (backend/Dockerfile); only backend/ and shared/ are needed
+**
+!backend/package.json
+!backend/package-lock.json
+!backend/src/
+!backend/migrations/
+!backend/seeds/
+!shared/config.schema.json
+!shared/default-config.json
+**/*.test.js
+**/node_modules
+**/.env

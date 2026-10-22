@@ -214,6 +214,7 @@ project/
 | `@fastify/helmet` | 13.2.0 | API | Security headers for the console | Setting a dozen headers by hand | MIT |
 | `@fastify/static` | 10.1.6 | API | Serves the built console from the same address | A second host + CORS setup | MIT |
 | `pg` | 8.23.1 | Data | PostgreSQL driver | No database access | MIT |
+| `ajv` | 8.20.0 (CR-11) | API | Checks config documents against `shared/config.schema.json` with our own options (no type coercion, all errors). Fastify already installs Ajv 8, so npm keeps one copy | Importing an undeclared package, or a hand-written schema checker | MIT |
 | `@biomejs/biome` (dev) | 2.5.15 | Tooling | Lint + format | Two tools (ESLint + Prettier) | MIT OR Apache-2.0 |
 
 Built into Node instead of packages: test runner (`node:test`), password hashing (`crypto.scrypt`), IDs (`crypto.randomUUID`), env files (`--env-file`), `fetch`.
@@ -245,12 +246,12 @@ Built into Node instead of packages: test runner (`node:test`), password hashing
 
 | Item | Version | Purpose |
 |---|---|---|
-| Docker image `node` | 26-alpine (exact tag pinned in M0) | Backend container |
-| Docker image `postgres` | 18-alpine | Local database |
+| Docker image `node` | 26.12.1-alpine3.24 (D-128) | Backend container |
+| Docker image `postgres` | 18.6-alpine3.24 (D-128) | Local database |
 | GitHub Actions: `actions/checkout` | v7.0.1 (pinned by commit SHA) | CI |
 | GitHub Actions: `actions/setup-java` (Temurin JDK 25) | v6.1.0 (SHA) | CI |
 | GitHub Actions: `gradle/actions/setup-gradle` | v6.4.0 (SHA), `cache-provider: basic` — the default "enhanced" cache is a commercial service | CI |
-| GitHub Actions: `actions/setup-node` | pinned in M10 | CI |
+| GitHub Actions: `actions/setup-node` | v7.1.0 (SHA, D-128) | CI |
 
 ---
 
@@ -267,7 +268,7 @@ Built into Node instead of packages: test runner (`node:test`), password hashing
 ## 8. To confirm during M0 (couldn't be verified from docs today)
 
 - ~~KSP 2.3.12 builds with Kotlin 2.4.21 under AGP 9.4.~~ ✓ Confirmed 2026-10-19: Room generated a database and DAO through KSP; no fallback needed.
-- Node 26's LTS promotion and the 21 Oct security release → pin the exact patch.
+- Node 26's LTS promotion and the 21 Oct security release → pin the exact patch. Pinned 26.12.1 on 2026-10-22 (D-128); move to the first LTS patch once it's promoted.
 - ~~emoji2 "replace all" works for Compose text in the overlay window.~~ ✓ Confirmed 2026-10-21 (M5): the app initialises emoji2 itself (D-76); the font loads from Google Play services, also after a reboot with no Activity, and Compose text in the overlay and the app uses it.
 - Restarting the service after a reboot on Android 15+ (R-09) → handled when that milestone's design is written.
 

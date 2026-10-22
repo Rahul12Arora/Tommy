@@ -315,21 +315,21 @@ Verify with: manual QA checklist · Android battery usage screen
 
 ## 5. Milestones — week 2
 
-### M10 — Backend + config API            status: pending
+### M10 — Backend + config API            status: done
 Goal: the backend serves the published config with ETags, locally in Docker.
 Depends on: M2 (schema + default config)
 Stories: US-19 (serving), US-21
 Tasks:
-- [ ] LLD: tables, migrations, config endpoints, validation, error handler, logging, health
-- [ ] `backend/` scaffold per ARCHITECTURE §13; Biome; `.env.example`; `README.md`
-- [ ] `docker-compose.yml`: Postgres 18 + API
-- [ ] Migration runner + `001_init.sql` (`config_versions`, `daily_stats`)
-- [ ] Seed: publish `shared/default-config.json` as version 1
-- [ ] `GET /v1/config?schema=` with ETag / 304; `GET /health`. Serve the re-serialised document, not stored text, so `3.0` can't reach phones (D-54)
-- [ ] Shared fixtures test (same results as the phone)
-- [ ] CI: Node lint + tests
+- [x] LLD: tables, migrations, config endpoints, validation, error handler, logging, health (§14.10, 2026-10-22)
+- [x] `backend/` scaffold per ARCHITECTURE §13; Biome; `.env.example`; `README.md` (2026-10-22)
+- [x] `docker-compose.yml`: Postgres 18 + API (2026-10-22)
+- [x] Migration runner + `001_init.sql` (`config_versions`; `daily_stats` → M14, D-125) (2026-10-22)
+- [x] Seed: publish `shared/default-config.json` as version 1 (2026-10-22)
+- [x] `GET /v1/config?schema=` with ETag / 304; `GET /health`. Serve the re-serialised document, not stored text, so `3.0` can't reach phones (D-54) (2026-10-22)
+- [x] Shared fixtures test (same results as the phone) (2026-10-22)
+- [x] CI: Node lint + tests (2026-10-22; also builds the Docker image)
 Done when:
-- [ ] `curl` returns the config, then `304` with the ETag; fixture tests match the phone's
+- [x] `curl` returns the config, then `304` with the ETag; fixture tests match the phone's (2026-10-22)
 Verify with: `npm test` · `curl -i localhost:3000/v1/config?schema=1`
 Not in this milestone: admin routes (→ M11)
 
