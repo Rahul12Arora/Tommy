@@ -1,7 +1,7 @@
 ## Current state
 - Phase: 5 — Build · Milestone: M13 Trends + positive goals (in progress, branch `feat/m13-trends`)
-- Last done: M13 LLD approved (ARCHITECTURE §14.13, D-147 to D-155)
-- Next step: build M13
+- Last done: M13 built and checked on the emulator (2 commits on `feat/m13-trends`, not pushed)
+- Next step: the developer's go to push `feat/m13-trends` and open the PR (CI), then merge + tag `m13-done`; Pixel check once the phone has free storage
 - Blockers: none. Docker note: Homebrew's `docker` CLI comes first on PATH and can't find Docker Desktop's credential helper (`docker pull` fails); put `/Applications/Docker.app/Contents/Resources/bin` first or `brew uninstall docker`
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37; start it with `-gpu swiftshader_indirect`, see log 2026-10-22 M9) + Pixel 7a
@@ -283,3 +283,11 @@
 - Proposed: D-147 to D-155 (in the LLD; go into DISCUSSION on approval). No new dependency. Category colours will be checked with the dataviz palette validator (light + dark) before commit
 - Next: approval of §14.13, then build
 - Approved: the LLD and D-147 to D-155 (the developer); decisions in DISCUSSION, HLD §3, §5 note and §6 follow D-147, D-148
+- Done: positive goals (`goals` block in schema/defaults/phone/backend validators + invalid fixture), `rules/Goals.kt` + `GoalStep` in `Reactions` (`GOAL_MET` once per goal per day, one `goal_met` line, none when the pet came back), `daily_goals` (Room v6, auto-migration 5 → 6), trend queries, `home/Trends.kt` judging, S-10 (`TrendsScreen`, Canvas `TrendsChart`, legend, expandable day rows), Trends from Home and the ring's 📱 (`Open.TRENDS`), `features.trends` hides both, positive rows on Home and in the ring's list, "Limits and goals" titles, debug seed `trends-30d` + `productive-40min`, README
+- Changed from the LLD: `TodaySummary.positiveGoals` (a second list) instead of reshaping `GoalProgress` — smaller diff, "over" stays limit-only; `todayUpdates` moved to `DayClock`; minutes bound 0–1440 (existing schema definition). §14.13 updated
+- Verified: `./gradlew assembleDebug test lint` — 377 unit tests (+31), lint clean (one `NonObservableLocale` error fixed on the way); backend `npm test` 115/115, Biome clean; console `npm run build` + Biome clean; device tests on the emulator 92/92 (one ring test first failed for a missing scroll in the test, fixed and re-run 9/9)
+- Verified on the emulator: seed lines = Trends rows (7 and 30 days), dashed untracked days, 0-min day, bar tap expands its row, ring 📱 → Trends → back → Home, 200% text; productive goal met once (mood 70 → 80, one line, 183 ticks with no second reward); M12 build → this build in place kept today's data (Room 5 → 6). Palette validator results in §14.13
+- Not verified: the Pixel 7a (`adb install -r` failed: the phone is out of storage — "Failed to free 570929668"), TalkBack by ear, `features.trends` off end to end
+- Tried & abandoned: Productive in yellow beside Neutral orange (normal-vision ΔE 12.9 < 15) → kept the reference palette order
+- Note: `ui/PlaceholderScreen.kt` has no users now that Trends exists; left in place (deleting a file needs the developer's OK)
+

@@ -367,11 +367,11 @@ Depends on: M9
 Stories: US-17 (positive goals), US-18
 Tasks:
 - [x] LLD (ARCHITECTURE §14.13; D-147 to D-155 approved 2026-10-23): queries, chart drawing (plain Compose Canvas), positive goal types
-- [ ] S-10 Trends: daily time per category, goals met per day (limit goals kept/missed, CR-05), empty days before install
-- [ ] Positive goals: focus sessions per day, productive minutes per day → `goal_met`
-- [ ] Tests: aggregation queries, empty-day handling, goal met once per day
+- [x] S-10 Trends: daily time per category, goals met per day (limit goals kept/missed, CR-05), empty days before install
+- [x] Positive goals: focus sessions per day, productive minutes per day → `goal_met`
+- [x] Tests: aggregation queries, empty-day handling, goal met once per day
 Done when:
-- [ ] 30 days of seeded debug data show correctly; a positive goal raises mood once
+- [x] 30 days of seeded debug data show correctly; a positive goal raises mood once
 Verify with: `./gradlew test` · debug seed
 
 ### M14 — Opt-in stats            status: pending

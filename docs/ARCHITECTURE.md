@@ -33,7 +33,7 @@ Nodes turn green (`:::done`) as each component lands.
 flowchart LR
   subgraph PHONE["Android phone"]
     subgraph APP["Our app — one process"]
-      SCR["App screens<br/>MainActivity + Compose<br/>setup · home · focus · trends · settings"]:::pending
+      SCR["App screens<br/>MainActivity + Compose<br/>setup · home · focus · trends · settings"]:::done
       subgraph SVC["PetService — always-on foreground service"]
         TRK["Usage tracker"]:::done
         RUL["Rules engine<br/>limits · nags · breaks · focus · idle"]:::done
@@ -2910,8 +2910,8 @@ Written 2026-10-23; D-147 to D-155 approved 2026-10-23.
 ```
 
 - `0` = off, the same rule as limits (§5). Both are off by default: someone who never touches them sees no change in mood.
-- Schema bounds: sessions 0–20, minutes 0–960 (like the total daily limit).
-- S-06 (setup) and S-11's Limits & goals page (the same screen) get a "Positive goals" heading under the limits, with one slider each. Off shows "Off"; sessions show "2 sessions a day", minutes show "1 h a day". A locked setting shows "Set by Nyx" (US-05). These sliders are S-06's "add goal" action.
+- Schema bounds: sessions 0–20 (a new `settingCount` definition), minutes 0–1440 (`settingLimitMinutes`, like the daily limits).
+- S-06 (setup) and S-11's Limits & goals page (the same screen, now titled "Limits and goals", as is the ring's list) get a "Positive goals" heading under the limits, with one slider each. Off shows "Off"; sessions show "2 sessions a day", minutes show "1 h a day". A locked setting shows "Set by Nyx" (US-05). These sliders are S-06's "add goal" action.
 - The goal key is what events and `daily_goals` rows store. Limit goals keep their M7 keys:
 
 | Goal | Kind | Key | Target | Met / kept when |
@@ -3063,8 +3063,8 @@ fun trendDays(today: LocalDate, range: TrendRange, firstDay: LocalDate?, totals:
 - `features.trends` off → no Trends button on Home, and 📱 has no action. Positive goals don't depend on it (F-12 ≠ F-13).
 
 **Home and the ring show positive goals** (US-17 "progress shows in the summary panel")
-- `GoalProgress` becomes `GoalProgress(goal: Goal, used: Long, target: Long)`: used and target are in seconds for minute goals and in sessions for the focus goal. `isOver` applies to `LIMIT` goals only; `isMet` = a positive goal with `used ≥ target`.
-- `todaySummary` builds the rows from `goalsOn(config)`. The focus count is today's `FOCUS_COMPLETED` events, which Home already observes.
+- `TodaySummary` gets a second list, `positiveGoals: List<PositiveGoalProgress>` (`goal`, `used`, `target`: seconds for the productive goal, sessions for the focus goal; `isMet` = `used ≥ target`). `GoalProgress` stays as it was, for limits only, so the ring's 🚦 value, its alert and the nag notes didn't change. (The LLD first proposed one `GoalProgress` over `Goal`; two lists turned out smaller and keep "over" limit-only by construction.)
+- `todaySummary` builds both lists from `goalsOn(config)`. The focus count is today's `FOCUS_COMPLETED` events, which Home already observes.
 - `GoalRow` shows a positive goal as "Productive ≥ 1 h", "45 min of 1 h", or "1 h 05 min of 1 h · met"; "met" is spelled out like "over".
 - The ring's 🚦 value and alert use limit goals only, as now. The Limits list shows the positive rows under a "Positive goals" subheading.
 
@@ -3080,7 +3080,7 @@ fun trendDays(today: LocalDate, range: TrendRange, firstDay: LocalDate?, totals:
   - one day with every goal met, and one with none.
 - `GOAL_MET` and `LIMIT_EXCEEDED` come from the same rules the engine uses (`positiveGoalsReached`, the limit comparison), so the seed can't disagree with the app's judging.
 - The receiver logs one line per seeded day (`2026-10-21: 3 h 12 min, goals 2 of 3`), which the manual check compares with the screen.
-- Scenarios and `--ez stop` also clear `daily_goals`, so every run starts from the same place.
+- Scenarios and `--ez stop` also clear `daily_goals`, so every run starts from the same place. Every path that clears records today's goals again at once, since a running engine only writes them when they change.
 - New scenario `productive-40min.txt`: 40 min of `com.google.android.apps.docs` (Productive in `categoryDefaults`).
 
 **Files** (`android/…` = `android/app/src/main/java/com/companionstudio/nyx/`)
@@ -3128,6 +3128,12 @@ fun trendDays(today: LocalDate, range: TrendRange, firstDay: LocalDate?, totals:
 2. S-11 → Limits & goals: Productive ≥ 30 min. Play `productive-40min` at 60×: at about 30 min the log shows `GOAL_MET` once, mood +10, and a `goal_met` bubble. Home and the ring's Limits list say "met". It plays on to 40 min with no second event; Trends' today row says the goal is met.
 3. Ring → 📱 opens Trends; back → Home. Turn `features.trends` off from the console (local Docker, M12): no Trends button, 📱 does nothing.
 
+**Built and checked** (2026-10-23)
+- Palette: the five category colours are the dataviz reference palette's first five slots in its own order (blue, orange, aqua, yellow, magenta → Social, Games, Entertainment, Productive, Neutral). Validator, light (surface `#fcfcfb`): all checks pass; worst neighbouring pair CVD ΔE 9.1, normal vision 19.6; contrast warning for aqua, yellow and magenta (below 3:1), which the day list (the table view) answers. Dark (`#1a1a19`): all pass, CVD 8.4, normal vision 19.3, all ≥ 3:1. A first try with Productive in yellow next to Neutral orange failed the normal-vision floor (12.9), so the reference order was kept.
+- Emulator (API 37), after setup: the seed's 24 logged lines matched the 7- and 30-day rows (e.g. `2026-10-13: 9 h, goals 2 of 3`; tapping its bar expanded that row with five categories and "missed / met / met"); five dashed columns before 29 Sep; 20 Oct shows "0 min"; the ring's 📱 opens Trends and back goes to Home; 200% font size wraps without clipping. `productive-40min` at 60× with "Productive ≥ 25 min": `GOAL_MET` at 1 506 s, mood 70 → 80 with one `goal_met` line, then 183 ticks at 80 with no second reward; Home "40 min of 25 min · met", Trends' today row "Productive ≥ 25 min · met".
+- Room 5 → 6 on real data: the M12 build installed fresh, 65 min of Instagram played, then this build installed over it: today kept 65 min and mood 32, and Trends showed "1 h 5 min · goals 2 of 3".
+- Not checked: the Pixel 7a (the install failed: not enough free storage on the phone), TalkBack by ear, `features.trends` off from the console (covered by device tests of `HomeScreen` and the ring, not end to end).
+
 **Decisions** (approved 2026-10-23)
 
 | ID | Decision | Why | Alternatives |
@@ -3136,7 +3142,7 @@ fun trendDays(today: LocalDate, range: TrendRange, firstDay: LocalDate?, totals:
 | D-148 | New `daily_goals` table: the goals on each day with their targets, written by the engine when today's set changes; a day's goals are the ones on at its last tick | Trends must judge each past day against the goals of that day (D-105 left this to M13); limits can change at any time | Judge past days against today's config (wrong after any change); write at the day reset (the engine may not be running then, and a day could be lost) |
 | D-149 | Kept/missed/met come from the event log: `LIMIT_EXCEEDED` / `GOAL_MET` with the goal's key that day. Today shows "so far" | One source of truth, the same one mood uses (H-03); nothing new to store | A per-day result table written at the reset (duplicates the log; missing if the engine wasn't running) |
 | D-150 | The focus goal counts `FOCUS_COMPLETED` events in today's log, i.e. by the day a session completed, not `focus_sessions.day` (its start day, A-25) | The reward goes into the mood of the day it fires on; a session completed after the reset can't help a day that's already over | Count by start day (the goal of a finished day could change after the reset) |
-| D-151 | "Before install" = before the earliest day with any `daily_app_usage` or `daily_goals` row | Needs no new stored value; the engine writes `daily_goals` on the first tick of every day, so the first tracked day always has a row; the debug seed works without faking an install date | `PackageInfo.firstInstallTime` (the seed would need to fake it; a restored backup brings older data than the install); a "first day" key in DataStore (one more thing to keep in step) |
+| D-151 | "Before install" = before the earliest day with any `daily_app_usage` or `daily_goals` row | Needs no new stored value; the engine writes `daily_goals` on the first tick of every day with any goal on (the default Social limit is), so the first tracked day has a row; the debug seed works without faking an install date | `PackageInfo.firstInstallTime` (the seed would need to fake it; a restored backup brings older data than the install); a "first day" key in DataStore (one more thing to keep in step) |
 | D-152 | S-10 = 7/30 toggle, a stacked bar per day in fixed category order (Canvas), a legend, and a list of day rows holding every number as text, expandable to categories and goal results | The day list is the chart's table view, so TalkBack and colour-blind users get everything; one chart, no axis tricks | Separate charts per category (5 charts, small bars); a line chart (hides the split between categories); tap-a-bar only (not usable with TalkBack) |
 | D-153 | Trends opens from Home and from the ring's 📱 slot (fresh task, `[Home, Trends]`); no 8th ring slot; `features.trends` off hides both | US-18 asks for the panel; 📱 has no action today; 8 slots' 56 dp circles would overlap at the 120 dp radius | An 8th slot with a larger ring (changes D-101 placement maths); only via Open Nyx → Trends (two taps, misses US-18's wording) |
 | D-154 | One `goal_met` bubble per tick however many goals were met; skipped when the pet came back on the same tick; no new placeholder | One line per moment (as `break_taken` and `focus_completed`); the existing lines are generic | A `{goal}` placeholder naming the goal (new line rules and lines for every personality; parking lot) |
