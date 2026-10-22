@@ -349,12 +349,12 @@ Done when:
 Verify with: `npm test` · browser walkthrough
 Not in this milestone: stats view (→ M14)
 
-### M12 — App fetches remote config            status: pending
+### M12 — App fetches remote config            status: in-progress
 Goal: phones pick up published config within 6 hours, safely.
 Depends on: M11
 Stories: US-19 (pickup), US-21, US-22
 Tasks:
-- [ ] LLD: `ConfigClient`, schedule, cache, error handling, debug base URL for a USB phone
+- [x] LLD: `ConfigClient`, schedule, cache, error handling, debug base URL for a USB phone (ARCHITECTURE §14.12, D-141 to D-146)
 - [ ] Fetch on service start and every 6 h; ETag; atomic cache; fallback chain
 - [ ] Tests: 200 / 304 / offline / invalid document / unknown schema version
 Done when:

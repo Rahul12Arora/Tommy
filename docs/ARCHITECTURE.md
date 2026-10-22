@@ -3,7 +3,7 @@
 > Phase 4 output. Read this first if you're new to the repo: after ~10 minutes you should know how data moves through the system and where every piece lives.
 > Low-level design (LLD) for each module is added to §14 at the **start** of its milestone, before any code.
 > Rule: code and diagrams must agree. A task that changes a component, a flow or a folder updates this file in the same task.
-> Last updated: 2026-10-22 (M12 LLD §14.12, awaiting approval)
+> Last updated: 2026-10-22 (M12 LLD §14.12)
 
 ---
 
@@ -506,10 +506,10 @@ sequenceDiagram
 
 **Security** (app)
 - No secrets in the app (A-10).
-- Debug builds may talk to the dev backend over plain HTTP on the emulator's host address only.
+- Debug builds may talk to the dev backend over plain HTTP on `127.0.0.1` only (through `adb reverse`, D-142).
 
 **Privacy — what ever leaves the phone**
-- `GET /v1/config`: no identifiers.
+- `GET /v1/config`: no identifiers; a fixed `User-Agent: Nyx/<version>`, not the default one that names the phone model (D-145).
 - `POST /v1/stats`: only if opted in; daily aggregates only (A-09).
 - Nothing else. The privacy policy and Play's Data safety form must say exactly this (M15).
 
@@ -590,9 +590,9 @@ Tests: every admin config route is checked for `401` without a session (M11).
 | `LOG_LEVEL` | Logger level | `info` |
 
 **Android build settings**
-- `CONFIG_BASE_URL` per build type:
-  - debug → the dev backend (`http://10.0.2.2:3000` from the emulator).
-  - release → the production HTTPS address (set in M15).
+- `CONFIG_BASE_URL` per build type (D-142, D-146):
+  - debug → the dev backend at `http://127.0.0.1:3000`, reached through `adb reverse tcp:3000 tcp:3000` from the emulator or a USB phone. Plain HTTP is allowed to that address only, in debug builds only.
+  - release → blank until M15 sets the production HTTPS address (blank = no config checks).
 - `applicationId`: `com.companionstudio.nyx`; app name: Nyx (D-49).
 
 **Environments** (A-27)
@@ -702,7 +702,7 @@ Written at the start of each milestone, before code.
 | Week-1 check fixes | M9 | not a module; changes listed in §14.9 |
 | Backend foundation + config API | M10 | done 2026-10-22 (§14.10) |
 | Admin login, draft/publish, console | M11 | done 2026-10-22 (§14.11) |
-| App remote config | M12 | written 2026-10-22, awaiting approval (§14.12) |
+| App remote config | M12 | done 2026-10-22 (§14.12) |
 | Trends + positive goals | M13 | pending |
 | Opt-in stats | M14 | pending |
 
@@ -2718,7 +2718,7 @@ Plus: wrong password ×6 → the 6th says wait a minute · a broken value (defau
 
 ### 14.12 M12 — App fetches remote config
 
-Written 2026-10-22; D-141 to D-146 proposed, **awaiting approval**.
+Written 2026-10-22; D-141 to D-146 approved 2026-10-22.
 
 **Purpose:** the app picks up the published config on service start and within 6 hours, and nothing the server sends (or fails to send) can break it. Stories: US-19 (pickup, A-17), US-21 (fallback chain), US-22 (user values stay and are clamped — already done by `EffectiveConfig`, §14.2; M12 only makes the base document change while the app runs).
 
@@ -2873,7 +2873,7 @@ sequenceDiagram
 4. **Invalid published document, forced in dev:** a SQL snippet (dev only, in `android/README.md`) supersedes the published row and inserts the next version with `nags.snoozeMinutes.default` = 400, bypassing the backend's validation. Force-stop, open → `Fetched config 3 ignored: setting-range at nags.snoozeMinutes`; Settings still show v2. Publishing from the console afterwards (v4) → applied.
 5. With the app open on S-11, publish again → the change shows without a restart once the next check is due (to see it at once: force-stop + open).
 
-**Proposed decisions**
+**Decisions** (approved 2026-10-22)
 
 | ID | Decision | Why | Alternatives |
 |---|---|---|---|
