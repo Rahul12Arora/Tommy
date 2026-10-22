@@ -1,7 +1,7 @@
 ## Current state
 - Phase: 5 — Build · Milestone: M10 Backend + config API (in progress, branch `feat/m10-backend`)
-- Last done: `docker-compose.yml` (Postgres 18.6 + API), `backend/Dockerfile`, root `.dockerignore`
-- Next step: migration runner + `001_init.sql`
+- Last done: migration runner (`src/lib/migrate.js`) + `001_init.sql` (`config_versions`), run at start-up
+- Next step: seed — publish `shared/default-config.json` as version 1 (needs the config validation, so `ajv` gets installed then)
 - Blockers: none. Docker note: Homebrew's `docker` CLI comes first on PATH and can't find Docker Desktop's credential helper (`docker pull` fails); put `/Applications/Docker.app/Contents/Resources/bin` first or `brew uninstall docker`
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37; start it with `-gpu swiftshader_indirect`, see log 2026-10-22 M9) + Pixel 7a
@@ -225,4 +225,7 @@
 - Done: Docker Desktop installed by the developer (Engine 29.9.2, Compose v5.6.1). `docker-compose.yml`: `db` (`postgres:18.6-alpine3.24`, volume at `/var/lib/postgresql` as the 18 image expects, health check, init script creates `nyx_test`) and `api` (built from the repo root, `DATABASE_URL` pointed at `db`, starts when `db` is healthy). `backend/Dockerfile`: Node 26.12.1 alpine, `npm ci --omit=dev`, `/app/backend` + `/app/shared` layout, user `node`, exec-form `CMD`. Root `.dockerignore` lets in only what the image needs (no tests)
 - Verified: `docker compose up --build` → `db` healthy, PostgreSQL 18.6, databases `nyx` and `nyx_test`; API answers on :3000 (404 shape), runs as `node`, image holds no test files (284 MB); `docker compose stop api` → "shutting down" logged, exit 0 in 0.3 s
 - Learned: Homebrew's `docker` CLI shadows Docker Desktop's; with it first on PATH `docker pull` fails ("docker-credential-desktop not found")
+- Done: `migrations/001_init.sql` (`config_versions` as in §14.10); `src/lib/migrate.js` (advisory lock, one transaction per file with its `schema_migrations` row, name order, `.sql` only; the connection is closed afterwards, which drops the lock); `server.js` runs it before listening; Dockerfile copies `migrations/`; `testing/testDb.js` (`testPool`, `emptyDatabase`); local `backend/.env` from the example (not committed)
+- Learned: Node's test runner treats every `.js` in a `test/` folder as a test file, so the helper folder is `testing/` (§14.10 and the repo map updated)
+- Verified: `npm test` 17/17 (7 new: applies once then nothing, name order and non-`.sql` ignored, a failing file rolled back with the files after it not run, two concurrent runs apply once, 001's checks refuse a document/row version mismatch and an unknown status, one published + one draft per schema version); lint clean; in Compose the API logs `applied: ["001_init.sql"]`, then `[]` after a restart; `\d config_versions` matches the LLD; with the database unreachable, start-up exits 1
 

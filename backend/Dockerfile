@@ -9,6 +9,7 @@ COPY backend/package.json backend/package-lock.json ./
 RUN npm ci --omit=dev
 
 COPY backend/src ./src
+COPY backend/migrations ./migrations
 COPY shared/config.schema.json shared/default-config.json /app/shared/
 
 USER node

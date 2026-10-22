@@ -1,10 +1,15 @@
 import { buildApp } from "./app.js";
 import { createPool } from "./lib/db.js";
 import { readEnv } from "./lib/env.js";
+import { runMigrations } from "./lib/migrate.js";
 
 const env = readEnv(process.env);
 const pool = createPool(env.databaseUrl);
 const app = buildApp({ logLevel: env.logLevel, trustProxy: env.trustProxy });
+
+// Before listening, so no request ever sees an old schema (D-126)
+const applied = await runMigrations(pool);
+app.log.info({ applied }, "migrations done");
 
 // The container stops us with SIGTERM: finish open requests, then release the database connections
 for (const signal of ["SIGTERM", "SIGINT"]) {

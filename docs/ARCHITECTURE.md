@@ -655,7 +655,7 @@ backend/
 │   └── server.js      ← starts it
 ├── migrations/        ← 001_init.sql …
 ├── scripts/           ← create-test-db.sql, hash-password.js (M11)
-├── test/              ← testDb.js (test helper)
+├── testing/           ← testDb.js (test helper)
 ├── seeds/
 ├── Dockerfile
 ├── .env.example
@@ -2277,7 +2277,7 @@ Written 2026-10-22; D-121 to D-130 and CR-11 approved 2026-10-22.
 | `seeds/initial-config.js` | `seedInitialConfig(pool)`: if `config_versions` is empty, validate `shared/default-config.json` and insert it as version 1, published |
 | `migrations/001_init.sql` | `config_versions` |
 | `scripts/create-test-db.sql` | `CREATE DATABASE nyx_test;` — mounted into the `db` container's init folder |
-| `test/testDb.js` | Test helper: pool on `TEST_DATABASE_URL`, migrations once, `TRUNCATE config_versions` before each test |
+| `testing/testDb.js` | Test helper: pool on `TEST_DATABASE_URL`; `emptyDatabase` drops every table so each test file starts clean. Not called `test/`: Node's test runner treats every `.js` file in a `test/` folder as a test |
 | `*.test.js` next to the code they test | Below |
 | `.github/workflows/backend.yml` | CI (below) |
 

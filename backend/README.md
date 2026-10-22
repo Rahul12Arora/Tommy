@@ -8,12 +8,18 @@ The Nyx API (Node.js + Fastify, plain JavaScript ES modules). It serves the one 
 src/
 ├── features/      ← one folder per feature: routes, service, model, validation, tests
 ├── middleware/    ← errorHandler.js (every error → the standard error shape)
-├── lib/           ← env.js (checks env vars), db.js (Postgres pool), httpError.js
+├── lib/           ← env.js (checks env vars), db.js (Postgres pool), migrate.js, httpError.js
 ├── app.js         ← builds the Fastify app (tests use it directly)
 └── server.js      ← starts it
+migrations/        ← 001_init.sql … applied in name order at start-up
+testing/           ← test helpers (not `test/`: Node would run every file there as a test)
 ```
 
-Tests sit next to the code they test (`*.test.js`).
+Tests sit next to the code they test (`*.test.js`). Database tests need `docker compose up -d db` (they use `nyx_test`).
+
+## Changing the database
+
+Add the next numbered file, e.g. `migrations/002_stats.sql`. The server applies it on its next start, inside a transaction; a failing file stops start-up and leaves nothing behind. Never edit a file that has already run anywhere: fix forward with a new one.
 
 ## Setup
 
