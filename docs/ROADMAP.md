@@ -253,7 +253,7 @@ Done when:
 Verify with: `./gradlew test` · fake scenarios · manual QA checklist
 Not in this milestone: positive goals (→ M13)
 
-### M8 — Focus sessions            status: in-progress
+### M8 — Focus sessions            status: done
 Goal: the user can start a focus session and the pet keeps them on task.
 Depends on: M7
 Stories: US-12, US-13, US-14

@@ -1,8 +1,8 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M8 Focus sessions (in progress; branch `feat/m8-focus`)
-- Last done: M8 built; 66/66 device tests and all three focus scenarios on the Pixel 7a
-- Next step: the developer merges PR #14 → tag `m8-done`, close M8 → M9 Week-1 check
-- Blockers: none (Pixel 7a connected). The API 37 emulator still hangs at boot, also on a cold boot from the command line (2026-10-22) ("hanging thread 'QEMU2 main loop'"); it needs a cold boot or wipe from Android Studio before it's used again
+- Phase: 5 — Build · Milestone: M9 Week-1 check (next; branch `feat/m9-week1` from `main`)
+- Last done: M8 done 2026-10-22 — PR #14 merged, tagged `m8-done` (`a1d3dc7`)
+- Next step: M9 in a new session: a full day on the Pixel (pet alive, reactions ≤ 60 s, ring ≤ 1 s), battery vs the 3% budget, empty/loading/error states, TalkBack + large text (also the TalkBack checks still open from M7 and M8), bugs, tag `week1-build`
+- Blockers: none. The API 37 emulator still hangs at boot, also on a cold boot (2026-10-22); the developer OK'd wiping it in M9
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
 - Build setup: Homebrew JDK on PATH starts Gradle; daemon runs on JDK 25 (`android/README.md`). With the phone plugged in, set `ANDROID_SERIAL` for device tasks
@@ -179,3 +179,7 @@
 - Open from M8: TalkBack by ear
 - Next: push `feat/m8-focus`, open the PR, CI
 - Verified: Android CI green on `feat/m8-focus` (run 39765596636); PR #14 open, not merged
+- Done: the developer merged PR #14; tagged `m8-done` on the merge (`a1d3dc7`). M8 closed: ROADMAP status done, AGENTS card on M9, `feat/m9-week1` started from `main` for the close-out docs
+- Open from M8: TalkBack by ear (with M7's)
+- Next: M9 Week-1 check
+- Approved: wiping the API 37 emulator's data in M9 to get it booting again (the developer, 2026-10-22)
