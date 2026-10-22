@@ -1,6 +1,6 @@
 # backend/
 
-The Nyx API (Node.js + Fastify, plain JavaScript ES modules). It serves the one config document to every phone, and later takes opt-in daily stats (M14) and hosts the admin console (M11). Design: `docs/ARCHITECTURE.md` §7, §9, §12 and §14.10.
+The Nyx API (Node.js + Fastify, plain JavaScript ES modules). It serves the one config document to every phone, and later takes opt-in daily stats (M14) and hosts the admin console (M11). Design: `docs/ARCHITECTURE.md` §7, §9, §12, §14.10 and §14.11.
 
 ## Endpoints
 
@@ -8,6 +8,10 @@ The Nyx API (Node.js + Fastify, plain JavaScript ES modules). It serves the one 
 |---|---|---|
 | GET | `/v1/config?schema=1` | The published config for that schema version. `ETag: "<configVersion>"`; send it back as `If-None-Match` to get `304` when nothing changed. `404` if nothing is published for that schema version |
 | GET | `/health` | `200 {"status":"ok"}`, or `503` when the database doesn't answer within 5 s |
+| POST | `/admin/login` | `{"username","password"}` → `204` + the `nyx_session` cookie (12 h, `Path=/admin`). `401` when wrong; 5 attempts a minute per IP, then `429` |
+| POST | `/admin/logout` | `{}` → `204`, clears the cookie |
+
+Every non-GET request under `/admin` must be sent as `Content-Type: application/json`, or it gets `415` (the CSRF rule, D-133).
 
 Errors always look like `{"error":{"code":"NOT_FOUND","message":"…","details":[…]}}` (codes in ARCHITECTURE §7).
 
@@ -16,14 +20,16 @@ Errors always look like `{"error":{"code":"NOT_FOUND","message":"…","details":
 ```text
 src/
 ├── features/
+│   ├── auth/      ← POST /admin/login, /admin/logout; the session cookie
 │   ├── config/    ← GET /v1/config; config.validation.js checks documents like the phone does
 │   └── health/    ← GET /health
-├── middleware/    ← errorHandler.js (every error → the standard error shape)
-├── lib/           ← env.js (checks env vars), db.js (Postgres pool), migrate.js, sharedFiles.js, httpError.js
+├── middleware/    ← errorHandler.js (every error → the standard error shape), requireJson.js, requireAdmin.js
+├── lib/           ← env.js (checks env vars), db.js (Postgres pool), migrate.js, sharedFiles.js, httpError.js, password.js (scrypt)
 ├── app.js         ← builds the Fastify app (tests use it directly)
 └── server.js      ← starts it
 migrations/        ← 001_init.sql … applied in name order at start-up
 seeds/             ← initial-config.js: publishes shared/default-config.json as version 1 into an empty database
+scripts/           ← hash-password.js, create-test-db.sql
 testing/           ← test helpers (not `test/`: Node would run every file there as a test)
 ```
 
@@ -39,8 +45,17 @@ Needs Node 26.12.1 (`engines` in `package.json`).
 
 ```bash
 npm ci
-cp .env.example .env    # then edit if needed; .env is never committed
+cp .env.example .env    # .env is never committed
 ```
+
+Then create your admin login in `.env` (nothing secret is in the repo, so every developer makes their own, D-137):
+
+```bash
+npm run hash-password   # type a password (≥ 12 characters, not shown); paste the printed ADMIN_PASSWORD_HASH=… line into .env
+node -e "console.log(require('node:crypto').randomBytes(32).toString('base64url'))"   # paste as SESSION_SECRET=…
+```
+
+Log in to the console with `ADMIN_USERNAME` (default `admin`) and that password. Changing `SESSION_SECRET` logs the admin out everywhere.
 
 Every variable is explained in `.env.example` and `docs/ARCHITECTURE.md` §12. Start-up stops with a list of every missing or bad variable.
 

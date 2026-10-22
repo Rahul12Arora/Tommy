@@ -7,7 +7,7 @@ import { runMigrations } from "./lib/migrate.js";
 const env = readEnv(process.env);
 // The pool is made before the app (which needs it), so its error handler reaches the app's logger through a closure
 const pool = createPool(env.databaseUrl, (error) => app.log.error({ err: error }, "idle database connection lost"));
-const app = buildApp({ pool, logLevel: env.logLevel, trustProxy: env.trustProxy });
+const app = buildApp({ pool, auth: env.auth, logLevel: env.logLevel, trustProxy: env.trustProxy });
 
 // Before listening, so no request ever sees an old schema (D-126)
 const applied = await runMigrations(pool);

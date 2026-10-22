@@ -1,13 +1,14 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { after, before, beforeEach, describe, test } from "node:test";
+import { TEST_AUTH } from "../../../testing/testAuth.js";
 import { emptyDatabase, testPool } from "../../../testing/testDb.js";
 import { buildApp } from "../../app.js";
 import { runMigrations } from "../../lib/migrate.js";
 import { DEFAULT_CONFIG_PATH } from "../../lib/sharedFiles.js";
 
 const pool = testPool();
-const app = buildApp({ pool, logLevel: "silent" });
+const app = buildApp({ pool, auth: TEST_AUTH, logLevel: "silent" });
 const defaultConfig = JSON.parse(readFileSync(DEFAULT_CONFIG_PATH, "utf8"));
 
 before(async () => {
