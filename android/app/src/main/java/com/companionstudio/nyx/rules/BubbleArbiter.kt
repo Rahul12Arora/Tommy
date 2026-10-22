@@ -4,17 +4,18 @@ import com.companionstudio.nyx.config.BubbleTrigger
 import java.time.Duration
 import java.time.Instant
 
-/** Bubble priority, highest first (bubble rules in DISCUSSION, §14.6). */
+/** Bubble priority, highest first (bubble rules in DISCUSSION, §14.6). A session's end line is a focus line (D-115). */
 enum class BubbleTier { FOCUS, STRETCH_NAG, LIMIT_NAG, BREAK, REWARD, IDLE }
 
 val BubbleTrigger.tier: BubbleTier
     get() = when (this) {
-        BubbleTrigger.FOCUS_DRIFT, BubbleTrigger.FOCUS_STARTED, BubbleTrigger.FOCUS_CHECKIN, BubbleTrigger.FOCUS_BROKEN ->
-            BubbleTier.FOCUS
+        BubbleTrigger.FOCUS_DRIFT, BubbleTrigger.FOCUS_STARTED, BubbleTrigger.FOCUS_CHECKIN, BubbleTrigger.FOCUS_BROKEN,
+        BubbleTrigger.FOCUS_COMPLETED,
+        -> BubbleTier.FOCUS
         BubbleTrigger.STRETCH_REACHED -> BubbleTier.STRETCH_NAG
         BubbleTrigger.LIMIT_REACHED, BubbleTrigger.LIMIT_REPEAT -> BubbleTier.LIMIT_NAG
         BubbleTrigger.BREAK_DUE -> BubbleTier.BREAK
-        BubbleTrigger.GOAL_MET, BubbleTrigger.FOCUS_COMPLETED, BubbleTrigger.BREAK_TAKEN, BubbleTrigger.PET_RETURNED ->
+        BubbleTrigger.GOAL_MET, BubbleTrigger.BREAK_TAKEN, BubbleTrigger.PET_RETURNED ->
             BubbleTier.REWARD
         BubbleTrigger.IDLE -> BubbleTier.IDLE
     }
@@ -39,7 +40,7 @@ data class ArbiterState(val pending: List<BubbleRequest> = emptyList(), val last
     fun without(key: String): ArbiterState = copy(pending = pending.filterNot { it.key == key })
 }
 
-/** What the pet's situation allows this tick. [focusActive] stays `false` until focus sessions arrive (M8). */
+/** What the pet's situation allows this tick. [focusActive]: a session ran when the tick began (D-115). */
 data class BubbleConditions(val petOnScreen: Boolean, val focusActive: Boolean, val minGap: Duration)
 
 data class Arbitrated(val state: ArbiterState, val bubble: BubbleRequest?, val notifications: List<BubbleRequest>)

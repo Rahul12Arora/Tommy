@@ -1,10 +1,12 @@
 package com.companionstudio.nyx.pet
 
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
@@ -13,6 +15,9 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.companionstudio.nyx.config.Category
+import com.companionstudio.nyx.focus.FocusGoal
+import com.companionstudio.nyx.focus.FocusPhase
+import com.companionstudio.nyx.focus.FocusStatus
 import com.companionstudio.nyx.home.GoalProgress
 import com.companionstudio.nyx.home.TodaySummary
 import com.companionstudio.nyx.rules.LimitKeys
@@ -133,5 +138,43 @@ class US07_ActionsRingTest {
         composeRule.onRoot().performTouchInput { click(Offset(5f, 5f)) }
 
         assertEquals(1, closed)
+    }
+
+    @Test
+    fun D118_aRunningSession_putsItsTimerInStartFocussSlot_withTheCard() {
+        val ended = mutableListOf<Boolean>()
+        val focusing = status.copy(
+            focus = FocusStatus(FocusGoal.FIXED_TIME, 25, focusMs = 13 * 60_000L, FocusPhase.DRIFTING, switches = 1, canDone = false, minDoneMinutes = 5),
+        )
+        composeRule.setContent {
+            NyxTheme {
+                ActionsRing(
+                    today,
+                    focusing,
+                    glowing = false,
+                    RingActions(30, onFocus = {}, onOpenApp = {}, onHide = {}, onEndFocus = { ended += it }),
+                    Side.RIGHT,
+                    maxWidth = 400.dp,
+                    onPetClick = {},
+                    onClose = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithContentDescription("Start focus").assertDoesNotExist()
+        // The ring slot and the pet's badge
+        val timers = composeRule.onAllNodesWithText("!12m", useUnmergedTree = true).assertCountEquals(2)
+        timers[0].assertIsDisplayed()
+        timers[1].assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Nyx, your pet. Focus session, 12 min left · switched away once · away from your focus apps")
+            .assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Focus: 12 min left · switched away once · away from your focus apps").performClick()
+
+        composeRule.onNodeWithText("Focus session").assertIsDisplayed()
+        composeRule.onNodeWithText("Done").assertDoesNotExist()
+        composeRule.onNodeWithText("End").performClick()
+        assertEquals(listOf(false), ended)
+        composeRule.onNodeWithText("Back").performClick()
+        composeRule.onNodeWithContentDescription("Open Nyx").assertIsDisplayed()
     }
 }

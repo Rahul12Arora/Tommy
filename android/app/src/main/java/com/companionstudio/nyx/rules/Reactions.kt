@@ -6,6 +6,7 @@ import com.companionstudio.nyx.config.NyxConfig
 import com.companionstudio.nyx.config.Placeholder
 import com.companionstudio.nyx.config.SettingPaths
 import com.companionstudio.nyx.data.RETENTION_DAYS
+import com.companionstudio.nyx.focus.FocusSessions
 import com.companionstudio.nyx.mood.bandAt
 import com.companionstudio.nyx.mood.moodOf
 import com.companionstudio.nyx.mood.presenceChange
@@ -16,50 +17,17 @@ import java.time.Instant
 import java.time.LocalDate
 import kotlin.random.Random
 
-/** A line to show beside the pet. [snoozeKey]: the limit its Snooze button silences; `null` = no Snooze (US-10). */
-data class ShownBubble(val line: String, val snoozeKey: String? = null)
-
-/** What the break screen (O-04) should do after a tick. */
-sealed interface BreakScreenChange {
-    /** [canSnooze]: "5 more minutes" is still on offer. [buttonDelaySeconds]: real seconds before the buttons work. */
-    data class Show(val line: String, val continuousMs: Long, val canSnooze: Boolean, val buttonDelaySeconds: Int) : BreakScreenChange
-
-    data object Remove : BreakScreenChange
-}
-
-/** What the actions ring shows that only the engine knows (§14.7). `null` limits are off. */
-data class RingStatus(
-    val continuousMs: Long = 0,
-    val breakAfterMinutes: Int? = null,
-    val stretchMs: Long = 0,
-    val stretchLimitMinutes: Int? = null,
-    val nags: Map<String, NagState> = emptyMap(),
-)
-
 /**
- * What the pet does after a tick. [nagNotifications] become N-04 (pet not on screen), [breakNotification] N-02;
- * [breakTaken] cancels N-02.
- */
-data class Reaction(
-    val mood: Int,
-    val bubble: ShownBubble? = null,
-    val glowing: Boolean = false,
-    val nagNotifications: List<String> = emptyList(),
-    val breakNotification: String? = null,
-    val breakTaken: Boolean = false,
-    val breakScreen: BreakScreenChange? = null,
-    val status: RingStatus = RingStatus(),
-)
-
-/**
- * The engine's step after the tracker (§14.6, §14.7): logs what happened, recomputes mood, runs the nags, breaks and
- * idle lines, and lets the arbiter pick at most one bubble. One instance per engine run, used only from the engine
- * coroutine; everything it remembers between ticks lives here, in memory, and is rebuilt after a restart.
+ * The engine's step after the tracker (§14.6, §14.7, §14.8): runs the focus session, logs what happened, recomputes
+ * mood, runs the nags, breaks and idle lines, and lets the arbiter pick at most one bubble. One instance per engine
+ * run, used only from the engine coroutine; everything it remembers between ticks lives here (or in [focus]), in
+ * memory, and is rebuilt after a restart.
  */
 class Reactions(
     private val dao: PetEventDao,
     private val clock: Clock,
     private val labels: NagLabels,
+    private val focus: FocusSessions,
     random: Random = Random.Default,
 ) {
     private val lines = LinePicker(random)
@@ -89,8 +57,13 @@ class Reactions(
         val day = snapshot.day.toString()
         if (snapshot.day != cleanedUpDay) {
             dao.deleteBefore(snapshot.day.minusDays(RETENTION_DAYS).toString())
+            focus.deleteBefore(snapshot.day.minusDays(RETENTION_DAYS))
             cleanedUpDay = snapshot.day
         }
+
+        // Before reading the log: a session that completes now logs its FOCUS_COMPLETED (D-109). Not gated by
+        // features.focus: switching it off hides Start, but a running session carries on (D-120)
+        val focusTick = focus.step(snapshot, document.focus, calls, labels)
 
         val logged = dao.eventsOn(day)
         val added = mutableListOf<PetEvent>()
@@ -117,12 +90,16 @@ class Reactions(
                 afterMs = checkNotNull(config.valueOf(SettingPaths.BREAK_AFTER_MINUTES)) * 60_000L,
                 repeatMs = document.breaks.repeatMinutes * 60_000L,
                 mode = mode,
-                // Focus sessions (M8) will hold the screen too (D-25)
-                screenAllowed = petOnScreen && mode == BreakMode.OBSTRUCTIVE && !calls.inCall(),
+                // A focus session holds the screen too (D-25, D-89)
+                screenAllowed = !focusTick.held && petOnScreen && mode == BreakMode.OBSTRUCTIVE && !calls.inCall(),
             ),
         )
         breaks = breakStep.state
         if (breakStep.taken) log(PetEventType.BREAK_TAKEN)
+        // Reminders that fell due during a session aren't offered; when it ends, the schedule starts over, so one
+        // that's still due fires at the next tick in the user's mode (D-115)
+        val remind = breakStep.action == BreakAction.REMIND && !focusTick.held
+        if (focusTick.endedNow) breaks = breaks.copy(nextDueMs = null)
 
         val types = logged.map { it.type } + added.map { it.type }
         val mood = moodOf(types, document.mood)
@@ -135,11 +112,13 @@ class Reactions(
             key = BREAK_KEY,
         )
         val offered = buildList {
+            addAll(focusTick.offers)
             nagStep.lines.forEach { add(nagRequest(it.check, it.trigger, snapshot.frontPackage, labels)) }
-            if (breakStep.action == BreakAction.REMIND) add(breakDue)
-            // A pet coming back says so; it's the same moment as the break, so one line is enough
+            if (remind) add(breakDue)
+            // A pet coming back says so, unless a finished session brought it back: one line for one moment
             val returned = added.any { it.type == PetEventType.PET_RETURNED }
-            if (returned) add(BubbleRequest(BubbleTrigger.PET_RETURNED))
+            val completed = focusTick.offers.any { it.trigger == BubbleTrigger.FOCUS_COMPLETED }
+            if (returned && !completed) add(BubbleRequest(BubbleTrigger.PET_RETURNED))
             if (breakStep.taken && !returned) add(BubbleRequest(BubbleTrigger.BREAK_TAKEN))
         }.toMutableList()
         val totalMs = snapshot.todayMs.values.sum()
@@ -153,7 +132,9 @@ class Reactions(
 
         // A nag still waiting for its turn is withdrawn once its limit stops nagging; a reminder once the break is taken
         arbiter = arbiter.pending.map { it.key }
-            .filter { key -> (key.isLimitKey() && nags[key]?.phase != NagPhase.NAGGING) || (key == BREAK_KEY && breakStep.taken) }
+            .filter { key ->
+                (key.isLimitKey() && nags[key]?.phase != NagPhase.NAGGING) || (key == BREAK_KEY && (breakStep.taken || focusTick.endedNow))
+            }
             .fold(arbiter) { state, key -> state.without(key) }
         val result = arbitrate(
             arbiter,
@@ -161,7 +142,7 @@ class Reactions(
             now,
             BubbleConditions(
                 petOnScreen = petOnScreen,
-                focusActive = false, // focus sessions arrive in M8
+                focusActive = focusTick.held,
                 minGap = Duration.ofSeconds(document.bubbles.minGapSeconds.toLong()),
             ),
         )
@@ -181,10 +162,11 @@ class Reactions(
         return Reaction(
             mood = mood,
             bubble = result.bubble?.let { ShownBubble(say(it), snoozeKey = it.key.takeIf { key -> key.isLimitKey() && snoozesLeft }) },
-            glowing = nagStep.glowing,
+            // The glow is part of a nag, so it waits for the session too (D-115)
+            glowing = nagStep.glowing && !focusTick.held,
             // Break reminders already post N-02 below, pet on screen or not (US-11)
             nagNotifications = result.notifications.filter { it.key.isLimitKey() }.map(::say),
-            breakNotification = if (breakStep.action == BreakAction.REMIND) say(breakDue) else null,
+            breakNotification = if (remind) say(breakDue) else null,
             breakTaken = breakStep.taken,
             breakScreen = when {
                 breakStep.action == BreakAction.SHOW_SCREEN -> BreakScreenChange.Show(
@@ -202,7 +184,10 @@ class Reactions(
                 stretchMs = snapshot.stretchMs,
                 stretchLimitMinutes = config.valueOf(SettingPaths.STRETCH_MINUTES)?.takeIf { it > 0 },
                 nags = nags,
+                focus = focusTick.status,
+                frontPackage = snapshot.frontPackage,
             ),
+            focusRunning = focusTick.status != null && snapshot.screenOn,
         )
     }
 
@@ -227,6 +212,12 @@ class Reactions(
         // The answer comes between ticks: the screen was on all along, so add the time since the last one
         val sinceTick = lastTickAt?.let { Duration.between(it, clock.instant()).toMillis().coerceAtLeast(0) } ?: 0
         breaks = answerBreakScreen(breaks, takeBreak, lastContinuousMs + sinceTick, config.document.breaks.obstructive)
+    }
+
+    /** Done or End on the ring's focus card (D-118). `false` when nothing could be ended. */
+    suspend fun endFocus(done: Boolean, config: EffectiveConfig): Boolean {
+        val day = lastDay ?: return false
+        return focus.end(done, config.document.focus, day)
     }
 
     private fun stepNags(snapshot: TrackerSnapshot, config: EffectiveConfig, logged: List<PetEvent>, now: Instant): NagStep {

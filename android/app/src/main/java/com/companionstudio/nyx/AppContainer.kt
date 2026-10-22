@@ -14,6 +14,8 @@ import com.companionstudio.nyx.data.AppDatabase
 import com.companionstudio.nyx.data.DayClock
 import com.companionstudio.nyx.data.SETTINGS_STORE_NAME
 import com.companionstudio.nyx.data.createSettingsStore
+import com.companionstudio.nyx.focus.FocusRepository
+import com.companionstudio.nyx.focus.FocusSessions
 import com.companionstudio.nyx.home.SummaryRepository
 import com.companionstudio.nyx.home.TrackingSummaryRepository
 import com.companionstudio.nyx.pet.PetSettings
@@ -83,6 +85,9 @@ class AppContainer(private val context: Context) {
     val summaryRepository: SummaryRepository =
         TrackingSummaryRepository(database.dailyUsageDao(), database.petEventDao(), effectiveConfig, petSettings, dayClock)
 
+    val focusSessionDao = database.focusSessionDao()
+    val focusRepository = FocusRepository(focusSessionDao, effectiveConfig, dayClock, clock)
+
     val systemUsageSource = SystemUsageSource(context.getSystemService(UsageStatsManager::class.java))
 
     // The service starts a fresh tracker whenever this changes. Only the debug scenarios change it (D-67)
@@ -107,7 +112,7 @@ class AppContainer(private val context: Context) {
             override fun category(category: Category?) =
                 context.getString(category?.labelRes ?: R.string.limit_total_name)
         }
-        return Reactions(database.petEventDao(), clock, labels)
+        return Reactions(database.petEventDao(), clock, labels, FocusSessions(focusSessionDao, clock))
     }
 
     private companion object {

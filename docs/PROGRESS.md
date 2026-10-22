@@ -1,8 +1,8 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M7 Limits, nags, breaks, idle lines (on `feat/m7-limits-nags`; built and checked on the Pixel 7a, waiting for the developer's OK to close)
-- Last done: M7 built to §14.7 (D-93 to D-108 approved): unit tests 260/260, lint clean, debug + release build
-- Next step: CI on the PR → the developer's OK (and a real call while a break is due, if wanted) → merge → `m7-done` → M8 Focus sessions
-- Blockers: none. The API 37 emulator still hangs at boot ("hanging thread 'QEMU2 main loop'"); it needs a cold boot or wipe from Android Studio before it's used again
+- Phase: 5 — Build · Milestone: M8 Focus sessions (in progress; branch `feat/m8-focus`)
+- Last done: M8 built; 66/66 device tests and all three focus scenarios on the Pixel 7a
+- Next step: the developer merges PR #14 → tag `m8-done`, close M8 → M9 Week-1 check
+- Blockers: none (Pixel 7a connected). The API 37 emulator still hangs at boot, also on a cold boot from the command line (2026-10-22) ("hanging thread 'QEMU2 main loop'"); it needs a cold boot or wipe from Android Studio before it's used again
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
 - Build setup: Homebrew JDK on PATH starts Gradle; daemon runs on JDK 25 (`android/README.md`). With the phone plugged in, set `ANDROID_SERIAL` for device tasks
@@ -153,3 +153,29 @@
 - Not verified: a real call while a break is due; TalkBack by ear
 - Verified: 263 unit tests, lint, debug build
 - Verified: Android CI green on `feat/m7-limits-nags` (run 39665643172); PR #13 open, not merged
+- Done: the developer merged PR #13; tagged `m7-done` on the merge (`6a9874e`). M7 closed: ROADMAP status done, AGENTS card on M8, `feat/m8-focus` started from `main` for the close-out docs
+- Open from M7: a real call while a break is due (unit-tested only); TalkBack by ear
+- Next: M8 Focus sessions, LLD first
+
+### 2026-10-22 (M8)
+- Done: M8 LLD as ARCHITECTURE §14.8 — session flow, SM-04 per tick, focus time from tracker credits, drift and A-02 exclusions, goals and pet modes, Done minimum, abandoned sessions, hold and release of nags and break reminders, day reset, `focus_sessions` (Room v5), two additive config fields, S-09, badge / ring timer slot / focus card / Home card, debug extras and scenarios, files, tests. D-109 to D-120 proposed. ROADMAP M8 in progress
+- Next: approval of D-109 to D-120 (D-112 is an interpretation of D-04), then build M8
+- Approved: D-109 to D-120, pet modes as proposed (decision log rows added); building M8 straight through at the developer's request
+- Done: config `focus.minDoneMinutes`/`abandonAfterMinutes`; `focus_sessions` + Room v5 auto-migration; tracker snapshot `creditedMs`/`screenOn`; `focus/` Focus (SM-04 step), FocusSessions, FocusRepository; Reactions hold and release (`rules/Reaction.kt` split out); `focus_completed` in the focus tier; fast ticks while focusing; `EndFocus` request; S-09 with the app picker; Home session card; ring timer slot + focus card; pet badge; debug focus extras + 3 scenarios. Diagram: rules engine and notifier marked done
+- Fixed while building: ended sessions lost their last progress (finish ran before the save) — caught by `US12_FocusSessionsTest`
+- Verified: `assembleDebug assembleRelease testDebugUnitTest lint` clean; 316 unit tests (+53), 0 skipped; `focus/Focus.kt` 48/48, `focus/FocusSessions.kt` 71/71 lines
+- Not verified: device tests (written, compile), install over M7, by-hand checks, the Pixel. Tried a cold boot of the emulator from the command line: hung at "QEMU2 main loop" again; stopped it. Wiping it needs the developer's OK
+- Next: device run, by-hand checks, PR
+- Verified on the Pixel 7a: `adb install -r` over the M7 build kept today's totals and mood 55 (Room v4 → v5). Device tests 58/58 through `am instrument` (not Gradle, which uninstalls the app): all classes except `US01_SetupGatingTest`, `US02_AgeCheckTest`, `US28_NavigationTest`, which reset setup state. First run 56/58: the two timer-text checks looked in the merged tree, where `clearAndSetSemantics` hides the text; fixed in the tests (unmerged tree; the ring shows it twice). Ring and badge classes then green twice in a row
+- Learned: `am instrument` kills the app's process, and the pet service doesn't come back by itself; opening the app restarts it. Phone's "stay awake" was on only during the runs (back to 0)
+- Next: developer's OK for the three setup-state classes; by-hand checks; PR
+- Verified (developer's OK): the three setup-state device classes, 8/8 → 66/66 in all. They clear Nyx's DataStore (pet choice, user values, settings); the service kept running
+- Verified on the Pixel by scenario: `youtube-30min` (start line, check-ins at 10/20, completed at 25, mood 70 → 85) and `youtube-screen-off` (paused while off, quiet mode silent, completed at 28 min, +15)
+- Blocked: `youtube-instagram` showed no switch, because the phone was in a call (audio mode 3, `MODE_IN_COMMUNICATION`) and A-02 doesn't count switches during calls; focus time did stop during Instagram. Re-run without a call
+- Privacy note: one screenshot taken to check the app's state showed another app the developer was using; deleted at once, no screenshots since. Scenario checks are read from the debug log only
+- Scenario stopped afterwards (`--ez stop true`): real usage and clock again; today's tracked time and events were cleared by the scenarios, as agreed
+- Verified after the call (audio mode 0): `youtube-instagram` — no switching broke at 10 min with the broken line, mood unchanged; set time with reward at the end drifted once with the drift line, no check-ins, completed at about 26 min, mood 70 → 85. Scenario stopped afterwards
+- Verified by the developer on the Pixel 7a: the done-when session with real YouTube and Instagram (Instagram installed for it) — no switching broke on Instagram; a set-time session completed with the reward and +15
+- Open from M8: TalkBack by ear
+- Next: push `feat/m8-focus`, open the PR, CI
+- Verified: Android CI green on `feat/m8-focus` (run 39765596636); PR #14 open, not merged

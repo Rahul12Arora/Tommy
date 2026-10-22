@@ -113,7 +113,9 @@
       "min": 5,
       "max": 30,
       "userEditable": true
-    }
+    },
+    "minDoneMinutes": 5,
+    "abandonAfterMinutes": 30
   },
   "bubbles": {
     "minGapSeconds": 60,

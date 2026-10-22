@@ -66,6 +66,19 @@ class ConfigValidatorTest {
     }
 
     @Test
+    fun D120_focusBounds_atTheEdgesPass_andOnePastFails() {
+        val edges = minimal.focus.copy(minDoneMinutes = 60, abandonAfterMinutes = 5)
+        assertEquals(emptyList<ConfigError>(), validateConfig(minimal.copy(focus = edges)))
+        assertEquals(emptyList<ConfigError>(), validateConfig(minimal.copy(focus = edges.copy(minDoneMinutes = 1, abandonAfterMinutes = 240))))
+
+        val past = edges.copy(minDoneMinutes = 0, abandonAfterMinutes = 241)
+        assertEquals(
+            listOf(ConfigRule.SCHEMA to "focus.minDoneMinutes", ConfigRule.SCHEMA to "focus.abandonAfterMinutes"),
+            errorsOf(minimal.copy(focus = past)),
+        )
+    }
+
+    @Test
     fun minAboveMax_isASettingRangeError() {
         val config = minimal.copy(focus = minimal.focus.copy(checkinMinutes = Setting(default = 10, min = 20, max = 10, userEditable = true)))
 

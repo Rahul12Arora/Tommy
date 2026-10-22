@@ -23,6 +23,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.time.Instant
 
@@ -91,6 +94,12 @@ class PetService : LifecycleService() {
                     hiddenUntil = hidden
                     Notifications.updatePetRunning(this@PetService, hidden)
                 }
+        }
+
+        lifecycleScope.launch {
+            // A session started or ended from an app screen: the engine reacts at once instead of at its next tick (§14.8)
+            container.focusSessionDao.observeActive().map { it?.id }.distinctUntilChanged().drop(1)
+                .collect { engine.requests.trySend(EngineRequest.Tick) }
         }
 
         // Off the main thread: reading the event log and package info are blocking calls, and the app's screens

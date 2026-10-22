@@ -2,6 +2,16 @@ package com.companionstudio.nyx.home
 
 import com.companionstudio.nyx.MainDispatcherRule
 import com.companionstudio.nyx.config.Category
+import com.companionstudio.nyx.config.ConfigResult
+import com.companionstudio.nyx.config.EffectiveConfig
+import com.companionstudio.nyx.config.SharedFiles
+import com.companionstudio.nyx.config.parseConfig
+import com.companionstudio.nyx.data.DayClock
+import com.companionstudio.nyx.focus.FakeFocusSessionDao
+import com.companionstudio.nyx.focus.FocusGoal
+import com.companionstudio.nyx.focus.FocusOutcome
+import com.companionstudio.nyx.focus.FocusRepository
+import com.companionstudio.nyx.focus.session
 import com.companionstudio.nyx.data.AdjustableClock
 import com.companionstudio.nyx.data.createSettingsStore
 import com.companionstudio.nyx.pet.PetSettings
@@ -37,6 +47,8 @@ class HomeViewModelTest {
         petFace = "😸",
     )
 
+    private val defaults = (parseConfig(SharedFiles.defaultConfig) as ConfigResult.Valid).config
+
     private val petSettings by lazy {
         PetSettings(createSettingsStore({ folder.root.resolve("settings.preferences_pb") }, onCorrupted = { throw it }))
     }
@@ -48,8 +60,15 @@ class HomeViewModelTest {
                 override fun observeToday() = flowOf(today)
             },
             petVisibility,
+            focusRepository,
         ),
     )
+
+    private val focusDao = FakeFocusSessionDao()
+    private val focusRepository by lazy {
+        val clock = AdjustableClock()
+        FocusRepository(focusDao, flowOf(EffectiveConfig(defaults, emptyMap())), DayClock(clock), clock)
+    }
 
     @Test
     fun US28_summaryIsNullUntilObserved_thenTheRepositorySummary() = runTest {
@@ -73,5 +92,20 @@ class HomeViewModelTest {
 
         assertNull(petSettings.hiddenUntil.first())
         assertFalse(viewModel.petHidden.first { !it })
+    }
+
+    @Test
+    fun US12_focus_showsTheRunningSession_andEndOnTheCardEndsIt() = runTest {
+        val viewModel = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.focus.collect {} }
+        assertTrue("Start is offered", viewModel.focus.first { it.enabled }.running == null)
+
+        focusDao.start(session())
+        assertEquals(FocusGoal.FIXED_TIME, viewModel.focus.first { it.running != null }.running?.goal)
+
+        viewModel.finishFocus(done = false).join()
+
+        assertEquals(FocusOutcome.ENDED_EARLY, focusDao.latest()?.outcome)
+        assertNull(viewModel.focus.first { it.running == null }.running)
     }
 }

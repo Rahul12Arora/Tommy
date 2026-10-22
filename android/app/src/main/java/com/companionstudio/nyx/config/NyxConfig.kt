@@ -85,7 +85,14 @@ data class ObstructiveConfig(
 )
 
 @Serializable
-data class FocusConfig(val durationMinutes: Setting, val checkinMinutes: Setting)
+data class FocusConfig(
+    val durationMinutes: Setting,
+    val checkinMinutes: Setting,
+    /** Added in M8 with defaults, like [ObstructiveConfig] (§14.8). Focus minutes before Done counts (D-113). */
+    val minDoneMinutes: Int = 5,
+    /** A session with no focus time for this long ends early by itself (D-114). */
+    val abandonAfterMinutes: Int = 30,
+)
 
 @Serializable
 data class BubblesConfig(val minGapSeconds: Int, val showSeconds: Int)

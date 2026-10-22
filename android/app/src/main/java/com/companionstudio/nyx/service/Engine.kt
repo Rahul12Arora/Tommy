@@ -25,6 +25,9 @@ sealed interface EngineRequest {
     data class Snooze(val key: String) : EngineRequest
 
     data class BreakScreenAnswer(val takeBreak: Boolean) : EngineRequest
+
+    /** Done ([done]) or End on the ring's focus card (D-118). */
+    data class EndFocus(val done: Boolean) : EngineRequest
 }
 
 /**
@@ -73,6 +76,7 @@ class Engine(
             EngineRequest.Tick -> Unit
             is EngineRequest.Snooze -> if (!reactions.snooze(request.key, config)) Log.i(TAG, "Snooze not possible any more")
             is EngineRequest.BreakScreenAnswer -> reactions.answerBreakScreen(request.takeBreak, config)
+            is EngineRequest.EndFocus -> if (!reactions.endFocus(request.done, config)) Log.i(TAG, "No focus session to end")
         }
     }
 
@@ -104,10 +108,11 @@ class Engine(
                         reaction.bubble?.let { ", bubble=\"${it.line}\"" }.orEmpty() +
                         reaction.breakNotification?.let { ", N-02=\"$it\"" }.orEmpty() +
                         reaction.nagNotifications.joinToString("") { ", N-04=\"$it\"" } +
-                        reaction.breakScreen?.let { ", breakScreen=$it" }.orEmpty(),
+                        reaction.breakScreen?.let { ", breakScreen=$it" }.orEmpty() +
+                        reaction.status.focus?.let { ", focus=${it.phase} ${it.focusMs / 1000}s switches=${it.switches}" }.orEmpty(),
                 )
             }
-            tickDelaySeconds(snapshot, config, glowing = reaction.glowing)
+            tickDelaySeconds(snapshot, config, glowing = reaction.glowing, focusRunning = reaction.focusRunning)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

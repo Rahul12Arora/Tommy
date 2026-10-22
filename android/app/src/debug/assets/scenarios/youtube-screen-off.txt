@@ -1,0 +1,4 @@
+# YouTube 10 min, the screen off for 3, YouTube again. A set-time 25 pauses and completes at 28 min (M8)
+app com.google.android.youtube 10m
+screen_off 3m
+app com.google.android.youtube 16m

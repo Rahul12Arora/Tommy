@@ -33,6 +33,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.companionstudio.nyx.R
 import com.companionstudio.nyx.config.Category
+import com.companionstudio.nyx.focus.FocusPhase
+import com.companionstudio.nyx.focus.focusShortText
+import com.companionstudio.nyx.focus.focusSummaryText
 import com.companionstudio.nyx.home.GoalProgress
 import com.companionstudio.nyx.home.TodaySummary
 import com.companionstudio.nyx.home.formatDuration
@@ -41,8 +44,17 @@ import com.companionstudio.nyx.rules.RingStatus
 import com.companionstudio.nyx.ui.labelRes
 import com.companionstudio.nyx.ui.theme.NyxTheme
 
-/** The ring's actions (O-03). [onFocus] is `null` when focus sessions are switched off in config. */
-class RingActions(val hideMinutes: Int, val onFocus: (() -> Unit)?, val onOpenApp: () -> Unit, val onHide: () -> Unit)
+/**
+ * The ring's actions (O-03). [onFocus] is `null` when focus sessions are switched off in config. [onEndFocus]: Done
+ * (`true`) or End on the running session's card (D-118).
+ */
+class RingActions(
+    val hideMinutes: Int,
+    val onFocus: (() -> Unit)?,
+    val onOpenApp: () -> Unit,
+    val onHide: () -> Unit,
+    val onEndFocus: (done: Boolean) -> Unit = {},
+)
 
 /**
  * One slot: an emoji, an optional short value, and the full text the caption and TalkBack show. [onClick] `null` is a
@@ -68,13 +80,17 @@ fun ActionsRing(
 ) {
     var selected by remember { mutableStateOf<Int?>(null) }
     var showLimits by remember { mutableStateOf(false) }
-    val slots = ringSlots(summary, status, actions, onLimits = { showLimits = true })
+    var showFocus by remember { mutableStateOf(false) }
+    val slots = ringSlots(summary, status, actions, onLimits = { showLimits = true }, onFocusCard = { showFocus = true })
+    val focus = status.focus
     val geometry = ringGeometry(side, slots.size, maxWidth.value)
     Box(Modifier.size(geometry.width.dp, geometry.height.dp)) {
         // Behind everything: only taps that miss every slot land here
         Box(Modifier.matchParentSize().pointerInput(Unit) { detectTapGestures(onTap = { onClose() }) })
         if (showLimits) {
             LimitsList(summary.goals, status, side, geometry, onBack = { showLimits = false })
+        } else if (showFocus && focus != null) {
+            RingFocusCard(focus, side, geometry, onEnd = actions.onEndFocus, onBack = { showFocus = false })
         } else {
             slots.forEachIndexed { i, slot ->
                 val center = geometry.slots[i]
@@ -88,13 +104,13 @@ fun ActionsRing(
             selected?.let { i -> Caption(slots[i].caption, side, geometry) }
         }
         Box(Modifier.offset((geometry.pet.x - PET_SIZE.value / 2).dp, (geometry.pet.y - PET_SIZE.value / 2).dp)) {
-            PetFace(summary.petFace, glowing, panelOpen = true, onClick = onPetClick)
+            PetFace(summary.petFace, glowing, panelOpen = true, onClick = onPetClick, focus = focus)
         }
     }
 }
 
 @Composable
-private fun ringSlots(summary: TodaySummary, status: RingStatus, actions: RingActions, onLimits: () -> Unit): List<RingSlot> {
+private fun ringSlots(summary: TodaySummary, status: RingStatus, actions: RingActions, onLimits: () -> Unit, onFocusCard: () -> Unit): List<RingSlot> {
     val worst = summary.goals.maxByOrNull { it.usedSeconds.toDouble() / it.targetSeconds }
     val continuous = formatDuration(status.continuousMs / 1000)
     return buildList {
@@ -128,7 +144,14 @@ private fun ringSlots(summary: TodaySummary, status: RingStatus, actions: RingAc
                 null,
             ),
         )
-        actions.onFocus?.let { add(RingSlot("🎯", null, stringResource(R.string.home_start_focus), it)) }
+        // A running session's timer takes Start focus's slot (CR-09), even if focus was switched off since (D-120)
+        val focus = status.focus
+        if (focus != null) {
+            val caption = stringResource(R.string.focus_ring_caption, focusSummaryText(focus))
+            add(RingSlot("⏱", focusShortText(focus), caption, onFocusCard, alert = focus.phase == FocusPhase.DRIFTING))
+        } else {
+            actions.onFocus?.let { add(RingSlot("🎯", null, stringResource(R.string.home_start_focus), it)) }
+        }
         add(RingSlot("🏠", null, stringResource(R.string.panel_open_app), actions.onOpenApp))
         add(RingSlot("🙈", "${actions.hideMinutes}m", stringResource(R.string.panel_hide, actions.hideMinutes), actions.onHide))
     }

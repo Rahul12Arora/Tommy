@@ -94,6 +94,8 @@ private class ConfigChecks {
         number("breaks.obstructive.snoozeMinutes", breaks.obstructive.snoozeMinutes, 1..60)
         number("breaks.obstructive.maxSnoozes", breaks.obstructive.maxSnoozes, 0..10)
         number("breaks.obstructive.returnAfterTakeBreakSeconds", breaks.obstructive.returnAfterTakeBreakSeconds, 10..600)
+        number("focus.minDoneMinutes", focus.minDoneMinutes, 1..60)
+        number("focus.abandonAfterMinutes", focus.abandonAfterMinutes, 5..240)
         number("bubbles.minGapSeconds", bubbles.minGapSeconds, 0..3600)
         number("bubbles.showSeconds", bubbles.showSeconds, 1..60)
         number("idle.everyMinutes", idle.everyMinutes, 1..1440)

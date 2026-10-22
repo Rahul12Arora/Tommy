@@ -12,6 +12,7 @@ import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDe
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import com.companionstudio.nyx.focus.FocusSetupRoute
 import com.companionstudio.nyx.home.HomeRoute
 import com.companionstudio.nyx.service.PetService
 import com.companionstudio.nyx.settings.SettingsLinks
@@ -30,7 +31,8 @@ import kotlinx.serialization.Serializable
 
 // Keys are @Serializable so the back stack survives rotation and process death
 @Serializable data object Home : NavKey
-@Serializable data object FocusSetup : NavKey
+/** [fromRing]: opened from the pet's ring, so Start goes back to the app the user was in (D-117). */
+@Serializable data class FocusSetup(val fromRing: Boolean = false, val fromApp: String? = null) : NavKey
 @Serializable data object Trends : NavKey
 @Serializable data object Settings : NavKey
 
@@ -53,9 +55,12 @@ import kotlinx.serialization.Serializable
 @Serializable data object SettingsLimits : NavKey
 @Serializable data object SettingsStats : NavKey
 
-/** [open]: from N-03, S-03 sits on top of Home (§14.4); from the pet's panel, Focus setup does (§14.5). */
+/**
+ * [open]: from N-03, S-03 sits on top of Home (§14.4); from the pet's ring, Focus setup does (§14.5), with [focusApp]
+ * selected (§14.8).
+ */
 @Composable
-fun AppNavigation(container: AppContainer, open: MainActivity.Open = MainActivity.Open.HOME) {
+fun AppNavigation(container: AppContainer, open: MainActivity.Open = MainActivity.Open.HOME, focusApp: String? = null) {
     // Read once: setup is either still to do or done for good. Nothing is drawn for the moment this takes
     val setupCompleted by produceState<Boolean?>(initialValue = null) {
         value = container.setupSettings.completed.first()
@@ -65,7 +70,7 @@ fun AppNavigation(container: AppContainer, open: MainActivity.Open = MainActivit
     val start = when {
         !completed -> arrayOf(Welcome)
         open == MainActivity.Open.PERMISSIONS -> arrayOf(Home, FixPermissions)
-        open == MainActivity.Open.FOCUS -> arrayOf(Home, FocusSetup)
+        open == MainActivity.Open.FOCUS -> arrayOf(Home, FocusSetup(fromRing = true, fromApp = focusApp))
         else -> arrayOf(Home)
     }
     val backStack = rememberNavBackStack(*start)
@@ -81,13 +86,24 @@ fun AppNavigation(container: AppContainer, open: MainActivity.Open = MainActivit
                 HomeRoute(
                     summaryRepository = container.summaryRepository,
                     petVisibility = container.petVisibility,
-                    onFocus = { backStack.add(FocusSetup) },
+                    focusRepository = container.focusRepository,
+                    onFocus = { backStack.add(FocusSetup()) },
                     onTrends = { backStack.add(Trends) },
                     onSettings = { backStack.add(Settings) },
                 )
             }
-            // Placeholders until S-09 (M8) and S-10 (M13) exist
-            entry<FocusSetup> { PlaceholderScreen(stringResource(R.string.focus_setup_title)) }
+            entry<FocusSetup> { key ->
+                FocusSetupRoute(
+                    installedApps = container.installedApps,
+                    config = container.effectiveConfig,
+                    repository = container.focusRepository,
+                    fromApp = key.fromApp,
+                    // From the ring: back to the app the user came from (a fresh task, so finishing returns there).
+                    // From Home: back to Home, which shows the session
+                    onStarted = { if (key.fromRing) activity?.finish() else backStack.removeLastOrNull() },
+                )
+            }
+            // A placeholder until S-10 (M13) exists
             entry<Trends> { PlaceholderScreen(stringResource(R.string.trends_title)) }
             entry<Settings> {
                 SettingsRoute(

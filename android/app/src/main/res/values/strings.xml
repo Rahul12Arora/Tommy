@@ -185,8 +185,44 @@
     <string name="settings_stats">Share anonymous stats</string>
     <string name="settings_permissions">Permissions</string>
 
-    <!-- Screens not built yet -->
+    <!-- S-09 Focus setup, the running session on Home, the ring and the pet (§14.8) -->
     <string name="focus_setup_title">Focus</string>
+    <string name="focus_goal">Goal</string>
+    <string name="focus_goal_fixed_time">For a set time</string>
+    <string name="focus_goal_fixed_time_hint">Ends when the time is up. Time in other apps doesn\'t count.</string>
+    <string name="focus_goal_until_done">Until I\'m done</string>
+    <string name="focus_goal_until_done_hint">You tap Done when you\'ve finished, e.g. the video.</string>
+    <string name="focus_goal_no_switching">No switching</string>
+    <string name="focus_goal_no_switching_hint">Opening any other app ends the session.</string>
+    <string name="focus_length">Length</string>
+    <string name="focus_apps">Allowed apps</string>
+    <string name="focus_apps_hint">Pick at least one. The notification shade, the home screen, Nyx and calls never count as switching.</string>
+    <string name="focus_apps_search">Search apps</string>
+    <string name="focus_apps_none">No app matches.</string>
+    <string name="focus_pet_mode">Pet behaviour</string>
+    <string name="focus_mode_quiet">Quiet presence</string>
+    <string name="focus_mode_quiet_hint">Stays quiet until the end. If you wander off, its badge shows it.</string>
+    <string name="focus_mode_reward">Reward at the end</string>
+    <string name="focus_mode_reward_hint">Speaks up only when you wander off, then celebrates at the end.</string>
+    <string name="focus_mode_checkin">Check in</string>
+    <string name="focus_mode_checkin_hint">Speaks up when you wander off and checks in now and then.</string>
+    <string name="focus_checkin_every">Check in every</string>
+    <string name="focus_start">Start</string>
+    <string name="focus_session_title">Focus session</string>
+    <string name="focus_left">%1$s left</string>
+    <string name="focus_so_far">%1$s so far</string>
+    <string name="focus_away">away from your focus apps</string>
+    <plurals name="focus_switches">
+        <item quantity="one">switched away once</item>
+        <item quantity="other">switched away %d times</item>
+    </plurals>
+    <string name="focus_done">Done</string>
+    <string name="focus_end">End</string>
+    <string name="focus_done_after">Done is available after %1$d min of focus.</string>
+    <string name="focus_ring_caption">Focus: %1$s</string>
+    <string name="pet_description_focus">Nyx, your pet. Focus session, %1$s</string>
+
+    <!-- Screens not built yet -->
     <string name="trends_title">Trends</string>
     <string name="placeholder_not_built">Not built yet.</string>
 </resources>

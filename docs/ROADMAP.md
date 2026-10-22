@@ -3,7 +3,7 @@
 > Phase 4 output. One milestone at a time; each is a vertical slice that can be verified on its own.
 > Every milestone starts by writing its LLD in `ARCHITECTURE.md` §14, before code.
 > Status values: `pending` · `in-progress` · `done`. Tick tasks as they finish.
-> Last updated: 2026-10-21
+> Last updated: 2026-10-22
 
 ---
 
@@ -228,7 +228,7 @@ Done when:
 Verify with: `./gradlew test` · fake scenarios on the emulator (`instagram-4h`, `--es event break_taken`)
 Not in this milestone: limits and breaks triggering lines (→ M7)
 
-### M7 — Limits, nags, breaks, idle lines            status: in-progress
+### M7 — Limits, nags, breaks, idle lines            status: done
 Goal: the pet nags when limits are crossed, reminds breaks, and talks now and then.
 Depends on: M6
 Stories: US-08, US-09, US-10, US-11, US-17 (limit goals), US-27, US-29 (notifications while hidden), US-07 + US-30 (actions ring, continuous screen use; CR-09, CR-10)
@@ -253,20 +253,20 @@ Done when:
 Verify with: `./gradlew test` · fake scenarios · manual QA checklist
 Not in this milestone: positive goals (→ M13)
 
-### M8 — Focus sessions            status: pending
+### M8 — Focus sessions            status: in-progress
 Goal: the user can start a focus session and the pet keeps them on task.
 Depends on: M7
 Stories: US-12, US-13, US-14
 Tasks:
-- [ ] LLD: session model, goal types, allowed-app picker, drift detection, check-ins, rewards, held nags release (D-25)
-- [ ] S-09 Focus setup (from the ring and Home)
-- [ ] Focus timer icon on the actions ring (CR-09)
-- [ ] SM-04: running, drifting, paused on lock, completed, broken, ended early
-- [ ] Pet modes: quiet / check-in every X min / reward at the end
-- [ ] Hold nags, break reminders and idle lines during focus; release those that still apply
-- [ ] Tests: every SM-04 transition, A-02 exclusions (shade, panel, call), held-nag release, day reset during a session (A-25)
+- [x] LLD: session model, goal types, allowed-app picker, drift detection, check-ins, rewards, held nags release (D-25)
+- [x] S-09 Focus setup (from the ring and Home) — device tests and the done-when session on the Pixel
+- [x] Focus timer icon on the actions ring (CR-09) — device tests and the done-when session on the Pixel
+- [x] SM-04: running, drifting, paused on lock, completed, broken, ended early
+- [x] Pet modes: quiet / check-in every X min / reward at the end
+- [x] Hold nags, break reminders and idle lines during focus; release those that still apply
+- [x] Tests: every SM-04 transition, A-02 exclusions (shade, panel, call), held-nag release, day reset during a session (A-25) — unit tests; device tests 66/66 on the Pixel 7a; scenarios on the Pixel
 Done when:
-- [ ] A 25-min "no switching" session on YouTube: opening Instagram breaks it; a fixed-time session completes with a reward and mood +15
+- [x] A 25-min "no switching" session on YouTube: opening Instagram breaks it; a fixed-time session completes with a reward and mood +15 — passed on the Pixel 7a (the developer, 2026-10-22)
 Verify with: `./gradlew test` · fake scenarios · real session on your phone
 Not in this milestone: focus stats in trends (→ M13)
 

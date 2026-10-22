@@ -233,6 +233,20 @@
         },
         "checkinMinutes": {
           "$ref": "#/definitions/settingShortMinutes"
+        },
+        "minDoneMinutes": {
+          "description": "Focus minutes before Done counts on an until-done session (D-113). Optional: defaults to 5.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 60,
+          "default": 5
+        },
+        "abandonAfterMinutes": {
+          "description": "A session with no focus time for this long ends early by itself (D-114). Optional: defaults to 30.",
+          "type": "integer",
+          "minimum": 5,
+          "maximum": 240,
+          "default": 30
         }
       }
     },

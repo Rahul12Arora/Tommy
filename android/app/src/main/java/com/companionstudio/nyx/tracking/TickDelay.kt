@@ -6,12 +6,13 @@ import com.companionstudio.nyx.config.SettingPaths
 /**
  * Seconds until the next tick (H-01). Fast when a limit that covers the front app, or the break limit, is less than one
  * slow tick away, so the crossing is seen within a fast tick; and while the pet [glowing], so the glow stops within a
- * fast tick of leaving the app (D-107). M8 (focus) adds its own here.
+ * fast tick of leaving the app (D-107); and while a focus session runs with the screen on, so a switch and the timer
+ * are seen within a fast tick (§14.8).
  */
-fun tickDelaySeconds(snapshot: TrackerSnapshot, config: EffectiveConfig, glowing: Boolean = false): Int {
+fun tickDelaySeconds(snapshot: TrackerSnapshot, config: EffectiveConfig, glowing: Boolean = false, focusRunning: Boolean = false): Int {
     val tracking = config.document.tracking
     val slowMs = tracking.slowTickSeconds * 1000L
-    if (glowing) return tracking.fastTickSeconds
+    if (glowing || focusRunning) return tracking.fastTickSeconds
     val breakLimit = if (config.document.features.breaks) config.valueOf(SettingPaths.BREAK_AFTER_MINUTES) else null
     if (remainingMs(breakLimit, snapshot.continuousMs)?.let { it in 1..slowMs } == true) return tracking.fastTickSeconds
     val category = snapshot.frontCategory ?: return tracking.slowTickSeconds

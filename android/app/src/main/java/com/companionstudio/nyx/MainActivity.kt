@@ -18,9 +18,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         val container = (application as PetApp).container
         val open = Open.entries.firstOrNull { it.name == intent.getStringExtra(EXTRA_OPEN) } ?: Open.HOME
+        val focusApp = intent.getStringExtra(EXTRA_FOCUS_APP)
         setContent {
             NyxTheme {
-                AppNavigation(container, open)
+                AppNavigation(container, open, focusApp)
             }
         }
     }
@@ -48,11 +49,14 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         private const val EXTRA_OPEN = "open"
+        private const val EXTRA_FOCUS_APP = "focus_app"
 
-        fun intent(context: Context, open: Open): Intent {
+        /** [focusApp]: with [Open.FOCUS], the app in front, which S-09 selects (D-117). */
+        fun intent(context: Context, open: Open, focusApp: String? = null): Intent {
             val intent = Intent(context, MainActivity::class.java)
             if (open == Open.HOME) return intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             return intent.putExtra(EXTRA_OPEN, open.name)
+                .putExtra(EXTRA_FOCUS_APP, focusApp)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
         }
     }
