@@ -3,7 +3,7 @@
 > Phase 4 output. One milestone at a time; each is a vertical slice that can be verified on its own.
 > Every milestone starts by writing its LLD in `ARCHITECTURE.md` §14, before code.
 > Status values: `pending` · `in-progress` · `done`. Tick tasks as they finish.
-> Last updated: 2026-10-21
+> Last updated: 2026-10-22
 
 ---
 
@@ -253,12 +253,12 @@ Done when:
 Verify with: `./gradlew test` · fake scenarios · manual QA checklist
 Not in this milestone: positive goals (→ M13)
 
-### M8 — Focus sessions            status: pending
+### M8 — Focus sessions            status: in-progress
 Goal: the user can start a focus session and the pet keeps them on task.
 Depends on: M7
 Stories: US-12, US-13, US-14
 Tasks:
-- [ ] LLD: session model, goal types, allowed-app picker, drift detection, check-ins, rewards, held nags release (D-25)
+- [x] LLD: session model, goal types, allowed-app picker, drift detection, check-ins, rewards, held nags release (D-25)
 - [ ] S-09 Focus setup (from the ring and Home)
 - [ ] Focus timer icon on the actions ring (CR-09)
 - [ ] SM-04: running, drifting, paused on lock, completed, broken, ended early

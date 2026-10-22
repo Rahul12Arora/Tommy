@@ -3,7 +3,7 @@
 > Phase 4 output. Read this first if you're new to the repo: after ~10 minutes you should know how data moves through the system and where every piece lives.
 > Low-level design (LLD) for each module is added to §14 at the **start** of its milestone, before any code.
 > Rule: code and diagrams must agree. A task that changes a component, a flow or a folder updates this file in the same task.
-> Last updated: 2026-10-21 (M6 LLD §14.6)
+> Last updated: 2026-10-22 (M8 LLD §14.8)
 
 ---
 
@@ -693,7 +693,7 @@ Written at the start of each milestone, before code.
 | Overlay: pet, bubble, panel, hide | M5 | done 2026-10-21 (§14.5) |
 | Lines, bubble arbiter, mood | M6 | done 2026-10-21 (§14.6) |
 | Limits, nags, breaks, idle lines, actions ring, break screen | M7 | done 2026-10-21 (§14.7) |
-| Focus sessions | M8 | pending |
+| Focus sessions | M8 | done 2026-10-22 (§14.8) |
 | Backend foundation + config API | M10 | pending |
 | Admin auth + console | M11 | pending |
 | App remote config | M12 | pending |
@@ -1972,3 +1972,237 @@ stateDiagram-v2
 - **D-108:** four new debug scenarios (above).
 
 **Not in M7:** focus sessions and the focus hold's input (→ M8: `focusActive` stays `false`); the focus timer slot (→ M8); Trends and recording which goals were on each day (→ M13); positive goals (→ M13); the privacy policy row (→ M15); a Snooze action on N-04, per-app exclusions for the break screen, ring animations (parking lot); continuous use on Home.
+
+### 14.8 M8 — Focus sessions
+
+Written 2026-10-22; D-109 to D-120 approved 2026-10-22 (D-112 as proposed). Built in the same session at the developer's request.
+
+**Purpose:** the user starts a focus session for a hard task, the pet keeps them company and notices when they wander off, nags and break reminders wait until it's over, and finishing makes the pet happier. Stories: US-12 (S-09: goal, allowed apps, pet mode), US-13 (drift, A-02 exclusions, pause on lock, check-ins, hold), US-14 (reward, mood +15, ended early), US-07 + US-30 (timer on the ring, CR-09), US-27 (no idle lines during focus).
+
+**How a session moves through the app** (DF-3, refined)
+
+```mermaid
+sequenceDiagram
+  actor U as User
+  participant S as S-09 / Home card
+  participant DB as Room (focus_sessions, events)
+  participant SV as PetService
+  participant E as Engine → Reactions → FocusSessions
+  participant O as Pet overlay
+  U->>S: goal, apps, pet mode → Start
+  S->>DB: start(): insert, only if no session is active
+  DB-->>SV: observeActive() changed
+  SV->>E: EngineRequest.Tick
+  E->>DB: active session
+  E-->>O: focus_started line, timer badge, ring timer slot
+  loop every tick (fast, 5 s)
+    E->>E: SM-04 step: focus time, drift, check-in, timer
+    E->>DB: save focus_ms, switches, last_focus_at
+  end
+  alt timer reached / no-switching broken / abandoned
+    E->>DB: finish(): only if still active (+ FOCUS_COMPLETED when completed)
+  else Done or End on the ring card
+    O->>E: EngineRequest.EndFocus(done)
+    E->>DB: finish(…)
+  else Done or End on Home
+    S->>DB: finish(…)
+    DB-->>SV: observeActive() changed → Tick
+  end
+  E-->>O: end line first; held nags and the break reminder follow (D-115)
+```
+
+- Screens start and end sessions by writing storage (D-44); buttons on the overlay go to the engine, like Snooze (D-103). Both end through the same DAO call, so whoever is first wins and the other is a no-op (D-109).
+- The engine notices every start and end at its next tick, wherever it came from. The service sends a `Tick` request whenever the active session changes, so "next tick" is within milliseconds.
+
+**SM-04 per tick** (`focus/Focus.kt`, pure; D-110, D-111)
+
+```mermaid
+stateDiagram-v2
+  [*] --> Running: Start
+  Running --> Drifting: a counted app that isn't allowed got time or is in front (not in a call) · switches +1
+  Drifting --> Running: an allowed app is in front
+  Drifting --> Broken: goal is no switching
+  Running --> Paused: screen off
+  Drifting --> Paused: screen off
+  Paused --> Running: screen on
+  Running --> Completed: focus time reaches the goal (timed goals) · Done (until done)
+  Running --> EndedEarly: End · no focus time for abandonAfterMinutes
+  Drifting --> EndedEarly: End · no focus time for abandonAfterMinutes
+  Paused --> EndedEarly: End · no focus time for abandonAfterMinutes
+  Completed --> [*]
+  Broken --> [*]
+  EndedEarly --> [*]
+```
+
+- **Focus time** (D-110) = the time the tracker credits to the session's allowed apps from the session's first tick on. So it is exact to the usage event, like Home's totals, and pauses on its own: nothing is credited while the screen is off, at the lock screen, on the launcher, in the shade or in another app. Timed goals complete when focus time reaches the goal's minutes (fast ticks: within 5 s).
+  - The first tick that sees a session only sets it up: its credits are from before the start (or, after a restart, from while the service was dead) and don't count.
+  - Needs two new `TrackerSnapshot` fields: `creditedMs: Map<String, Long>` (this tick's credits per package, counted apps only) and `screenOn` (the tracker's view, so debug scenarios pause sessions too).
+- **Drift** (US-13, A-02, D-111): at a tick, a counted app that isn't allowed is in front, or got credited time since the last tick (a 3 s peek between ticks counts), and the phone isn't in a call (D-99's `CallState`, read every tick while a session runs).
+  - Not a switch, with no extra code: the shade (System UI), the ring and bubbles (overlay windows, not apps), the launcher and Recents, and Nyx itself are never counted apps (D-69). A call isn't a switch through `CallState`, so the dialer and VoIP apps don't drift.
+  - Running → Drifting adds one switch and saves it. Drifting stays until an allowed app is in front; the launcher or the shade on the way back doesn't end it.
+  - No switching: the first switch breaks the session (`focus_broken`). If the timer is reached in the same tick, completion wins.
+- **Paused** = screen off (the tracker's screen state). Paused time isn't focus time anyway; the phase only matters for the badge, the card and the tick interval.
+- **Abandoned** (D-114): no focus time for `focus.abandonAfterMinutes` (default 30) → ended early, no line. Without it, a forgotten until-done session would hold every nag and break reminder for the rest of the day. Measured from `last_focus_at_ms` (stored), so it survives restarts. With the screen off nothing ticks, so it's noticed at the next screen-on.
+- **Live state in memory** (`focus/FocusSessions.kt`, one per engine run like `Reactions`): the known session ID, its phase and the last check-in index. After a restart the phase starts as Running and is re-derived at the next tick; a drift in progress across a restart can count as a second switch (rare, accepted).
+
+**Goals and pet modes** (US-12, D-04, D-112, D-113)
+
+| Goal | Completes when | Done button | A switch |
+|---|---|---|---|
+| For a set time | Focus time reaches N min (`focus.durationMinutes`, 25, 5–180) | — | Recorded, pet reacts |
+| Until I'm done | Done is tapped (A-01) | Once focus time ≥ `focus.minDoneMinutes` (5) | Recorded, pet reacts |
+| No switching for N min | Focus time reaches N min | — | Breaks the session |
+
+| Pet mode | Start | Drift | During the session | End |
+|---|---|---|---|---|
+| Quiet presence | `focus_started` | Badge only, no line | Nothing | `focus_completed` / `focus_broken` |
+| Reward at the end | `focus_started` | `focus_drift` (`{app}`) | Nothing | same |
+| Check-in every X min | `focus_started` | `focus_drift` (`{app}`) | `focus_checkin` every X min of focus time (`{minutes}` = focus minutes so far); X from `focus.checkinMinutes` (10, 5–30) | same |
+
+- **Every mode** gets +15 (`FOCUS_COMPLETED`) and the `focus_completed` line when a session completes (US-14); ended early → no line, no mood change; broken → `focus_broken` line, no mood change.
+- **D-112:** D-04 names the three modes but not how they differ; they are three levels of chattiness. "Reward at the end" differs from quiet only by speaking up when you drift (confirmed by the developer).
+- **D-113:** Done exists only for until-done, and only after 5 min of focus time; timed goals finish by their timer; End is always there. Without the minimum, Start → Done would be +15 per tap and mood would mean nothing.
+- Check-ins are counted in focus time, so a paused or drifting stretch doesn't trigger one. After a restart the index is rebuilt from `focus_ms`, so it doesn't check in at once.
+
+**Holding and releasing** (US-13, US-27, D-25, D-26, D-89, D-115)
+- **Which ticks count as focus:** every tick that starts with a session active, **including the one that ends it**, so the end line comes before anything that was held.
+- **Bubbles:** the arbiter's `focusActive` (D-82) is now real: only the focus tier shows; nags, rewards and `pet_returned` wait; idle is dropped. **`focus_completed` moves from the reward tier to the focus tier**, otherwise a held nag (higher tier) would speak before the reward at the end. When the pet comes back from 🐾 because of the +15, only `focus_completed` is said (one line for one moment, as with `break_taken`).
+- **Nags:** SM-02 keeps running and `LIMIT_EXCEEDED` (−10) is still logged when a limit is crossed; only the line, the glow and N-04 wait. At the end the waiting nag request shows after the bubble gap if its limit is still Nagging, otherwise it was already withdrawn (§14.7). The glow comes back at the first tick after the end.
+- **Break reminders:** SM-03 keeps counting and a break during a session still counts (`BREAK_TAKEN`). Reminders that fall due are neither offered nor posted (no bubble, no N-02, no break screen). When the session ends, the reminder schedule restarts (`nextDueMs = null`). If continuous use is still past the limit, the next tick fires one reminder in the user's mode: gentle bubble + N-02, or the break screen (D-89's "held until it ends").
+- **Mood and hidden:** mood events are logged as usual. Hidden + focus: focus-tier lines are skipped (D-24) and held ones stay held (D-82).
+
+**Day reset during a session** (A-25, D-116)
+- The session doesn't stop and keeps its start day in `focus_sessions.day`, which Trends (M13) and stats (M14) count by.
+- `FOCUS_COMPLETED` is logged on the day the session ends, because mood belongs to the current day: +15 on a day that has already reset would show nowhere.
+- Nags reset at the reset as before (§9); the session keeps holding the new day's nags.
+
+**Storage** — `focus_sessions`, Room version 5, `AutoMigration(from = 4, to = 5)` (a new table, as D-85)
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | INTEGER | Primary key, auto-increment |
+| `day` | TEXT | Day key at the start (A-25); indexed |
+| `started_at_ms` | INTEGER | App clock (fast in debug scenarios) |
+| `goal` | TEXT | `FIXED_TIME`, `UNTIL_DONE`, `NO_SWITCHING` |
+| `goal_minutes` | INTEGER NULL | `null` for until done |
+| `allowed_apps` | TEXT | Package names joined by `,` through a `TypeConverter` (package names can't contain commas). At least one |
+| `pet_mode` | TEXT | `QUIET`, `CHECK_IN`, `REWARD_AT_END` |
+| `checkin_minutes` | INTEGER NULL | Only for check-in mode |
+| `focus_ms` | INTEGER | Focus time so far (D-110) |
+| `switches` | INTEGER | Running → Drifting count ("the switch is recorded", US-13) |
+| `last_focus_at_ms` | INTEGER | Last tick that added focus time; the start at first (D-114) |
+| `outcome` | TEXT NULL | `null` = active; `COMPLETED`, `BROKEN`, `ENDED_EARLY` |
+| `ended_at_ms` | INTEGER NULL | |
+
+- `FocusSessionDao` (abstract class, like `DailyUsageDao`):
+  - `observeActive()`, `active()`, `byId(id)`, `latest()` (S-09's defaults), `deleteBefore(day)` (31 days, active sessions kept), `clearAll()` (debug).
+  - `start(session): Long?` (`@Transaction`): inserts only if no session is active, so there's only ever one (SM-04).
+  - `saveProgress(id, focusMs, switches, lastFocusAtMs)`: only when something changed.
+  - `finish(id, outcome, endedAtMs, eventDay): Boolean` (`@Transaction`): `UPDATE … WHERE id = :id AND outcome IS NULL`. If a row changed and the outcome is `COMPLETED`, it inserts `FOCUS_COMPLETED` (`subject` = the session ID) on `eventDay` in the same transaction. So the reward is logged exactly once, whoever finishes, and a race between the ring, Home and the engine can't give +15 twice.
+- `focus/FocusRepository.kt` for screens: `observeActive()`, `latest()`, `start(…)`, `finish(id, done)`. `eventDay` comes from `DayClock` + the effective reset hour, like `TrackingSummaryRepository`.
+- No new DataStore keys. S-09 remembers the last choices by reading the last session row.
+
+**Config** — two additive fields with Kotlin defaults (`schemaVersion` stays 1, like `breaks.obstructive`)
+
+```json
+"focus": { "durationMinutes": { "…": "…" }, "checkinMinutes": { "…": "…" }, "minDoneMinutes": 5, "abandonAfterMinutes": 30 }
+```
+
+- Bounds (`schema` rule): `minDoneMinutes` 1–60, `abandonAfterMinutes` 5–240. Not required, so documents without them stay valid. Added to `shared/default-config.json` so the console shows them.
+- `features.focus` off → no Start on the ring or Home. A session already running carries on until it ends, and its card keeps Done/End.
+
+**S-09 Focus setup** (`focus/FocusSetupScreen.kt`, `focus/AllowedAppsPicker.kt`, `focus/FocusSetupViewModel.kt`; D-117)
+
+| Section | Control | Rules |
+|---|---|---|
+| Goal | 3 choices: For a set time · Until I'm done · No switching | |
+| Minutes | `SettingSlider` (`ui/`) in the effective `focus.durationMinutes` range | Hidden for until done; read-only "Set by Nyx" when locked |
+| Allowed apps | Search + checkbox list of launcher apps (`InstalledApps.list()`, as S-05) | At least one; selected ones listed first |
+| Pet mode | 3 choices, each with a one-line description | |
+| Check in every | `SettingSlider` in the `focus.checkinMinutes` range | Only in check-in mode |
+| **Start** | Button | Disabled with no app selected |
+
+- **Defaults:** the last session's goal, minutes, apps, mode and check-in interval, clamped into today's ranges; otherwise the config defaults and no app. Opened from the ring, the app that was in front is the selected app instead. The ring passes it as an intent extra; `RingStatus` gets `frontPackage`.
+- The sliders don't write the user's config values: the choice belongs to the session and is remembered through the last row. `userEditable = false` still locks the slider to the admin's default.
+- **After Start:** opened from the ring (a fresh task over Home, §14.5), the activity finishes, so the user is back in the app they came from with the `focus_started` line beside the pet. Opened from Home, it goes back to Home, which shows the session card.
+- **While a session runs**, S-09 shows the session card instead of the form (a stale ring tap or a back-stack entry can still reach it).
+
+**Showing the session**
+
+| Where | What | Actions |
+|---|---|---|
+| Pet badge (O-01) | A small pill over the bottom of the pet's circle, inside its 56 dp, so the window's size doesn't change: minutes left (set time, no switching) or so far (until done); `!` while drifting | — |
+| Ring timer slot (CR-09, D-101) | ⏱ in the Start focus slot: `12m` left or `34m` so far; caption "Focus: 12 min left · switched away 2×", "Away from your focus apps" | Tap → focus card |
+| Ring focus card (`pet/RingFocusCard.kt`) | In the ring's place, like the Limits list: goal, time, switches | Done (until done, after the minimum) · End · Back |
+| Home card (`focus/FocusSessionCard.kt`) | Replaces the Start focus button while a session runs; same text | Done · End |
+
+- The pet's TalkBack description adds "Focus session, 12 minutes left" (or "away from your focus apps"). Drifting is shown by `!` and the text, not by colour alone (§9).
+- `RingStatus` gets `focus: FocusStatus?` (goal, goal minutes, focus time, phase, switches, Done allowed), updated every tick. Opening the ring forces a tick (D-77), so the timer is current.
+- The ring's End and Done send `EngineRequest.EndFocus(done)` (new). Home's write through `FocusRepository`.
+- `HomeScreen` takes one `focus: HomeFocus` (start, or the running session with its callbacks) instead of `onFocus`, so it stays at five parameters (§4).
+
+**Tick interval** (H-01): fast while a session is active and the screen is on (`tickDelaySeconds(…, focusRunning)`), so drift and the timer are seen within 5 s. Paused → the screen is off, so nothing ticks.
+
+**Debug tools** (D-67, D-119)
+- `ScenarioReceiver` gets focus extras that start a session through `FocusRepository.start` right after the scenario clears its data: `--es focus no_switching --ei focus_minutes 25 --es focus_apps com.google.android.youtube --es focus_mode check_in`. Starting a scenario or `--ez stop true` also clears `focus_sessions`.
+- New scenarios:
+  - `youtube-30min`: YouTube 30 min. Set time 25 completes at 25 with +15.
+  - `youtube-instagram`: YouTube 10 min → Instagram 1 min → YouTube 20 min. No switching breaks at 10 min. Set time 25 drifts once, says `focus_drift`, and completes at 26 min (Instagram time doesn't count).
+  - `youtube-screen-off`: YouTube 10 min → screen off 3 min → YouTube 16 min. Set time 25 pauses and completes at 28 min of scenario time.
+
+**Files** (`android/app/src/main/java/com/companionstudio/nyx/` unless stated)
+
+| File | Responsibility |
+|---|---|
+| `focus/FocusSession.kt` · `FocusSessionDao.kt` | Entity, `FocusGoal`, `PetMode`, `FocusOutcome`, apps converter; DAO with `start` and `finish` transactions |
+| `focus/Focus.kt` | Pure: SM-04 step: focus time, drift, switches, check-ins, completion, broken, abandoned |
+| `focus/FocusSessions.kt` | Per engine run: sees starts and ends, runs the step, saves progress, finishes, end requests, `FocusStatus` |
+| `focus/FocusRepository.kt` | Start, finish and observe for screens |
+| `focus/FocusSetupScreen.kt` · `AllowedAppsPicker.kt` · `FocusSetupViewModel.kt` | S-09 |
+| `focus/FocusSessionCard.kt` | The running session on Home and S-09 |
+| `rules/Reactions.kt` · `rules/Reaction.kt` (new) | Focus step before reading the log; hold and release; `Reaction`, `RingStatus`, `ShownBubble` and `BreakScreenChange` move out to `Reaction.kt`, so `Reactions.kt` stays near 250 lines |
+| `rules/BubbleArbiter.kt` | `focus_completed` in the focus tier |
+| `tracking/Tracker.kt` · `TickDelay.kt` | Snapshot `creditedMs` and `screenOn`; fast while focusing |
+| `config/NyxConfig.kt` · `ConfigValidator.kt` | `minDoneMinutes`, `abandonAfterMinutes` with defaults; bounds |
+| `service/Engine.kt` · `PetService.kt` | `EndFocus` request; `Tick` on an active-session change |
+| `pet/ActionsRing.kt` · `RingFocusCard.kt` · `PetWindow.kt` · `PetOverlay.kt` | Timer slot, focus card, badge, the front app passed to S-09 |
+| `home/HomeScreen.kt` · `HomeViewModel.kt` | Session card instead of Start focus while running |
+| `MainActivity.kt` · `AppNavigation.kt` · `AppContainer.kt` | The ring's app extra, S-09 replaces the placeholder and finishes after Start from the ring; wiring |
+| `data/AppDatabase.kt` | Version 5 |
+| `shared/config.schema.json` · `shared/default-config.json` | The two fields |
+| `src/debug/…/ScenarioReceiver.kt` · `src/debug/assets/scenarios/` | Focus extras, clearing sessions, three scenarios |
+
+- `pet/PetOverlay.kt` is already ~330 lines (parking lot: split placement from content). M8 adds a few lines to it. Doing that split first as its own `refactor:` commit is an option, but it's not part of this plan unless you say so.
+
+**Tests**
+
+| Test | Where | Checks |
+|---|---|---|
+| `US13_FocusTest` | `src/test/` | Every SM-04 transition · focus time only from allowed apps' credits, not on the first tick · a peek between ticks is a switch · launcher, shade, Nyx and no front app never drift (A-02) · in a call → no drift · one switch per drift · Drifting stays through the launcher, ends on an allowed app · no switching breaks at once, completion wins in the same tick · screen off → Paused · timed goals complete at N min · Done only for until done and after the minimum · abandoned after 30 min without focus time · check-ins every X min of focus time, `{minutes}` filled, none in quiet or reward mode, rebuilt index doesn't fire at once |
+| `US12_FocusSessionsTest` | `src/test/` (fake DAOs) | `focus_started` for a new session, not after a restart · an end from Home is noticed and gets its line · ended early → no line · drift lines per pet mode, `{app}` filled · progress saved only on change · `FocusStatus` values |
+| `US13_FocusHoldTest` | `src/test/` (Reactions, fake DAOs) | During focus: no nag bubble, no glow, no N-04, `LIMIT_EXCEEDED` still logged; no break bubble, N-02 or break screen; idle dropped · at the end: the end line first, the held nag after the gap if still nagging, withdrawn if not; a still-due reminder fires once (gentle and obstructive); a break taken during the session → no reminder · +15 brings the pet back with only `focus_completed` · day reset during a session (A-25): it carries on, the row keeps the start day, `FOCUS_COMPLETED` on the new day, nags reset |
+| `BubbleArbiterTest` (+) · `TickDelayTest` (+) · `ConfigValidatorTest` (+) · `US21_DefaultConfigTest` (+) | `src/test/` | `focus_completed` in the focus tier · fast while focusing · bounds, defaults when the fields are missing |
+| `US12_FocusSetupViewModelTest` | `src/test/` | Defaults from the last session, clamped · from the ring the front app is selected · locked sliders · Start disabled with no app · start writes one row; a second start while one runs writes nothing |
+| `ScenarioTest` (+) | `src/testDebug/` | The three new files parse |
+| `FocusSessionDaoTest` | `src/androidTest/` | `start` refuses a second active session · `finish` only once, the second returns false · completed inserts `FOCUS_COMPLETED` in the same transaction, other outcomes don't · `observeActive` emits on start and end · `deleteBefore` keeps the active one · apps converter round trip |
+| `US12_FocusSetupScreenTest` | `src/androidTest/` | Sections per goal and mode · search · Start enabled after picking an app and calls back |
+| `US07_ActionsRingTest` (+) · `US28_HomeScreenTest` (+) · `PetWindowBubbleTest` (+) | `src/androidTest/` | Timer slot instead of Start focus, focus card with Done only when allowed, End, Back · the Home card instead of Start focus · badge text and TalkBack description |
+
+- Coverage: ≥ 90% lines on `focus/Focus.kt`, `focus/FocusSessions.kt` and `rules/` (ROADMAP §2).
+- **By hand** (adb, fast clock, then real use): the three scenarios with each goal and mode; S-09 from the ring over YouTube (YouTube preselected, back in YouTube after Start, start line beside the pet) and from Home (card); Done and End from the ring and from Home; badge and ring slot counting down; a nag due during a session shows only after the end line; the break screen held in obstructive mode; a call during a session (emulator's fake call) isn't a switch; install over the M7 build keeps data (v4 → v5); the done-when session on the Pixel 7a with real YouTube and Instagram.
+
+**Decisions** (approved 2026-10-22)
+- **D-109:** sessions live in `focus_sessions` (Room v5). One active row (`outcome` null), started in a transaction that refuses a second. Focus time, switches and the last focus time are saved each tick; the live phase is memory. Every end goes through one conditional `finish` that also logs `FOCUS_COMPLETED` in the same transaction. Screens write through `FocusRepository`; the ring's buttons are engine requests.
+- **D-110:** focus time = tracker credits to the allowed apps from the session's first tick on (not that tick); timed goals complete on it. Paused = the tracker's screen-off.
+- **D-111:** a switch = a counted, not-allowed app in front or credited since the last tick, outside a call; one per Running → Drifting; Drifting ends only on an allowed app; no switching breaks on the first one; completion wins a same-tick tie.
+- **D-112:** pet modes as three levels of chattiness (table above).
+- **D-113:** Done only for until-done sessions and only after `focus.minDoneMinutes` (5) of focus time; End always.
+- **D-114:** a session with no focus time for `focus.abandonAfterMinutes` (30) ends early by itself.
+- **D-115:** the ticks of a session, including the ending one, show focus-tier bubbles only; `focus_completed` joins the focus tier; nags keep logging but their line, glow and N-04 wait; break reminders aren't offered, and the reminder schedule restarts at the end; with the +15 return, only `focus_completed` is said.
+- **D-116:** a session keeps its start day (A-25); `FOCUS_COMPLETED` goes on the day it ends.
+- **D-117:** S-09's defaults come from the last session (clamped), the ring's front app overrides the app choice; the sliders don't write user config values; after Start from the ring the activity finishes, from Home it returns to Home.
+- **D-118:** the timer shows as a pet badge (minutes, `!` when drifting), a ring slot in Start focus's place with a focus card (Done/End/Back), and a Home card. The ring sends `EndFocus(done)`.
+- **D-119:** debug: focus extras on `ScenarioReceiver`, sessions cleared with the scenario data, three focus scenarios.
+- **D-120:** two additive config fields, `focus.minDoneMinutes` and `focus.abandonAfterMinutes`, with Kotlin defaults; `features.focus` off hides Start but doesn't stop a running session.
+
+**Not in M8:** focus stats in Trends (→ M13) and opt-in stats (→ M14); a repeat of the drift line while you stay away (the badge shows it); "phone face down" sessions (locking pauses, as US-13 says); notifications for focus events while the pet is hidden; ring animations (parking lot).

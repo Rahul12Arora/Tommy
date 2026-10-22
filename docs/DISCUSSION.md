@@ -431,6 +431,18 @@ stateDiagram-v2
 | D-106 | S-11 as in the table; `breaks.mode` and `idle.enabled` in `ReactionSettings`; the S-06 slider row shared through `ui/SettingSlider.kt`. | See ARCHITECTURE §14.7 | See §14.7 | 2026-10-21 |
 | D-107 | Fast ticks also while the pet glows and when continuous use is within one slow tick of the break limit. | See ARCHITECTURE §14.7 | See §14.7 | 2026-10-21 |
 | D-108 | Four new debug scenarios (above). | See ARCHITECTURE §14.7 | See §14.7 | 2026-10-21 |
+| D-109 | Focus sessions live in `focus_sessions` (Room v5): one active row, started in a transaction that refuses a second; focus time, switches and last focus time saved each tick, the live phase in memory; every end goes through one conditional `finish` that logs `FOCUS_COMPLETED` in the same transaction; screens write through `FocusRepository`, the ring's buttons are engine requests. | See ARCHITECTURE §14.8 | See §14.8 | 2026-10-22 |
+| D-110 | Focus time = tracker credits to the allowed apps from the session's first tick on (not that tick); timed goals complete on it; Paused = the tracker's screen-off. | See ARCHITECTURE §14.8 | See §14.8 | 2026-10-22 |
+| D-111 | A switch = a counted, not-allowed app in front or credited since the last tick, outside a call; one per Running → Drifting; Drifting ends only on an allowed app; no switching breaks on the first; completion wins a same-tick tie. | See ARCHITECTURE §14.8 | See §14.8 | 2026-10-22 |
+| D-112 | Pet modes are three levels of chattiness: quiet (no lines during the session, drift on the badge), reward at the end (drift lines), check-in (drift lines + check-ins every X min of focus time); all get start and end lines and +15 on completion. | See ARCHITECTURE §14.8 | See §14.8 | 2026-10-22 |
+| D-113 | Done only for until-done sessions, after `focus.minDoneMinutes` (5) of focus time; End always. | See ARCHITECTURE §14.8 | See §14.8 | 2026-10-22 |
+| D-114 | A session with no focus time for `focus.abandonAfterMinutes` (30) ends early by itself. | See ARCHITECTURE §14.8 | See §14.8 | 2026-10-22 |
+| D-115 | Session ticks, including the ending one, show focus-tier bubbles only; `focus_completed` joins the focus tier; nags keep logging but their line, glow and N-04 wait; break reminders aren't offered and their schedule restarts at the end; a +15 return says only `focus_completed`. | See ARCHITECTURE §14.8 | See §14.8 | 2026-10-22 |
+| D-116 | A session keeps its start day (A-25); `FOCUS_COMPLETED` goes on the day it ends. | See ARCHITECTURE §14.8 | See §14.8 | 2026-10-22 |
+| D-117 | S-09 defaults come from the last session (clamped); the ring's front app overrides the app choice; sliders don't write user config; after Start from the ring the activity finishes, from Home it returns to Home. | See ARCHITECTURE §14.8 | See §14.8 | 2026-10-22 |
+| D-118 | The timer shows as a pet badge (minutes, `!` when drifting), a ring slot in Start focus's place with a focus card (Done/End/Back), and a Home card; the ring sends `EndFocus(done)`. | See ARCHITECTURE §14.8 | See §14.8 | 2026-10-22 |
+| D-119 | Debug: focus extras on `ScenarioReceiver`, sessions cleared with scenario data, three focus scenarios. | See ARCHITECTURE §14.8 | See §14.8 | 2026-10-22 |
+| D-120 | Two additive config fields, `focus.minDoneMinutes` and `focus.abandonAfterMinutes`, with Kotlin defaults; `features.focus` off hides Start but doesn't stop a running session. | See ARCHITECTURE §14.8 | See §14.8 | 2026-10-22 |
 
 ### D-16 — Admin / user settings split
 

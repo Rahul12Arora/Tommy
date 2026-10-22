@@ -1,7 +1,7 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M8 Focus sessions (next; branch `feat/m8-focus` from `main`)
+- Phase: 5 — Build · Milestone: M8 Focus sessions (in progress; branch `feat/m8-focus`)
 - Last done: M7 done 2026-10-22 — PR #13 merged, tagged `m7-done` (`6a9874e`)
-- Next step: M8 LLD (§14.8) in a new session: focus sessions (SM-04), S-09, the focus hold for nags and the break screen (D-25), the timer slot on the ring
+- Next step: build M8 per ARCHITECTURE §14.8 (approved: D-109 to D-120)
 - Blockers: none. The API 37 emulator still hangs at boot ("hanging thread 'QEMU2 main loop'"); it needs a cold boot or wipe from Android Studio before it's used again
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
@@ -156,3 +156,8 @@
 - Done: the developer merged PR #13; tagged `m7-done` on the merge (`6a9874e`). M7 closed: ROADMAP status done, AGENTS card on M8, `feat/m8-focus` started from `main` for the close-out docs
 - Open from M7: a real call while a break is due (unit-tested only); TalkBack by ear
 - Next: M8 Focus sessions, LLD first
+
+### 2026-10-22 (M8)
+- Done: M8 LLD as ARCHITECTURE §14.8 — session flow, SM-04 per tick, focus time from tracker credits, drift and A-02 exclusions, goals and pet modes, Done minimum, abandoned sessions, hold and release of nags and break reminders, day reset, `focus_sessions` (Room v5), two additive config fields, S-09, badge / ring timer slot / focus card / Home card, debug extras and scenarios, files, tests. D-109 to D-120 proposed. ROADMAP M8 in progress
+- Next: approval of D-109 to D-120 (D-112 is an interpretation of D-04), then build M8
+- Approved: D-109 to D-120, pet modes as proposed (decision log rows added); building M8 straight through at the developer's request
