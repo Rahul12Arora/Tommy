@@ -291,4 +291,4 @@
 - Tried & abandoned: Productive in yellow beside Neutral orange (normal-vision ΔE 12.9 < 15) → kept the reference palette order
 - Note: `ui/PlaceholderScreen.kt` has no users now that Trends exists; left in place (deleting a file needs the developer's OK)
 - Done: `ui/PlaceholderScreen.kt` and its string deleted (the developer's OK)
-
+- Verified: PR #20 opened; CI green — Android build 2 min 27 s (run 39851696361), backend test 43 s and console 14 s (run 39851696402)
