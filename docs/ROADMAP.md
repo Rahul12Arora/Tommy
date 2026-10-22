@@ -228,7 +228,7 @@ Done when:
 Verify with: `./gradlew test` · fake scenarios on the emulator (`instagram-4h`, `--es event break_taken`)
 Not in this milestone: limits and breaks triggering lines (→ M7)
 
-### M7 — Limits, nags, breaks, idle lines            status: in-progress
+### M7 — Limits, nags, breaks, idle lines            status: done
 Goal: the pet nags when limits are crossed, reminds breaks, and talks now and then.
 Depends on: M6
 Stories: US-08, US-09, US-10, US-11, US-17 (limit goals), US-27, US-29 (notifications while hidden), US-07 + US-30 (actions ring, continuous screen use; CR-09, CR-10)

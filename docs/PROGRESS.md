@@ -1,7 +1,7 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M7 Limits, nags, breaks, idle lines (on `feat/m7-limits-nags`; built and checked on the Pixel 7a, waiting for the developer's OK to close)
-- Last done: M7 built to §14.7 (D-93 to D-108 approved): unit tests 260/260, lint clean, debug + release build
-- Next step: CI on the PR → the developer's OK (and a real call while a break is due, if wanted) → merge → `m7-done` → M8 Focus sessions
+- Phase: 5 — Build · Milestone: M8 Focus sessions (next; branch `feat/m8-focus` from `main`)
+- Last done: M7 done 2026-10-22 — PR #13 merged, tagged `m7-done` (`6a9874e`)
+- Next step: M8 LLD (§14.8) in a new session: focus sessions (SM-04), S-09, the focus hold for nags and the break screen (D-25), the timer slot on the ring
 - Blockers: none. The API 37 emulator still hangs at boot ("hanging thread 'QEMU2 main loop'"); it needs a cold boot or wipe from Android Studio before it's used again
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
@@ -153,3 +153,6 @@
 - Not verified: a real call while a break is due; TalkBack by ear
 - Verified: 263 unit tests, lint, debug build
 - Verified: Android CI green on `feat/m7-limits-nags` (run 39665643172); PR #13 open, not merged
+- Done: the developer merged PR #13; tagged `m7-done` on the merge (`6a9874e`). M7 closed: ROADMAP status done, AGENTS card on M8, `feat/m8-focus` started from `main` for the close-out docs
+- Open from M7: a real call while a break is due (unit-tested only); TalkBack by ear
+- Next: M8 Focus sessions, LLD first
