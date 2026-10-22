@@ -1,7 +1,7 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M10 Backend + config API (done; PR open from `feat/m10-backend`, waiting for the developer's merge)
-- Last done: config validation (+ shared fixtures), initial config seed, `GET /v1/config`, `GET /health`, BUG-05 fixed, backend CI workflow
-- Next step: the developer merges the M10 PR → tag `m10-done` on the merge → M11 in a new session, LLD first
+- Phase: 5 — Build · Milestone: M11 Admin login + console (done; PR open from `feat/m11-admin`)
+- Last done: M11 built and verified locally 2026-10-22 — login, draft/publish API, console W-01 to W-03, console in the image; Done-when checked in headless Chrome
+- Next step: merge the M11 PR, tag `m11-done`; then M12 (app fetches remote config) in a new session, LLD first. Each dev needs an admin login in `backend/.env` (`npm run hash-password`, `backend/README.md`)
 - Blockers: none. Docker note: Homebrew's `docker` CLI comes first on PATH and can't find Docker Desktop's credential helper (`docker pull` fails); put `/Applications/Docker.app/Contents/Resources/bin` first or `brew uninstall docker`
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37; start it with `-gpu swiftshader_indirect`, see log 2026-10-22 M9) + Pixel 7a
@@ -238,3 +238,20 @@
 - Done: ROADMAP M10 ticked and status done; AGENTS card on M11
 
 - Done: PR #17 opened (M10 → main) with the manual QA checklist; merging is the developer's step
+- Done: the developer merged PR #17; tagged `m10-done` on the merge (`61b5430`). M10 closed; `feat/m11-admin` started from `main` for the close-out docs
+- Next: M11 Admin login + console
+
+### 2026-10-22 (M11)
+- Done: M11 LLD written in ARCHITECTURE §14.11: stateless signed session cookie, JSON-only CSRF rule, scrypt settings, draft/publish on the existing `config_versions` (no migration), console W-01 to W-03 with RJSF tabs and a Changes list, Docker console stage, CI console job, test list
+- Verified before writing: the register's versions, licences and peer dependencies on npm; `@fastify/cookie` signing (HMAC-SHA256, timing-safe unsign, `signCookie` for tests), `@fastify/rate-limit` per-route `config.rateLimit` with `global: false`, `@fastify/static` `prefix`/`redirect`, RJSF 6.11 `extraErrors`/`liveValidate`/`validateForm`/`submitButtonOptions.norender`, Vite 8 `server.fs.allow`
+- Decided: D-131 to D-139 approved; HLD updated to match (§7, §9, §11, §12, §13)
+- Done: login/logout, signed session cookie, `requireJson` (CSRF), `requireAdmin`, login rate limit, `hash-password` (hidden input checked through a pseudo-terminal), env vars `NODE_ENV`/`ADMIN_*`/`SESSION_SECRET`
+- Done: `GET /admin/config/published`, `GET`/`PUT /admin/config/draft`, `POST /admin/config/publish` (advisory lock, server-set versions, re-validation on publish); no migration
+- Done: `admin/` (Vite + React + RJSF), Docker console stage, `/console/` served by the API, CI job `console`, READMEs
+- Decided: D-140 — Ajv's `new Function` is blocked by the console's CSP (`script-src 'self'`), so the validator is precompiled at dev/build time and the form uses the full schema with the other tab's sections hidden
+- Tried & abandoned: Ajv's ES-module standalone output (RJSF names functions after hashes that can start with a digit → "invalid export name"); wrapped the CommonJS output instead. `@fastify/static`'s `redirect: true` doesn't cover the bare prefix → explicit `GET /console` redirect. Rejecting extra login keys: Fastify's default Ajv drops them (`removeAdditional`), so they're ignored
+- Verified: backend `npm run lint`, `npm run test:coverage` (114 tests, 100% lines on `src/features/`); console `npm run lint` + `npm run build`; `docker build`; walkthrough in headless Chrome (DevTools protocol, no new dependency) against the image: wrong password message, login, cookie flags (`HttpOnly`, `SameSite=Strict`, `Path=/admin`), edit Social default 60 → 45 → Changes list → Save draft v2 → Publish → `GET /v1/config` `ETag "2"` with 45, cross-field error shown at the top and under the field, browser schema error on the Pets tab, logout → login after reload, **no CSP errors**, audit log lines for login/failed login/save/publish
+- Verified: pushed `feat/m11-admin`; Backend CI green (run 39790670501: `test` 53 s incl. Docker build with the console stage, `console` 13 s)
+- Verified: the developer's browser check of the console (2026-10-22)
+- Not verified: the `Secure` cookie over HTTPS (production, M15)
+- Known: a server error under a field can show twice (RJSF quirk; parking lot)

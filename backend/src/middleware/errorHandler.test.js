@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { TEST_AUTH } from "../../testing/testAuth.js";
 import { buildApp } from "../app.js";
 import { HttpError } from "../lib/httpError.js";
 
 function testApp() {
-  const app = buildApp({ logLevel: "silent" });
+  const app = buildApp({ auth: TEST_AUTH, logLevel: "silent" });
   app.get("/boom", async () => {
     throw new Error("secret detail");
   });

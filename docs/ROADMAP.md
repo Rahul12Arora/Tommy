@@ -333,19 +333,19 @@ Done when:
 Verify with: `npm test` · `curl -i localhost:3000/v1/config?schema=1`
 Not in this milestone: admin routes (→ M11)
 
-### M11 — Admin login + console            status: pending
+### M11 — Admin login + console            status: done
 Goal: you can log in, edit the draft in a generated form and publish.
 Depends on: M10
 Stories: US-19, US-20, US-23
 Tasks:
-- [ ] LLD: login, session cookie, CSRF rules, draft/publish endpoints, console screens W-01 to W-03
-- [ ] `hash-password` script; login/logout; `requireAdmin`; rate limit
-- [ ] Draft/published/publish endpoints with cross-field validation
-- [ ] `admin/`: Vite + React; login; config editor (generated form, draft vs published); pets & lines
-- [ ] Production image builds the console into `/console/` (D-42)
-- [ ] Tests: every admin route `401` without a session; login rate limit; invalid draft rejected with details
+- [x] LLD: login, session cookie, CSRF rules, draft/publish endpoints, console screens W-01 to W-03 (§14.11, 2026-10-22)
+- [x] `hash-password` script; login/logout; `requireAdmin`; rate limit (2026-10-22)
+- [x] Draft/published/publish endpoints with cross-field validation (2026-10-22)
+- [x] `admin/`: Vite + React; login; config editor (generated form, draft vs published); pets & lines (2026-10-22; precompiled validator, D-140)
+- [x] Production image builds the console into `/console/` (D-42) (2026-10-22)
+- [x] Tests: every admin route `401` without a session; login rate limit; invalid draft rejected with details (2026-10-22)
 Done when:
-- [ ] Change the Social limit default in the console → publish → `GET /v1/config` shows it with a new ETag
+- [x] Change the Social limit default in the console → publish → `GET /v1/config` shows it with a new ETag (2026-10-22, headless Chrome against the Docker image)
 Verify with: `npm test` · browser walkthrough
 Not in this milestone: stats view (→ M14)
 

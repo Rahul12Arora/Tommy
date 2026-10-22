@@ -1,0 +1,259 @@
+/* Plain CSS (TECH_STACK §6): the page, plus RJSF's Bootstrap-3 class names without Bootstrap itself */
+:root {
+  --text: #1d1d1f;
+  --muted: #6e6e73;
+  --line: #d2d2d7;
+  --accent: #3a5ccc;
+  --danger: #b3261e;
+  --surface: #f5f5f7;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--text);
+  background: #fff;
+}
+
+body {
+  margin: 0;
+}
+
+.page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 16px 64px;
+}
+
+button {
+  font: inherit;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+button.link {
+  border: none;
+  color: var(--accent);
+  margin-left: auto;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.error {
+  color: var(--danger);
+}
+
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
+  background: #fff;
+  border-bottom: 1px solid var(--line);
+}
+
+.toolbar h1 {
+  font-size: 20px;
+  margin: 0 8px 0 0;
+}
+
+.versions {
+  color: var(--muted);
+  margin-right: auto;
+}
+
+.status {
+  padding: 8px 12px;
+  background: var(--surface);
+  border-radius: 6px;
+}
+
+.server-errors {
+  margin: 12px 0;
+  padding: 8px 12px;
+  border: 1px solid var(--danger);
+  border-radius: 6px;
+  color: var(--danger);
+}
+
+.changes {
+  margin: 12px 0;
+}
+
+.changes li {
+  margin: 2px 0;
+  overflow-wrap: anywhere;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin: 16px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.tabs button {
+  border: none;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+}
+
+.tabs button.active {
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+
+/* Login (W-01): opaque, covering the editor underneath */
+.login-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+}
+
+.login {
+  display: grid;
+  gap: 12px;
+  width: min(320px, calc(100vw - 32px));
+  padding: 24px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.login h1 {
+  font-size: 20px;
+  margin: 0;
+}
+
+.login label {
+  display: grid;
+  gap: 4px;
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+/* RJSF classic theme. `.hidden` wraps the sections of the other tab */
+.hidden {
+  display: none;
+}
+
+fieldset {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  margin: 8px 0;
+  padding: 8px 12px;
+}
+
+legend {
+  font-weight: 600;
+  padding: 0 4px;
+}
+
+.form-group {
+  margin: 8px 0;
+}
+
+.control-label {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.form-control {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 480px;
+}
+
+.checkbox label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.has-error .form-control {
+  border-color: var(--danger);
+}
+
+.help-block,
+.error-detail,
+.panel-danger {
+  color: var(--danger);
+  font-size: 14px;
+}
+
+.error-detail {
+  list-style: none;
+  padding: 0;
+  margin: 2px 0;
+}
+
+.panel-danger {
+  border: 1px solid var(--danger);
+  border-radius: 6px;
+  padding: 4px 12px;
+}
+
+.array-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.array-item > :first-child {
+  flex: 1;
+}
+
+.btn-group {
+  display: flex;
+  gap: 2px;
+}
+
+.btn-danger {
+  color: var(--danger);
+}
+
+/* RJSF draws its buttons with Glyphicons; plain characters instead of the icon font */
+.glyphicon-plus::before {
+  content: "+ Add";
+}
+
+.glyphicon-remove::before {
+  content: "✕";
+}
+
+.glyphicon-arrow-up::before {
+  content: "↑";
+}
+
+.glyphicon-arrow-down::before {
+  content: "↓";
+}
+
+.glyphicon-copy::before {
+  content: "⧉";
+}
+
+.glyphicon {
+  font-style: normal;
+}

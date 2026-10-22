@@ -45,6 +45,8 @@ google-services.json
 node_modules/
 dist/
 coverage/
+# The console's schema validator, compiled before every dev start and build (D-140)
+admin/src/generated/
 npm-debug.log*
 
 # ---- Environment files — only the example is committed ----

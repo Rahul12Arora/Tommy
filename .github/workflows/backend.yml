@@ -6,6 +6,8 @@ on:
       - "backend/**"
       # The backend validates with shared/config.schema.json, seeds shared/default-config.json and tests the fixtures
       - "shared/**"
+      # The image also builds the console (D-42)
+      - "admin/**"
       - ".github/workflows/backend.yml"
 
 permissions:
@@ -58,3 +60,29 @@ jobs:
       - name: Docker image builds
         working-directory: .
         run: docker build -f backend/Dockerfile -t nyx-api:ci .
+
+  # The console has no tests of its own (TECH_STACK §5): lint and a production build, which also compiles the
+  # schema validator (D-140)
+  console:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: admin
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "26.12.1"
+          cache: npm
+          cache-dependency-path: admin/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
