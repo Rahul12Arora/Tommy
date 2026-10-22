@@ -13,6 +13,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Config checks (§14.12); opt-in stats from M14 -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <!-- Apps with a launcher icon, for S-05's list (R-10). Not QUERY_ALL_PACKAGES, which Play restricts -->
     <queries>

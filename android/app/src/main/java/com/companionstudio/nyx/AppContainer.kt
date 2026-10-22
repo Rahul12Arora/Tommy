@@ -6,7 +6,9 @@ import android.media.AudioManager
 import android.util.Log
 import androidx.datastore.preferences.preferencesDataStoreFile
 import com.companionstudio.nyx.config.Category
+import com.companionstudio.nyx.config.ConfigClient
 import com.companionstudio.nyx.config.ConfigManager
+import com.companionstudio.nyx.config.ConfigRefresher
 import com.companionstudio.nyx.config.ConfigUserValues
 import com.companionstudio.nyx.config.EffectiveConfig
 import com.companionstudio.nyx.data.AdjustableClock
@@ -38,9 +40,10 @@ import com.companionstudio.nyx.ui.labelRes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
 import java.io.File
+import java.time.Clock
 
 /** Manual dependency injection (TECH_STACK §5). One instance, created by [PetApp]. */
 class AppContainer(private val context: Context) {
@@ -74,13 +77,26 @@ class AppContainer(private val context: Context) {
     val reactionSettings = ReactionSettings(settingsStore)
     val callState: CallState = AudioCallState(context.getSystemService(AudioManager::class.java))
 
-    // Read from disk once, the first time something collects. M12 swaps this for a flow that follows the fetched document
-    private val baseConfig by lazy { configManager.loadBase() }
-
-    /** What features read: the base document with the user's values on top (§14.2), updated whenever a value changes. */
-    val effectiveConfig: Flow<EffectiveConfig> = configUserValues.observe()
-        .map { userValues -> EffectiveConfig(baseConfig, userValues) }
+    /**
+     * What features read: the base document with the user's values on top (§14.2), updated whenever a value
+     * changes or a new document is fetched (§14.12). The base is read from disk the first time something collects.
+     */
+    val effectiveConfig: Flow<EffectiveConfig> = combine(configManager.base, configUserValues.observe(), ::EffectiveConfig)
         .flowOn(Dispatchers.IO)
+
+    /** Checks the server for a new config; `null` in builds without a server address (D-146). */
+    val configRefresher: ConfigRefresher? = if (BuildConfig.CONFIG_BASE_URL.isEmpty()) {
+        Log.i(TAG, "No config server in this build: using the cached or built-in config")
+        null
+    } else {
+        ConfigRefresher(
+            fetch = ConfigClient(BuildConfig.CONFIG_BASE_URL, BuildConfig.VERSION_NAME)::fetch,
+            manager = configManager,
+            // Real time, not the debug scenarios' faster clock: the 6 hours are about the server, not usage
+            clock = Clock.systemUTC(),
+            log = { Log.i(TAG, it) },
+        )
+    }
 
     val summaryRepository: SummaryRepository =
         TrackingSummaryRepository(database.dailyUsageDao(), database.petEventDao(), effectiveConfig, petSettings, dayClock)

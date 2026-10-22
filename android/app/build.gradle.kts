@@ -26,10 +26,14 @@ android {
 
     buildTypes {
         debug {
+            // The local backend through `adb reverse tcp:3000 tcp:3000`, on the emulator and a USB phone (D-142)
+            buildConfigField("String", "CONFIG_BASE_URL", "\"http://127.0.0.1:3000\"")
             // Coverage report: ./gradlew createDebugUnitTestCoverageReport (targets in docs/ROADMAP.md)
             enableUnitTestCoverage = true
         }
         release {
+            // Blank until M15 sets the production HTTPS address; blank = no config checks (D-146)
+            buildConfigField("String", "CONFIG_BASE_URL", "\"\"")
             optimization {
                 enable = true
                 packageScope = setOf("androidx.**", "kotlin.**", "kotlinx.**")

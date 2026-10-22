@@ -3,7 +3,7 @@
 > Phase 4 output. Read this first if you're new to the repo: after ~10 minutes you should know how data moves through the system and where every piece lives.
 > Low-level design (LLD) for each module is added to §14 at the **start** of its milestone, before any code.
 > Rule: code and diagrams must agree. A task that changes a component, a flow or a folder updates this file in the same task.
-> Last updated: 2026-10-22 (M11 LLD §14.11)
+> Last updated: 2026-10-22 (M12 LLD §14.12)
 
 ---
 
@@ -44,7 +44,8 @@ flowchart LR
       end
       CFG["ConfigManager<br/>built-in → admin → user"]:::done
       STORE[("Room · DataStore<br/>config cache file")]:::done
-      NET["ConfigClient · StatsUploader<br/>week 2"]:::pending
+      NET["ConfigClient · ConfigRefresher"]:::done
+      UPL["StatsUploader<br/>M14"]:::pending
     end
     OS["Android system services<br/>usage events · overlay windows<br/>notifications · package info"]
     GPS["Google Play services<br/>emoji font"]
@@ -73,7 +74,8 @@ flowchart LR
   OVL -->|"draws over other apps"| OS
   NTF --> OS
   OVL -.->|"emoji font"| GPS
-  NET -->|"HTTPS GET /v1/config<br/>POST /v1/stats"| API
+  NET -->|"HTTPS GET /v1/config"| API
+  UPL -->|"HTTPS POST /v1/stats"| API
   NET --> CFG
   BROWSER -->|"HTTPS /admin/*"| API
   BROWSER -->|"loads"| STATIC
@@ -506,10 +508,10 @@ sequenceDiagram
 
 **Security** (app)
 - No secrets in the app (A-10).
-- Debug builds may talk to the dev backend over plain HTTP on the emulator's host address only.
+- Debug builds may talk to the dev backend over plain HTTP on `127.0.0.1` only (through `adb reverse`, D-142).
 
 **Privacy — what ever leaves the phone**
-- `GET /v1/config`: no identifiers.
+- `GET /v1/config`: no identifiers; a fixed `User-Agent: Nyx/<version>`, not the default one that names the phone model (D-145).
 - `POST /v1/stats`: only if opted in; daily aggregates only (A-09).
 - Nothing else. The privacy policy and Play's Data safety form must say exactly this (M15).
 
@@ -590,9 +592,9 @@ Tests: every admin config route is checked for `401` without a session (M11).
 | `LOG_LEVEL` | Logger level | `info` |
 
 **Android build settings**
-- `CONFIG_BASE_URL` per build type:
-  - debug → the dev backend (`http://10.0.2.2:3000` from the emulator).
-  - release → the production HTTPS address (set in M15).
+- `CONFIG_BASE_URL` per build type (D-142, D-146):
+  - debug → the dev backend at `http://127.0.0.1:3000`, reached through `adb reverse tcp:3000 tcp:3000` from the emulator or a USB phone. Plain HTTP is allowed to that address only, in debug builds only.
+  - release → blank until M15 sets the production HTTPS address (blank = no config checks).
 - `applicationId`: `com.companionstudio.nyx`; app name: Nyx (D-49).
 
 **Environments** (A-27)
@@ -702,7 +704,7 @@ Written at the start of each milestone, before code.
 | Week-1 check fixes | M9 | not a module; changes listed in §14.9 |
 | Backend foundation + config API | M10 | done 2026-10-22 (§14.10) |
 | Admin login, draft/publish, console | M11 | done 2026-10-22 (§14.11) |
-| App remote config | M12 | pending |
+| App remote config | M12 | done 2026-10-22 (§14.12) |
 | Trends + positive goals | M13 | pending |
 | Opt-in stats | M14 | pending |
 
@@ -2715,3 +2717,175 @@ Plus: wrong password ×6 → the 6th says wait a minute · a broken value (defau
 | D-140 | The console's schema validator is precompiled at `dev`/`build` time (RJSF `compileSchemaValidatorsCode`) so the strict CSP stays; one RJSF form over the full schema, the other tab's sections hidden | `'unsafe-eval'` in the console's CSP; no validation in the browser |
 
 **Not in M11:** stats view W-04 (→ M14) · version history and rollback (F-16, Could) · a `DELETE` for drafts · optimistic locking between tabs · friendlier field labels (schema `title`s) · a rate limit on `GET /v1/config` (parking lot) · HTTPS and the production deploy (→ M15).
+
+### 14.12 M12 — App fetches remote config
+
+Written 2026-10-22; D-141 to D-146 approved 2026-10-22.
+
+**Purpose:** the app picks up the published config on service start and within 6 hours, and nothing the server sends (or fails to send) can break it. Stories: US-19 (pickup, A-17), US-21 (fallback chain), US-22 (user values stay and are clamped — already done by `EffectiveConfig`, §14.2; M12 only makes the base document change while the app runs).
+
+**What gets installed:** nothing. `HttpURLConnection` (TECH_STACK §5), `java.nio.file` and the JDK's own HTTP server for tests.
+
+**Files** (`android/…` = `android/app/src/main/java/com/companionstudio/nyx/`)
+
+| File | New / changed | Responsibility |
+|---|---|---|
+| `config/ConfigClient.kt` | new | One `GET /v1/config` with `HttpURLConnection` → `FetchResult`. Knows HTTP, not config: it never parses the body |
+| `config/ConfigManager.kt` | changed | Adds `base: Flow<NyxConfig>` (the base document, now able to change), `cachedVersion()` and `accept(text)`: validate → write the cache atomically → emit |
+| `config/ConfigRefresher.kt` | new | *When* to check: on service start, then every 6 h while the screen is on (D-143); logs the outcome |
+| `AppContainer.kt` | changed | Builds the client and refresher from `BuildConfig.CONFIG_BASE_URL`; `effectiveConfig` combines `configManager.base` with the user values (replaces the `baseConfig by lazy`) |
+| `service/PetService.kt` | changed | Launches `configRefresher.keepFresh(screenOn)` in `onCreate` |
+| `app/build.gradle.kts` | changed | `buildConfigField` `CONFIG_BASE_URL` per build type (D-142, D-146) |
+| `src/main/AndroidManifest.xml` | changed | `INTERNET` (§10) |
+| `src/debug/AndroidManifest.xml`, `src/debug/res/xml/network_security_config.xml` | changed / new | Debug builds only: plain HTTP to `127.0.0.1` and nothing else (D-142) |
+| `android/README.md` | changed | "Against the local backend": `docker compose up`, `adb reverse tcp:3000 tcp:3000`, what the log shows, how to force an invalid published document |
+
+**`ConfigClient`**
+
+```kotlin
+sealed interface FetchResult {
+    data class Fetched(val body: String) : FetchResult // 200
+    data object NotModified : FetchResult              // 304
+    data class Failed(val reason: String) : FetchResult // anything else, offline included
+}
+
+class ConfigClient(private val baseUrl: String, private val appVersion: String, private val timeoutMs: Int = 10_000) {
+    /** Blocking; call on Dispatchers.IO. Never throws for a network or server problem. */
+    fun fetch(cachedVersion: Int?): FetchResult
+}
+```
+
+- **Request:** `GET {baseUrl}/v1/config?schema={SCHEMA_VERSION}` with
+  - `If-None-Match: "<cachedVersion>"` only when there is a cached document (D-141);
+  - `Accept: application/json`;
+  - `User-Agent: Nyx/<versionName>` — the default one names the phone model, and §9 promises the config call carries nothing about the phone (D-145);
+  - connect and read timeouts 10 s each; `useCaches = false` (the ETag is ours to handle).
+- **Response:** `200` → the body as UTF-8, read up to 1 MiB (today's document is ~9 KB; more → `Failed("too large")`, so a broken server can't exhaust memory) · `304` → `NotModified` · any other status → `Failed("HTTP <code>")` · `IOException` (offline, DNS, refused, timeout, TLS) → `Failed(<exception class>: <message>)`. The connection is always disconnected.
+- No retries inside the client; the refresher decides when to try again.
+
+**`ConfigManager` additions** (M2's `loadBase()` stays as it is)
+
+```kotlin
+val base: Flow<NyxConfig>                 // loadBase() on first collection, then every accepted document
+fun cachedVersion(): Int?                 // configVersion of the document from the server (cache or fetch); null on built-in
+fun accept(text: String): AcceptResult    // Applied(version) · Unchanged · Rejected(errors)
+```
+
+- **`accept`** runs the same `parseConfig` as the cache (schema rule incl. `schemaVersion` = 1, then every cross-field rule):
+  1. `Invalid` → `Rejected(errors)`. The cache and `base` are untouched.
+  2. Valid, `configVersion` = `cachedVersion()` → `Unchanged` (nothing written).
+  3. Valid, any other version — **lower ones too** (D-144): the server's published document is the truth (a dev database reset, a future rollback, F-16) → write the cache, then emit on `base` → `Applied(version)`.
+- **Atomic cache write:** write `config_cache.json.tmp` in `filesDir` → `FileOutputStream.fd.sync()` → `Files.move(tmp, cache, ATOMIC_MOVE)` (a `rename(2)`, which replaces the old file in one step on Android's file systems). A crash mid-write leaves the old cache whole; a leftover `.tmp` is never read and is overwritten next time.
+  - If the write fails (disk full), the document is still applied in memory and the failure logged; the next start falls back to the old cache until the next check. Nothing throws.
+- The cache file stays the raw document, and its ETag is its `configVersion` — M2's open point, confirmed (no wrapper file).
+
+**`ConfigRefresher`** — when to check (A-17, D-143)
+
+```kotlin
+class ConfigRefresher(
+    private val fetch: (cachedVersion: Int?) -> FetchResult, // ConfigClient::fetch; a fake in tests
+    private val manager: ConfigManager,
+    private val clock: Clock,
+    private val log: (String) -> Unit,
+) {
+    suspend fun keepFresh(screenOn: Flow<Boolean>) // runs until the service's scope ends
+}
+```
+
+- While the screen is on, it looks every 15 minutes whether a check is due; while it's off, nothing runs (no wake locks, no alarms, §9 Battery). With `collectLatest` on `screenOn`, screen-off cancels the wait.
+- **Due** when there's been no check since the service started, or the wall clock is not inside `[lastCheck, lastCheck + 6 h)` — so moving the clock back can't block checks forever.
+- `lastCheck` lives in memory, so **every service start checks** (start = setup Finish, app open when not running, boot, app update, restart after process death; D-70). A `304` costs a few hundred bytes.
+- A failed check counts as a check: the next try is 6 h later (§9 Errors). Nothing hammers a server that's down.
+- The fetch runs on `Dispatchers.IO`, off the engine coroutine; a slow server never delays a tick.
+- **Applying while running** (D-144): `effectiveConfig` follows `base`. The engine reads `effectiveConfig.first()` every tick, and the overlay and screens collect it, so a new document is used from the next tick — no restart needed. User values are re-resolved and clamped into any narrowed range (US-22).
+- **Log lines** (tag `Nyx`, release too — they hold no usage data or identifiers): `Config 7 applied` (+ `; not saved: …` when the cache write failed) · `Config 7 unchanged (304)` · `Fetched config ignored: setting-range at nags.snoozeMinutes, …` · `Config check failed: HTTP 503` / `… SocketTimeoutException …`.
+- **Clock:** the real system clock, not `AppContainer.clock`: a debug scenario's faster time (D-67) is about usage, and shouldn't make the app check the server more often.
+
+```mermaid
+sequenceDiagram
+  participant S as PetService
+  participant R as ConfigRefresher
+  participant C as ConfigClient
+  participant M as ConfigManager
+  participant API as GET /v1/config
+  participant E as Engine
+  S->>R: keepFresh(screenOn)
+  loop screen on, every 15 min
+    R->>R: due? (no check yet, or ≥ 6 h, or clock went back)
+    R->>M: cachedVersion() → 7
+    R->>C: fetch(7)  [keepFresh runs on Dispatchers.IO]
+    C->>API: ?schema=1, If-None-Match "7"
+    alt 304
+      API-->>C: 304
+      C-->>R: NotModified
+    else 200
+      API-->>C: document, ETag "8"
+      C-->>R: Fetched(body)
+      R->>M: accept(body)
+      alt valid
+        M->>M: write cache atomically
+        M-->>E: base emits v8 → next tick uses it
+      else invalid
+        M-->>R: Rejected(errors) → logged, last good stays
+      end
+    else offline / 4xx / 5xx / too large
+      C-->>R: Failed(reason) → logged, next try in 6 h
+    end
+  end
+```
+
+**Fallback chain** (US-21) — what the app uses in each case
+
+| Situation | App uses | Cache |
+|---|---|---|
+| `200`, valid, new version | the new document, from the next tick | replaced atomically |
+| `304` | unchanged | untouched |
+| `200`, fails the Kotlin validator | the last good document | untouched; rule IDs logged |
+| `200`, `schemaVersion` ≠ 1 (rule `schema`) | the last good document | untouched |
+| `404` (nothing published for schema 1), other 4xx, 5xx | the last good document | untouched |
+| Offline, DNS, timeout, refused, TLS error, body > 1 MiB | the last good document | untouched |
+| Process killed while writing | the old cache (rename is atomic) | old file intact |
+| Cache unreadable or invalid at start | built-in (M2) | ignored, logged |
+| No cache and the server never reached | built-in | none |
+
+"Last good" = the document in memory, which is the cache if one was valid at start, otherwise the built-in one.
+
+**Base URL and plain HTTP** (§12, D-142, D-146)
+
+| Build | `CONFIG_BASE_URL` | Network rules |
+|---|---|---|
+| debug | `http://127.0.0.1:3000` + `adb reverse tcp:3000 tcp:3000` — the same for the emulator and a USB phone | `src/debug/res/xml/network_security_config.xml`: `cleartextTrafficPermitted="true"` for the domain `127.0.0.1` only |
+| release | `""` until M15 sets the production HTTPS address; blank → no refresher is created and the app runs on cache/built-in, logged once | No network security config: Android's default (API 28+) refuses all plain HTTP (§9) |
+
+- `adb reverse` must be run again whenever the phone reconnects or the emulator restarts; the README says so. Without it the check fails like being offline, which is itself a useful test.
+- Checked first on the emulator (API 37), 2026-10-22: `127.0.0.1` through `adb reverse` → `200`, then `304` with the ETag; `http://10.0.2.2:3000` → `Cleartext HTTP traffic to 10.0.2.2 not permitted`.
+
+**Tests** (`src/test/`, JVM; `config/` keeps its ≥ 90% coverage target, ROADMAP §2)
+
+| Test | Checks |
+|---|---|
+| `US21_ConfigClientTest` | Against a local HTTP server on a free port (the JDK's `com.sun.net.httpserver`, usable from unit tests): sends `?schema=1` and `User-Agent: Nyx/…` · `If-None-Match: "7"` sent for cached 7, absent for `null` · `200` → `Fetched` with the body (UTF-8, emoji intact) · `304` → `NotModified` · `404`, `500` → `Failed("HTTP …")` · server stopped (refused) → `Failed` · no answer within the timeout (100 ms in the test) → `Failed` · body over 1 MiB → `Failed` |
+| `US21_ConfigManagerTest` (extended) | `base` emits the cache at start, the built-in without one · `accept(valid v2)` → `Applied(2)`, cache file holds it, `base` emits it, `cachedVersion()` = 2 · every `shared/fixtures/invalid/` file → `Rejected` with its rule, cache and `base` unchanged · `schemaVersion` 2 → `Rejected(schema)` · same version → `Unchanged`, file not rewritten · lower version → `Applied` · a leftover `.tmp` doesn't affect loading · a cache directory that can't be written → still `Applied` in memory, no throw · `cachedVersion()` is `null` on built-in |
+| `US19_ConfigRefresherTest` | `runTest` virtual time + a fake clock and fake `fetch`: screen on at start → one check at once · none again before 6 h · one at 6 h · clock moved back → a check · screen off → no checks, even past 6 h; screen on after that → a check · a `Failed` check counts (next one 6 h later) · `NotModified` → nothing accepted · `Fetched(invalid)` → logged with rule IDs, base unchanged |
+| `US21_BuiltInConfigTest` (device, changed) | Builds its own `ConfigManager` from the app's assets with no cache file: since M12 the app's own cache may hold a fetched document, so "no cache yet" can't be assumed |
+| `US22_EffectiveConfigTest` (extended) | `ConfigManager.base` combined with user values the way `AppContainer` does it: an accepted document with a narrower range → the stored value 25 comes out clamped to 15 |
+
+**Manual check — ROADMAP "Done when"** (emulator and the Pixel, against local Docker)
+1. `docker compose up`, `adb reverse tcp:3000 tcp:3000`, install debug, `adb logcat -s Nyx` → `Config 1 applied` (first start: no cache, so no ETag, D-141); force-stop and open again → `Config 1 unchanged (304)`.
+2. Console: Social limit default 60 → 45, Publish (v2). Force-stop, open the app → `Config 2 applied`; S-11 shows 45 for a user who never moved the slider; a user value above a narrowed max is clamped.
+3. `docker compose stop api`, force-stop, open → `Config check failed: …ConnectException…`; Settings still show v2. Same in airplane mode.
+4. **Invalid published document, forced in dev:** a SQL snippet (dev only, in `android/README.md`) supersedes the published row and inserts the next version with `nags.snoozeMinutes.default` = 400, bypassing the backend's validation. Force-stop, open → `Fetched config ignored: schema at nags.snoozeMinutes.default, setting-range at nags.snoozeMinutes`; Settings still show v2. Publishing a valid version afterwards (v4) → applied.
+5. With the app open on S-11, publish again → the change shows without a restart once the next check is due (to see it at once: force-stop + open).
+
+**Decisions** (approved 2026-10-22)
+
+| ID | Decision | Why | Alternatives |
+|---|---|---|---|
+| D-141 | `If-None-Match` is sent only when a server document is cached; on the built-in document the first check always downloads | The built-in `configVersion` 1 and the server's version 1 can differ (the server's 1 is `default-config.json` as it was on first deploy). One ~9 KB download per install | ETag from whatever base is in use |
+| D-142 | Debug builds use `http://127.0.0.1:3000` with `adb reverse tcp:3000 tcp:3000`, on the emulator and a USB phone alike; plain HTTP allowed to `127.0.0.1` only, debug only. §12's `10.0.2.2` is replaced | One URL and one command for both devices; nothing on the laptop is exposed to the Wi-Fi | `10.0.2.2` for the emulator + a Gradle property with the laptop's LAN address for the phone (firewall, changing IPs) |
+| D-143 | Checks run in `PetService`: on service start, then every 6 h of wall-clock time, looked at every 15 min while the screen is on; never while it's off; a failure waits for the next 6-hour check; last check kept in memory | No new dependency (WorkManager isn't in the register), no wake-ups while the screen is off; the service is always running anyway | WorkManager periodic work (new dependency, CR); `delay(6 h)` (its clock stops while the phone sleeps); persisting `lastCheck` (more state for little gain) |
+| D-144 | A fetched document is applied while the app runs (from the next tick), and any valid document whose version differs from the current one is applied, lower versions included | US-19 says "within 6 hours", not "after restart"; the server's published document is the truth | Apply only at the next start; refuse lower versions (would block a rollback, F-16) |
+| D-145 | Fixed `User-Agent: Nyx/<versionName>`; 10 s connect + read timeouts; body capped at 1 MiB | The default user agent names the phone model (§9: nothing about the phone leaves it); a hung or broken server can't stall the check or exhaust memory | Library defaults |
+| D-146 | Release `CONFIG_BASE_URL` stays blank until M15; a blank URL means no refresher | No guessed production address in the code | A placeholder URL that fails at runtime |
+
+**Not in M12:** the production URL and HTTPS (→ M15) · stats upload (→ M14) · a "check now" button or quicker retry after a failure · certificate pinning · a rate limit on `GET /v1/config` (parking lot).

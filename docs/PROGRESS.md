@@ -1,7 +1,7 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M12 App fetches remote config (next)
-- Last done: M11 done 2026-10-22 — PR #18 merged, tagged `m11-done` (`cdd0f84`)
-- Next step: M12 in a new session, LLD first (`ConfigClient` with ETag, 6-hour check, atomic cache, debug build → `10.0.2.2:3000`). Each dev needs an admin login in `backend/.env` (`npm run hash-password`, `backend/README.md`)
+- Phase: 5 — Build · Milestone: M12 App fetches remote config (done on `feat/m12-remote-config`; PR open, merge + tag `m12-done` pending)
+- Last done: M12 verified on the emulator and the Pixel; PR opened
+- Next step: the developer merges the M12 PR, tag `m12-done`; then M13 Trends + positive goals, LLD first. Local dev DB now has v4 published (same content as v2); v3 is the forced-invalid one, superseded. Each dev needs an admin login in `backend/.env` (`npm run hash-password`, `backend/README.md`)
 - Blockers: none. Docker note: Homebrew's `docker` CLI comes first on PATH and can't find Docker Desktop's credential helper (`docker pull` fails); put `/Applications/Docker.app/Contents/Resources/bin` first or `brew uninstall docker`
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37; start it with `-gpu swiftshader_indirect`, see log 2026-10-22 M9) + Pixel 7a
@@ -257,3 +257,20 @@
 - Known: a server error under a field can show twice (RJSF quirk; parking lot)
 - Done: PR #18 merged to `main` (`cdd0f84`), tagged `m11-done`
 - Next: M12 — app fetches remote config, LLD first
+
+### 2026-10-22 (M12)
+- Done: branch `feat/m12-remote-config`; M12 LLD written in ARCHITECTURE §14.12 — `ConfigClient` (HttpURLConnection, ETag, timeouts, 1 MiB cap, own User-Agent), `ConfigManager.base`/`accept` with an atomic cache write, `ConfigRefresher` (service start + 6 h wall clock, screen-on only), fallback chain table, debug URL via `adb reverse`, tests, manual check incl. a forced invalid published document
+- Proposed: D-141 to D-146 (in the LLD; go into DISCUSSION on approval). No new dependency
+- Next: the developer's approval
+- Approved: the LLD and D-141 to D-146 (the developer); decisions in DISCUSSION, HLD §9 and §12 follow D-142 and D-145
+- Verified first (emulator, API 37): plain HTTP to `127.0.0.1` through `adb reverse` works (200, then 304), `10.0.2.2` is refused — throwaway probe test, deleted
+- Done: `ConfigClient`, `ConfigManager.base`/`cachedVersion`/`accept` (temp file + fsync + atomic rename), `ConfigRefresher` (real system clock, not the scenario clock), wiring in `AppContainer` and `PetService`, `INTERNET`, debug network security config, `CONFIG_BASE_URL` per build type; README "Against the local backend" with the forced-invalid SQL
+- Learned: `InputStream.readNBytes` is API 33+ (minSdk 30), so the body is read in a loop; the JDK's `com.sun.net.httpserver` works in unit tests, no stub needed
+- Verified: `./gradlew assembleDebug test lint` — 346 unit tests (+31), lint clean; `config/` coverage 97.9% lines, 95.9% branches; mutation check (every check due) fails 4 refresher tests. Emulator against local Docker after setup: `Config 1 applied` (no cache → no ETag) → restart `Config 1 unchanged (304)` → API stopped `Config check failed: …` with the cache kept
+- Not verified yet: publish → applied, forced invalid document, the Pixel, device tests (they uninstall the app, so they run after the manual check)
+- Done: draft v2 (Social 60 → 45) published with the same two UPDATEs as the backend's publish, straight in the dev DB (no admin password in this session; the console publish itself was verified in M11)
+- Verified on the Pixel 7a (API 36, existing install updated in place, data kept) and the emulator (API 37): app update → `Config 1 applied`; v2 → `Config 2 applied` on both; emulator Home shows "Social & scrolling ≤ 45 min", Pixel cache holds v2 with 45 (Pixel left locked, its UI not looked at); screen off at service start → no check, screen on → `Config 2 unchanged (304)`; README's forced-invalid SQL run as written → v3 with snooze default 400 → both log `Fetched config ignored: schema at nags.snoozeMinutes.default, setting-range at nags.snoozeMinutes` and keep v2 (Pixel checked on screen-on, without unlocking); valid v4 → `Config 4 applied`; `adb reverse` removed → `Config check failed: ConnectException…`, Home still 45
+- Learned: the forced v3 breaks two rules (schema bound and setting-range); README and §14.12 wording fixed
+- Device tests: 76/77 on the emulator; `US21_BuiltInConfigTest` failed because it asserted "no cache file yet", which M12 makes untrue. Rewritten to load the asset through its own `ConfigManager` with no cache (same checks: version 1, Cat and Blob) → passes. Flagged for the developer
+- Done: ROADMAP M12 ticked, status done; HLD diagram: `ConfigClient · ConfigRefresher` done, `StatsUploader` split out as pending (M14)
+- Verified: PR #19 opened; Android CI green (run 39840852683, 4 min 42 s). Backend CI not triggered (no `backend/` or `shared/` change)
