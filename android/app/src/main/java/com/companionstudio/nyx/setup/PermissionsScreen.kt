@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -150,7 +152,8 @@ private fun MissingPermissionsDialog(missing: List<SetupPermission>, onContinue:
         onDismissRequest = onGoBack,
         title = { Text(stringResource(R.string.permissions_missing_title)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Scrolls: four reasons at 200% text don't fit a small screen (A-01)
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 missing.forEach { Text("• " + stringResource(it.withoutItRes)) }
                 Text(stringResource(R.string.permissions_missing_later))
             }
@@ -176,8 +179,8 @@ private val SetupPermission.reasonRes: Int
         SetupPermission.BATTERY -> R.string.permission_battery_reason
     }
 
-// The "Without it" column of ARCHITECTURE §10
-private val SetupPermission.withoutItRes: Int
+// The "Without it" column of ARCHITECTURE §10; Home says the same (E-01)
+val SetupPermission.withoutItRes: Int
     @StringRes get() = when (this) {
         SetupPermission.USAGE_ACCESS -> R.string.permission_usage_without
         SetupPermission.OVERLAY -> R.string.permission_overlay_without

@@ -76,6 +76,7 @@
     <string name="app_categories_intro">Nyx has guessed a category for each app. Tap an app to fix any that are wrong.</string>
     <string name="app_categories_search">Search apps</string>
     <string name="app_categories_no_match">No apps match.</string>
+    <string name="app_categories_none">No apps found.</string>
     <string name="app_categories_change">Change category</string>
     <string name="app_categories_current">%1$s (current)</string>
 
@@ -120,6 +121,8 @@
     <string name="home_trends">Trends</string>
     <string name="home_settings">Settings</string>
     <string name="home_pet_hidden">The pet is hidden for now.</string>
+    <string name="home_permissions_title">Nyx is missing a permission</string>
+    <string name="home_permissions_fix">Open permissions</string>
     <string name="show_pet">Show pet</string>
 
     <!-- Pet overlay (§14.5, §14.7): O-01 pet, O-02 speech bubble, O-03 actions ring -->

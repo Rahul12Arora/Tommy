@@ -277,7 +277,7 @@ Stories: NFRs (performance, battery, accessibility) for the week-1 features
 Tasks:
 - [ ] Full day on your phone: pet stays alive (R-04), reactions ≤ 60 s, panel ≤ 1 s
 - [ ] Battery: app's own use from Android's battery screen vs the 3% budget (A-19); tune ticks if over
-- [ ] Empty, loading and error states on Home, setup and settings
+- [x] Empty, loading and error states on Home, setup and settings — E-01 to E-03 fixed (ARCHITECTURE §14.9)
 - [ ] TalkBack + large text on setup, Home, settings
 - [ ] Fix bugs found (each with a failing test first)
 - [ ] Tag `week1-build`

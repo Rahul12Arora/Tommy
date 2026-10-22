@@ -16,6 +16,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -46,9 +48,9 @@ fun StatsOptInRoute(statsSettings: StatsSettings, setupSettings: SetupSettings, 
 fun StatsOptInScreen(optIn: Boolean?, onOptInChange: (Boolean) -> Unit, onFinish: () -> Unit) {
     SetupStep(stringResource(R.string.stats_title)) {
         Text(stringResource(R.string.stats_intro))
-        Text(stringResource(R.string.stats_shared_title), style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.stats_shared_title), style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
         Text(stringResource(R.string.stats_shared))
-        Text(stringResource(R.string.stats_never_title), style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.stats_never_title), style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
         Text(stringResource(R.string.stats_never))
         if (optIn == null) {
             CircularProgressIndicator()

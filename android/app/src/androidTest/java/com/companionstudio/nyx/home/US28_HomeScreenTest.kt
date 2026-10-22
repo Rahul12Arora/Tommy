@@ -4,6 +4,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -13,6 +15,7 @@ import com.companionstudio.nyx.config.Category
 import com.companionstudio.nyx.focus.FocusGoal
 import com.companionstudio.nyx.focus.FocusPhase
 import com.companionstudio.nyx.focus.FocusStatus
+import com.companionstudio.nyx.setup.SetupPermission
 import com.companionstudio.nyx.ui.theme.NyxTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -123,6 +126,67 @@ class US28_HomeScreenTest {
         composeRule.onNodeWithText("End").performScrollTo().performClick()
 
         assertEquals(listOf(true, false), ended)
+    }
+
+    @Test
+    fun E02_noLimitsOn_noEmptyGoalsHeading() {
+        composeRule.setContent {
+            NyxTheme { HomeScreen(today.copy(goals = emptyList()), onShowPet = null, focus = HomeFocus(running = null, onStart = {}), onTrends = {}, onSettings = {}) }
+        }
+
+        composeRule.onNodeWithText("Today: 3 h 12 min").assertIsDisplayed()
+        composeRule.onNodeWithText("Goals").assertDoesNotExist()
+    }
+
+    @Test
+    fun A02_goalsIsAHeading() {
+        composeRule.setContent {
+            NyxTheme { HomeScreen(today, onShowPet = null, focus = HomeFocus(running = null, onStart = {}), onTrends = {}, onSettings = {}) }
+        }
+
+        composeRule.onNode(hasText("Goals") and isHeading()).assertExists()
+    }
+
+    @Test
+    fun US26_E01_permissionsOff_saysWhatDoesntWork_andOpensThem() {
+        var fixes = 0
+        composeRule.setContent {
+            NyxTheme {
+                HomeScreen(
+                    today,
+                    onShowPet = null,
+                    focus = HomeFocus(running = null, onStart = {}),
+                    onTrends = {},
+                    onSettings = {},
+                    permissions = HomePermissions(listOf(SetupPermission.USAGE_ACCESS, SetupPermission.OVERLAY), onFix = { fixes++ }),
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Nyx is missing a permission").assertIsDisplayed()
+        composeRule.onNodeWithText("• The pet can't see your apps, so it can't track your time or react to it.").assertIsDisplayed()
+        composeRule.onNodeWithText("• The pet can't appear on your screen.").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Open permissions").performScrollTo().performClick()
+
+        assertEquals(1, fixes)
+    }
+
+    @Test
+    fun US26_E01_nothingMissing_noPermissionCard() {
+        composeRule.setContent {
+            NyxTheme {
+                HomeScreen(
+                    today,
+                    onShowPet = null,
+                    focus = HomeFocus(running = null, onStart = {}),
+                    onTrends = {},
+                    onSettings = {},
+                    permissions = HomePermissions(emptyList(), onFix = {}),
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Nyx is missing a permission").assertDoesNotExist()
     }
 
     @Test

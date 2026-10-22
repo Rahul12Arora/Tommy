@@ -1,7 +1,7 @@
 ## Current state
 - Phase: 5 — Build · Milestone: M9 Week-1 check (in progress; branch `feat/m9-week1`)
-- Last done: M9 started — QA checklist M3–M8 in ROADMAP M9; emulator boots again; setup walked at 200% font; findings BUG-04, E-01 to E-03, A-01 to A-03 (log 2026-10-22, M9)
-- Next step: the developer approves the fixes; then fix them (failing test first), and the developer runs the Pixel's real day from the checklist
+- Last done: M9 fixes for BUG-04, E-01 to E-03, A-01 to A-03 (ARCHITECTURE §14.9); 316 unit tests, lint, device tests 77/77 on the emulator
+- Next step: the developer's real day on the Pixel from the ROADMAP M9 checklist (from a full charge), plus TalkBack by ear; then PR and tag `week1-build`
 - Blockers: none
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37; start it with `-gpu swiftshader_indirect`, see log 2026-10-22 M9) + Pixel 7a
@@ -199,3 +199,10 @@
   - A-03 Sliders: uiautomator shows an empty content-desc and a 44 dp tall node; whether TalkBack says the name needs a check (a device test, then by ear)
 - Tried & abandoned: checking TalkBack's speech on the emulator — adb swipes don't move TalkBack's focus and speech isn't logged. TalkBack and 200% font turned back off on the emulator
 - Next: the developer's go-ahead on the fixes; the Pixel's real day
+- Approved: all seven fixes (the developer)
+- Done: failing device tests first — 9 failed for the expected reasons (A-03's name and value already passed; only its 48 dp height check failed) — then the fixes: S-05 header inside the lazy list (BUG-04), Home permission card → S-03 (E-01, `HomePermissions`, re-read on resume), no empty Goals heading (E-02), "No apps found." (E-03), scrolling dialog list (A-01), sub-headings (A-02). ARCHITECTURE §14.9 lists them
+- Tried & abandoned: making the slider 48 dp tall. `heightIn(min = 48.dp)` didn't change the node (still 44 dp), and the touch bounds are 44 dp too. Stopped after two tries (AGENTS); left as Material draws it, A-03's test checks name and value only
+- Tried & abandoned: `performScrollToNode` on BUG-04's broken layout never returned (zero-height list); the test swipes instead
+- Verified: 316 unit tests, lint; device tests 77/77 on the emulator (all classes, incl. 11 new); by hand at 200% font: S-05 in landscape lists apps; Home shows the card with both permissions off, and it's gone after granting them through Open permissions → S-03 → Continue. Emulator font and rotation reset afterwards
+- Not verified: the Pixel (not used this session); TalkBack by ear
+- Next: the real day on the Pixel; TalkBack by ear
