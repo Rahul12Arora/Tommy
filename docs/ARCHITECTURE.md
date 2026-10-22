@@ -36,11 +36,11 @@ flowchart LR
       SCR["App screens<br/>MainActivity + Compose<br/>setup · home · focus · trends · settings"]:::pending
       subgraph SVC["PetService — always-on foreground service"]
         TRK["Usage tracker"]:::done
-        RUL["Rules engine<br/>limits · nags · breaks · focus · idle"]:::pending
+        RUL["Rules engine<br/>limits · nags · breaks · focus · idle"]:::done
         MOOD["Mood"]:::done
         BUB["Bubble arbiter + line picker"]:::done
         OVL["Overlay UI<br/>pet · bubble · panel"]:::done
-        NTF["Notifier"]:::pending
+        NTF["Notifier"]:::done
       end
       CFG["ConfigManager<br/>built-in → admin → user"]:::done
       STORE[("Room · DataStore<br/>config cache file")]:::done
@@ -1625,11 +1625,11 @@ fun moodOf(events: List<PetEventType>, mood: MoodConfig): Int =
 
 | Tier (highest first) | Triggers | Gap applies | While hidden |
 |---|---|---|---|
-| Focus | `focus_drift`, `focus_started`, `focus_checkin`, `focus_broken` | yes, except `focus_drift` | skipped |
+| Focus | `focus_drift`, `focus_started`, `focus_checkin`, `focus_broken`, `focus_completed` (from M8, D-115) | yes, except `focus_drift` | skipped |
 | Stretch nag | `stretch_reached` | yes | notification (N-04, M7) |
 | Daily-limit nag | `limit_reached`, `limit_repeat` | yes | notification (N-04, M7) |
 | Break reminder | `break_due` | yes | notification (N-02, M7) |
-| Reward | `goal_met`, `focus_completed`, `break_taken`, `pet_returned` | yes | skipped |
+| Reward | `goal_met`, `break_taken`, `pet_returned` | yes | skipped |
 | Idle | `idle` | yes | skipped |
 
 - **Input per tick:** the requests offered this tick (`BubbleRequest(trigger, values, key)`; `key` defaults to the trigger, M7 uses one per limit), whether the pet is on screen, whether a focus session runs (always no until M8), `bubbles.minGapSeconds` and the clock.
@@ -2204,5 +2204,14 @@ stateDiagram-v2
 - **D-118:** the timer shows as a pet badge (minutes, `!` when drifting), a ring slot in Start focus's place with a focus card (Done/End/Back), and a Home card. The ring sends `EndFocus(done)`.
 - **D-119:** debug: focus extras on `ScenarioReceiver`, sessions cleared with the scenario data, three focus scenarios.
 - **D-120:** two additive config fields, `focus.minDoneMinutes` and `focus.abandonAfterMinutes`, with Kotlin defaults; `features.focus` off hides Start but doesn't stop a running session.
+
+**Built** (2026-10-22), with what the LLD left open:
+- S-09 with no earlier session starts at For a set time · 25 min · Check in · 10 min, no app picked.
+- The session's summary line is lower case after the time ("12 min left · switched away once · away from your focus apps"), so it reads as one sentence in the ring's caption, the pet's TalkBack description and the cards.
+- Ended sessions keep their last focus time and switches: progress is saved before `finish`.
+- The debug receiver waits 500 ms after switching the usage source before it starts a session, so the engine's new run sees it as new and says `focus_started` (a session from before a run is picked up silently).
+- `features.focus` doesn't gate the engine's focus step at all: Start is hidden, and a running session carries on (D-120).
+- **Verified:** `assembleDebug assembleRelease testDebugUnitTest lint` clean; 316 unit tests, 0 skipped; coverage `focus/Focus.kt` 48/48 and `focus/FocusSessions.kt` 71/71 lines, `rules/Reactions.kt` 143/143. Device tests compile.
+- **Not verified yet:** device tests (`FocusSessionDaoTest`, `US12_FocusSetupScreenTest`, and the changed `US07_ActionsRingTest`, `US28_HomeScreenTest`, `PetWindowBubbleTest`), the install over M7 (v4 → v5), and every by-hand check above. No phone was connected, and a cold boot of the API 37 emulator hung again ("QEMU2 main loop").
 
 **Not in M8:** focus stats in Trends (→ M13) and opt-in stats (→ M14); a repeat of the drift line while you stay away (the badge shows it); "phone face down" sessions (locking pauses, as US-13 says); notifications for focus events while the pet is hidden; ring animations (parking lot).

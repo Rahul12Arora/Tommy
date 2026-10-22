@@ -1,8 +1,8 @@
 ## Current state
 - Phase: 5 — Build · Milestone: M8 Focus sessions (in progress; branch `feat/m8-focus`)
-- Last done: M7 done 2026-10-22 — PR #13 merged, tagged `m7-done` (`6a9874e`)
-- Next step: build M8 per ARCHITECTURE §14.8 (approved: D-109 to D-120)
-- Blockers: none. The API 37 emulator still hangs at boot ("hanging thread 'QEMU2 main loop'"); it needs a cold boot or wipe from Android Studio before it's used again
+- Last done: M8 built and unit-tested (`2ad8e77`, `829280c`); not yet run on a device
+- Next step: plug in the Pixel 7a (or wipe the emulator) → `connectedDebugAndroidTest` → install over M7 (v4 → v5) → the three focus scenarios → done-when session with real YouTube/Instagram → PR
+- Blockers: no device. The API 37 emulator still hangs at boot, also on a cold boot from the command line (2026-10-22) ("hanging thread 'QEMU2 main loop'"); it needs a cold boot or wipe from Android Studio before it's used again
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
 - Build setup: Homebrew JDK on PATH starts Gradle; daemon runs on JDK 25 (`android/README.md`). With the phone plugged in, set `ANDROID_SERIAL` for device tasks
@@ -161,3 +161,8 @@
 - Done: M8 LLD as ARCHITECTURE §14.8 — session flow, SM-04 per tick, focus time from tracker credits, drift and A-02 exclusions, goals and pet modes, Done minimum, abandoned sessions, hold and release of nags and break reminders, day reset, `focus_sessions` (Room v5), two additive config fields, S-09, badge / ring timer slot / focus card / Home card, debug extras and scenarios, files, tests. D-109 to D-120 proposed. ROADMAP M8 in progress
 - Next: approval of D-109 to D-120 (D-112 is an interpretation of D-04), then build M8
 - Approved: D-109 to D-120, pet modes as proposed (decision log rows added); building M8 straight through at the developer's request
+- Done: config `focus.minDoneMinutes`/`abandonAfterMinutes`; `focus_sessions` + Room v5 auto-migration; tracker snapshot `creditedMs`/`screenOn`; `focus/` Focus (SM-04 step), FocusSessions, FocusRepository; Reactions hold and release (`rules/Reaction.kt` split out); `focus_completed` in the focus tier; fast ticks while focusing; `EndFocus` request; S-09 with the app picker; Home session card; ring timer slot + focus card; pet badge; debug focus extras + 3 scenarios. Diagram: rules engine and notifier marked done
+- Fixed while building: ended sessions lost their last progress (finish ran before the save) — caught by `US12_FocusSessionsTest`
+- Verified: `assembleDebug assembleRelease testDebugUnitTest lint` clean; 316 unit tests (+53), 0 skipped; `focus/Focus.kt` 48/48, `focus/FocusSessions.kt` 71/71 lines
+- Not verified: device tests (written, compile), install over M7, by-hand checks, the Pixel. Tried a cold boot of the emulator from the command line: hung at "QEMU2 main loop" again; stopped it. Wiping it needs the developer's OK
+- Next: device run, by-hand checks, PR

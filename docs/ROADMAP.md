@@ -259,12 +259,12 @@ Depends on: M7
 Stories: US-12, US-13, US-14
 Tasks:
 - [x] LLD: session model, goal types, allowed-app picker, drift detection, check-ins, rewards, held nags release (D-25)
-- [ ] S-09 Focus setup (from the ring and Home)
-- [ ] Focus timer icon on the actions ring (CR-09)
-- [ ] SM-04: running, drifting, paused on lock, completed, broken, ended early
-- [ ] Pet modes: quiet / check-in every X min / reward at the end
-- [ ] Hold nags, break reminders and idle lines during focus; release those that still apply
-- [ ] Tests: every SM-04 transition, A-02 exclusions (shade, panel, call), held-nag release, day reset during a session (A-25)
+- [ ] S-09 Focus setup (from the ring and Home) — built and unit-tested; device tests and by-hand check pending
+- [ ] Focus timer icon on the actions ring (CR-09) — built; device tests and by-hand check pending
+- [x] SM-04: running, drifting, paused on lock, completed, broken, ended early
+- [x] Pet modes: quiet / check-in every X min / reward at the end
+- [x] Hold nags, break reminders and idle lines during focus; release those that still apply
+- [x] Tests: every SM-04 transition, A-02 exclusions (shade, panel, call), held-nag release, day reset during a session (A-25) — unit tests; device tests written, not yet run
 Done when:
 - [ ] A 25-min "no switching" session on YouTube: opening Instagram breaks it; a fixed-time session completes with a reward and mood +15
 Verify with: `./gradlew test` · fake scenarios · real session on your phone
