@@ -4,7 +4,7 @@ An emoji pet that floats over every app on an Android phone. Nyx watches which a
 
 - **Android app** (Kotlin + Jetpack Compose) — does all tracking and reacting on the phone, offline.
 - **Backend** (Node.js + Fastify + PostgreSQL) — serves one tunable config to every phone and collects opt-in anonymous stats. *Week 2.*
-- **Admin console** (React) — the developer's web page for tuning limits, lines, pets and switches. *Week 2.*
+- **Admin console** (React) — the developer's web page for tuning limits, lines, pets and switches.
 
 ## Status
 
@@ -44,7 +44,10 @@ docs/      ← the docs above
 - `docker compose up --build` (from the repo root) starts Postgres and the API on port 3000.
 - Running the API on the host, tests and lint: [`backend/README.md`](backend/README.md).
 
-**Console** — instructions arrive with M11.
+**Console** (from M11)
+- Create an admin login in `backend/.env` first (`backend/README.md` → Setup).
+- `docker compose up --build` also serves the console at http://localhost:3000/console/.
+- Live editing with Vite, lint and build: [`admin/README.md`](admin/README.md).
 
 ## Test
 
@@ -53,6 +56,7 @@ docs/      ← the docs above
 | Android unit tests | `./gradlew test` | M0 |
 | Android lint | `./gradlew lint` | M0 |
 | Backend | `npm test` (in `backend/`) | M10 |
+| Console | `npm run lint` · `npm run build` (in `admin/`) | M11 |
 
 ## Deploy
 

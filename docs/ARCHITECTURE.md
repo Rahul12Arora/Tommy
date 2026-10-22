@@ -50,11 +50,11 @@ flowchart LR
     GPS["Google Play services<br/>emoji font"]
   end
   subgraph HOST["Hosting — one container + managed Postgres"]
-    API["Fastify API<br/>/v1 · /admin · /health"]:::pending
-    STATIC["Console files<br/>/console/"]:::pending
+    API["Fastify API<br/>/v1 · /admin · /health"]:::done
+    STATIC["Console files<br/>/console/"]:::done
     PG[("PostgreSQL")]:::done
   end
-  BROWSER["Admin's browser<br/>React console"]:::pending
+  BROWSER["Admin's browser<br/>React console"]:::done
   SHARED["shared/<br/>schema · default config · fixtures"]:::done
 
   TRK --> RUL
@@ -670,11 +670,13 @@ admin/
 ├── src/
 │   ├── features/
 │   │   ├── login/     ← W-01
-│   │   ├── config/    ← W-02 config editor, W-03 pets & lines (ConfigEditor, SectionForm, sections, configDiff)
+│   │   ├── config/    ← W-02 config editor, W-03 pets & lines (ConfigEditor, ConfigForm, sections, configDiff…)
 │   │   └── stats/     ← W-04
+│   ├── generated/     ← configValidator.js (compiled from the schema, not committed, D-140)
 │   ├── api.js
 │   ├── App.jsx
 │   └── main.jsx
+├── scripts/           ← compile-validator.js
 ├── index.html
 ├── vite.config.js
 └── README.md
@@ -2467,7 +2469,7 @@ curl -i localhost:3000/health                                      # 200
 
 ### 14.11 M11 — Admin login + console
 
-Written 2026-10-22; D-131 to D-139 approved 2026-10-22.
+Written 2026-10-22; D-131 to D-139 approved 2026-10-22. D-140 (precompiled validator, single-schema form) came up while building; the tables below show what was built.
 
 **Purpose:** the admin logs in, edits the draft config in a form generated from the schema, sees what differs from the live version and publishes it. Phones pick it up through M10's `GET /v1/config`. Stories: US-19 (edit + publish, errors before publishing), US-20 (pets, personalities, lines, category defaults), US-23 (login, rate limit; HTTPS comes from the host in M15).
 
@@ -2491,6 +2493,7 @@ Written 2026-10-22; D-131 to D-139 approved 2026-10-22.
 | `src/features/config/config.service.js` (changed) | Adds `CURRENT_SCHEMA_VERSION`, `draftConfig`, `saveDraft`, `publishDraft` |
 | `src/features/config/config.model.js` (changed) | Adds `findDraft`, `nextVersionId`, `insertDraft`, `updateDraft`, `supersedePublished`, `markPublished`, `lockConfigWrites` |
 | `src/app.js` (changed) | Registers helmet, cookie, rate limit, the `/admin` scope and (when built) the console files; takes `auth` and `consoleDir` |
+| `src/app.test.js` | The console files at `/console/` with the strict CSP; `/console` redirect; no route without a build |
 | `src/server.js` (changed) | Passes `auth` from the environment and `consoleDir` (`backend/console/`, present only in the image) |
 | `scripts/hash-password.js` | `npm run hash-password`: reads a password without echoing it, prints the hash line for `.env` |
 | `testing/testAuth.js` | `TEST_AUTH` (username, hash of a fixed test password, secret, `secureCookie: false`) and `loginCookie(app)` for tests |
@@ -2510,7 +2513,7 @@ scope prefix /admin
 └── scope
     ├── onRequest requireAdmin
     └── GET published · GET/PUT draft · POST publish
-static { root: consoleDir, prefix: "/console/", redirect: true }   ← only if consoleDir exists
+static { root: consoleDir, prefix: "/console/" } + GET /console → 301 /console/   ← only if consoleDir exists
 ```
 
 - Fastify scopes (`app.register(async (admin) => …, { prefix: "/admin" })`) keep the hooks off `/v1` and `/health` without per-route flags. Hooks run in `onRequest`, before the body is read, so an unauthenticated request never gets parsed.
@@ -2627,7 +2630,8 @@ sequenceDiagram
 
 | File | Responsibility |
 |---|---|
-| `package.json` | `"type": "module"`, `engines` Node 26.12.1; scripts `dev` (`vite`), `build` (`vite build`), `lint` (`biome check .`) |
+| `package.json` | `"type": "module"`, `engines` Node 26.12.1; scripts `dev` / `build` (compile the validator, then `vite` / `vite build`), `lint` (`biome check .`) |
+| `scripts/compile-validator.js` | Compiles the schema into plain validation functions in `src/generated/configValidator.js` (gitignored), so the browser never runs `new Function` (D-140) |
 | `vite.config.js` | `base: "/console/"`; React plugin; dev proxy for `/admin` and `/v1` → `http://localhost:3000` (same origin for the cookie); `server.fs.allow: [".", "../shared"]` so the dev server may read the schema outside `admin/` |
 | `index.html` | Mount point, loads `src/main.jsx` |
 | `biome.json` | Same rules as the backend's |
@@ -2635,8 +2639,10 @@ sequenceDiagram
 | `src/App.jsx` | Session state (`unknown` / `out` / `in`); renders `ConfigEditor`, and `LoginPage` on top of it when logged out |
 | `src/api.js` | `request(method, path, body)` on `fetch`: JSON in and out, `{}` for bodyless POSTs, throws `ApiError { status, code, message, details }` from §7's shape. `login`, `logout`, `getPublished`, `getDraft` (404 → `null`), `saveDraft`, `publish` |
 | `src/features/login/LoginPage.jsx` | W-01: username + password, submit → `login`. Shows "Wrong username or password" (401) or "Too many attempts — wait a minute" (429) |
-| `src/features/config/ConfigEditor.jsx` | W-02/W-03 page: header (live version, draft version, unsaved marker), tabs **Settings** / **Pets & lines**, buttons Save draft · Publish · Reset to published, server errors, the Changes list. Owns `published`, `draft`, `savedDraft` state |
-| `src/features/config/SectionForm.jsx` | One RJSF `Form` over a set of top-level keys: builds the sub-schema (those `properties`, their `required`, the shared `definitions`), passes that slice of the draft, merges edits back. Hides RJSF's own submit button |
+| `src/features/config/ConfigEditor.jsx` | W-02/W-03 page: header (live version, draft version, unsaved marker), tabs **Settings** / **Pets & lines**, buttons Save draft · Publish · Reset to published · Log out. Owns `published`, `draft`, `savedDraft` state |
+| `src/features/config/ConfigForm.jsx` | One RJSF `Form` over the **full** schema with the precompiled validator; the open tab only decides which top-level sections get `ui:widget: hidden` (D-140). Hides RJSF's own submit button |
+| `src/features/config/ChangesList.jsx` | The Changes list |
+| `src/features/config/ServerErrors.jsx` | The server's `details`, each with the tab it belongs to |
 | `src/features/config/sections.js` | Which keys each tab shows (below) |
 | `src/features/config/configDiff.js` | `diffConfigs(published, draft)` → `[{ path, before, after }]`; `errorsToErrorSchema(details)`: JSON Pointers → RJSF's `extraErrors` tree, so server errors show under their field |
 | `src/styles.css` | Plain CSS for RJSF's Bootstrap-3 class names and the page |
@@ -2647,16 +2653,17 @@ sequenceDiagram
 - **Draft vs published** (W-02, D-139): a **Changes** list under the header, `path: published → draft` for every leaf that differs (`/limits/categories/social/dailyMinutes/default: 60 → 45`), computed by `diffConfigs` on every edit. Arrays are compared by index. Simpler than putting the published value next to every field, which would need a custom RJSF field template.
 - **Flow:**
   1. On mount: `getPublished` + `getDraft`. No draft → the form starts from a copy of the published document (`savedDraft = false`). A `401` → `App` shows the login.
-  2. Edit → the open tab validates against the schema in the browser (`liveValidate="onBlur"`, error list at the top).
-  3. **Save draft** → the open tab's `validateForm()` first (the browser only checks the open tab; the server checks everything) → `PUT` → the response replaces the draft; `400` → the details list at the top and `extraErrors` under the fields (the cross-field rules only exist on the server).
+  2. Edit → the schema is checked in the browser (`liveValidate="onBlur"`, error list at the top, covering both tabs since the hidden sections are still part of the form).
+  3. **Save draft** → `validateForm()` first → `PUT` → the response replaces the draft; `400` → the details list at the top and `extraErrors` under the fields (the cross-field rules only exist on the server).
   4. **Publish** → enabled only with a saved draft and no unsaved edits → `window.confirm("Publish version 8 to every phone? 3 changes.")` → `POST` → reload published + draft.
 - **Session expiry mid-edit:** `ConfigEditor` stays mounted under the login form, so unsaved edits survive; after logging in, the admin presses Save again. **Logout** button in the header.
 - **No router** (TECH_STACK §6): three screens, one state switch. **No `fetch` wrapper library, no CSS framework.**
 - **Schema import:** `import schema from "../../../../shared/config.schema.json"` — Vite bundles JSON imports, so the console always uses the schema of the commit it was built from, the same one the backend validates with.
-- **Tests:** build + lint only (TECH_STACK §5): the logic is the schema, which the backend tests cover. `configDiff.js` is small enough to check by hand in the walkthrough.
+- **Precompiled validator** (D-140): RJSF's normal validator builds Ajv functions in the browser with `new Function`, which helmet's CSP (`script-src 'self'`, no `'unsafe-eval'`) blocks. `scripts/compile-validator.js` uses RJSF's `compileSchemaValidatorsCode` at `dev`/`build` time and wraps Ajv's CommonJS output into one ES module (its ES-module output fails: RJSF names functions after hashes that can start with a digit); the generated code imports nothing. `createPrecompiledValidator` only accepts the schema it was compiled from, so the form uses the full schema and hides the other tab's sections instead of building a sub-schema per tab.
+- **Tests:** build + lint only (TECH_STACK §5): the logic is the schema, which the backend tests cover. `configDiff.js` was checked in the browser walkthrough.
 
 **Docker image** (D-42)
-- New first stage `FROM node:26.12.1-alpine3.24 AS console`, `WORKDIR /app/admin`: copy `admin/package.json` + lock → `npm ci` → copy `admin/index.html`, `vite.config.js`, `src/` and `shared/config.schema.json` to `/app/shared/` → `npm run build` → `/app/admin/dist`.
+- New first stage `FROM node:26.12.1-alpine3.24 AS console`, `WORKDIR /app/admin`: copy `admin/package.json` + lock → `npm ci` → copy `admin/index.html`, `vite.config.js`, `scripts/`, `src/` and `shared/config.schema.json` to `/app/shared/` → `npm run build` → `/app/admin/dist`.
 - The existing stage adds `COPY --from=console /app/admin/dist ./console` → `/app/backend/console`, which `server.js` passes as `consoleDir`.
 - `.dockerignore` allow-list gains those `admin/` paths. `docker compose up --build` therefore serves the console at `http://localhost:3000/console/` too.
 
@@ -2666,7 +2673,7 @@ sequenceDiagram
 
 **CI** (`.github/workflows/backend.yml`)
 - Triggers gain `admin/**`.
-- New job `console`: checkout → setup-node (same pins, cache on `admin/package-lock.json`) → `npm ci` → `npm run lint` → `npm run build`.
+- New job `console`: checkout → setup-node (same pins, cache on `admin/package-lock.json`) → `npm ci` → `npm run lint` → `npm run build` (which compiles the validator).
 - The existing Docker build step now also builds the console stage.
 
 **Tests** (`node:test`; story IDs in names)
@@ -2704,6 +2711,7 @@ Plus: wrong password ×6 → the 6th says wait a minute · a broken value (defau
 | D-136 | Draft lifecycle: `GET draft` → 404 when none; PUT replaces the whole document; the server sets `configVersion` (`MAX(id)+1` when new) and `schemaVersion` (from the schema's `const`); publish re-validates; draft saves and publishes are serialised by a transaction-level advisory lock; last save wins | Creating a draft on first GET; client-chosen version numbers; optimistic locking |
 | D-137 | `NODE_ENV` required; `.env.example` ships `ADMIN_PASSWORD_HASH` and `SESSION_SECRET` empty with the commands that make them — the README explains how to create a dev login rather than documenting a known one (Track A) | A committed dev password + secret (a deploy could go out with them) |
 | D-138 | scrypt N=2^15, r=8, p=3, 64-byte key, 16-byte salt, `maxmem` 64 MiB; stored as `scrypt:N:r:p:salt:key` (base64url, no `$`) | Node's defaults (N=2^14); a `$`-separated PHC-style string |
-| D-139 | Console: one draft document, two tabs (Settings = W-02, Pets & lines = W-03), each an RJSF form over a subset of the top-level keys; draft vs published shown as a Changes list | Per-field published values via a custom RJSF template; one giant form |
+| D-139 | Console: one draft document, two tabs (Settings = W-02, Pets & lines = W-03); draft vs published shown as a Changes list (the per-tab forms became one form with hidden sections, D-140) | Per-field published values via a custom RJSF template; one giant form |
+| D-140 | The console's schema validator is precompiled at `dev`/`build` time (RJSF `compileSchemaValidatorsCode`) so the strict CSP stays; one RJSF form over the full schema, the other tab's sections hidden | `'unsafe-eval'` in the console's CSP; no validation in the browser |
 
 **Not in M11:** stats view W-04 (→ M14) · version history and rollback (F-16, Could) · a `DELETE` for drafts · optimistic locking between tabs · friendlier field labels (schema `title`s) · a rate limit on `GET /v1/config` (parking lot) · HTTPS and the production deploy (→ M15).

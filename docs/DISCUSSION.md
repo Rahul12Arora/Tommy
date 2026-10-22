@@ -462,6 +462,7 @@ stateDiagram-v2
 | D-137 | `NODE_ENV` is required; `.env.example` ships `ADMIN_PASSWORD_HASH` and `SESSION_SECRET` empty, with the commands that make them; the README explains how to create a dev login (Track A) | No secret in the repo, so no deploy can go out with a known password; a forgotten `NODE_ENV` can't drop `Secure` | A committed dev login | 2026-10-22 |
 | D-138 | scrypt N=2^15, r=8, p=3, 64-byte key, 16-byte salt, `maxmem` 64 MiB; stored as `scrypt:N:r:p:salt:key` in base64url | An OWASP-listed setting at ~32 MiB per check; parameters travel with the hash; no `$` to quote | Node's defaults (N=2^14); PHC `$` strings | 2026-10-22 |
 | D-139 | Console: one draft document, two tabs (Settings = W-02, Pets & lines = W-03), each an RJSF form over a subset of the top-level keys; draft vs published as a Changes list | No custom RJSF templates; small forms | Published value beside every field; one giant form | 2026-10-22 |
+| D-140 | The console's schema validator is precompiled at `dev`/`build` time (`scripts/compile-validator.js`, RJSF's `compileSchemaValidatorsCode`); the form uses the full schema and hides the other tab's sections (ARCHITECTURE §14.11) | Ajv builds validators with `new Function`, which the console's CSP blocks; the precompiled validator only accepts the schema it was compiled from. Keeps the strict CSP with no new dependency; both tabs are validated in the browser | `'unsafe-eval'` in the console's CSP; no browser validation; a sub-schema per tab with two compiled validators | 2026-10-22 |
 
 ### D-16 — Admin / user settings split
 
@@ -596,3 +597,6 @@ stateDiagram-v2
 - Per-app exclusions for the obstructive break screen (e.g. navigation apps, which Nyx can't detect) (noticed answering Q-15)
 - A generous per-IP rate limit on the public `GET /v1/config` (`@fastify/rate-limit` is installed in M11 anyway); not required by an NFR today (noticed in M10's LLD)
 - Move the bubble trigger list and their placeholders into `shared/` as data, so the phone and the backend can't drift (today: Kotlin enum + JS constant, kept in step by the fixtures) (noticed in M10's LLD)
+- Console: a server error shown under its field appears twice in some sequences (RJSF merges `extraErrors` into the field's errors twice); the ServerErrors box at the top shows it once. Cosmetic (noticed in M11's walkthrough)
+- Console field labels are the schema's property names (`dailyMinutes`); `title`/`description` in the schema would make them friendlier, additive for the phone (noticed in M11's LLD)
+- Console optimistic locking between two tabs, and a `DELETE` for drafts (last save wins today, D-136) (noticed in M11's LLD)
