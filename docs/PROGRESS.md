@@ -1,8 +1,8 @@
 ## Current state
 - Phase: 5 — Build · Milestone: M10 Backend + config API (in progress, branch `feat/m10-backend`)
-- Last done: M10 LLD drafted as ARCHITECTURE §14.10; D-121 to D-130 and CR-11 (`ajv`) proposed
-- Next step: the developer approves the LLD + CR-11; install Node 26.12.1 and Docker on the Mac; then the `backend/` scaffold
-- Blockers: Node and Docker aren't installed on the Mac (no `node`, `npm`, `docker` on PATH)
+- Last done: M10 LLD, D-121 to D-130 and CR-11 approved; `backend/` scaffold (env check, error handler, app/server, Biome, README)
+- Next step: `docker-compose.yml` (Postgres 18 + API) and `backend/Dockerfile`
+- Blockers: Docker on the Mac is the CLI only (Homebrew `docker` 29.9.2): no daemon and no `compose` plugin. Needs a runtime (Docker Desktop, OrbStack or Colima + `docker-compose`) before the Compose and DB tasks
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37; start it with `-gpu swiftshader_indirect`, see log 2026-10-22 M9) + Pixel 7a
 - Build setup: Homebrew JDK on PATH starts Gradle; daemon runs on JDK 25 (`android/README.md`). With the phone plugged in, set `ANDROID_SERIAL` for device tasks
@@ -218,4 +218,8 @@
 - Verified against sources: npm registry (fastify 5.12.7 deps, ajv 8.20.0 MIT, pg 8.23.1), nodejs.org (26.12.1 security release 2026-10-21, not yet LTS), Docker Hub tags, setup-node v7.1.0 SHA, Node 26.12.1 CLI flags (`--env-file-if-exists`, `--test-concurrency`, coverage flags)
 - Found: no Node or Docker on the Mac
 - Next: approval → install Node + Docker → scaffold
+- Approved: the LLD, D-121 to D-130, CR-11 (the developer). Docs marked approved; TECH_STACK register + pins updated; HLD §6, §7, §12 follow D-125, D-127, D-128, D-130
+- Done: `backend/` scaffold — `package.json` (ESM, Node 26.12.1, exact pins fastify 5.12.7, pg 8.23.1, Biome 2.5.15), `biome.json` (2 spaces, 120 cols, repo-root `.gitignore` via `vcs.root`), `.env.example`, `README.md`, `src/lib/env.js`, `db.js`, `httpError.js`, `src/middleware/errorHandler.js`, `src/app.js`, `src/server.js`. `ajv` is installed with the validation task, where it's first used
+- Verified: Node 26.12.1 + npm 11.20.0 on the Mac; `npm test` 10/10 (env, error shapes: 404, 500 without detail, HttpError, route-schema 400 with pointer, bad JSON 400 and 415 → BAD_REQUEST); `npm run lint` clean; `test:coverage` runs; `node src/server.js` boots, answers `/nope` with the 404 shape, logs request IDs as UUIDs, shuts down on SIGTERM; bad `PORT` stops start-up with the message
+- Found: Docker is the CLI only — no daemon, no `docker compose`
 
