@@ -1,10 +1,10 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M9 Week-1 check (next; branch `feat/m9-week1` from `main`)
-- Last done: M8 done 2026-10-22 — PR #14 merged, tagged `m8-done` (`a1d3dc7`)
-- Next step: M9 in a new session: a full day on the Pixel (pet alive, reactions ≤ 60 s, ring ≤ 1 s), battery vs the 3% budget, empty/loading/error states, TalkBack + large text (also the TalkBack checks still open from M7 and M8), bugs, tag `week1-build`
-- Blockers: none. The API 37 emulator still hangs at boot, also on a cold boot (2026-10-22); the developer OK'd wiping it in M9
+- Phase: 5 — Build · Milestone: M9 Week-1 check (in progress; branch `feat/m9-week1`)
+- Last done: M9 started — QA checklist M3–M8 in ROADMAP M9; emulator boots again; setup walked at 200% font; findings BUG-04, E-01 to E-03, A-01 to A-03 (log 2026-10-22, M9)
+- Next step: the developer approves the fixes; then fix them (failing test first), and the developer runs the Pixel's real day from the checklist
+- Blockers: none
 - Open questions: Q-04 (success-metric targets, not blocking)
-- Test devices: emulator (API 37) + Pixel 7a
+- Test devices: emulator (API 37; start it with `-gpu swiftshader_indirect`, see log 2026-10-22 M9) + Pixel 7a
 - Build setup: Homebrew JDK on PATH starts Gradle; daemon runs on JDK 25 (`android/README.md`). With the phone plugged in, set `ANDROID_SERIAL` for device tasks
 
 ## Session log (append-only)
@@ -183,3 +183,19 @@
 - Open from M8: TalkBack by ear (with M7's)
 - Next: M9 Week-1 check
 - Approved: wiping the API 37 emulator's data in M9 to get it booting again (the developer, 2026-10-22)
+
+### 2026-10-22 (M9)
+- Started M9: ROADMAP M9 in progress, with a QA checklist for M3–M8 split into the Pixel's real day (no scenarios there: they wipe today's data), emulator scenario checks, and accessibility
+- Emulator: wiped (approved) and cold-booted — still hung at "QEMU2 main loop", with `Failed to find ColorBuffer` GPU errors in the log. Booted in 35 s with software rendering, `emulator -avd Medium_Phone_API_37.0 -gpu swiftshader_indirect`. Slow: System UI showed one "not responding" right after boot
+- Learned: Gradle's `installDebug` failed on the slow emulator (`InstallException`); `adb install -r` of the same APK worked
+- Verified on the emulator at 200% font: fresh install → S-01 to S-07 → Home, all permissions skipped; process death on S-03 comes back on S-03 (D-56). All screens scroll and read fine in portrait
+- BUG-04 · App list has no room in landscape at large text · Steps: 200% font, landscape, S-05 · Expected: apps listed and reachable · Actual: title, intro, search and Continue fill the screen; the list gets 0 height, so no app can be re-categorised · Env: emulator API 37, debug `a1d3dc7` · Severity: major (for those users)
+- Findings, proposed, not fixed:
+  - E-01 Home has no error state: with usage access or overlay off it shows "Today: 0 min" and no hint. N-03 is posted at service start, but with notifications also skipped nobody sees it (emulator: notification permission "ignore")
+  - E-02 Home with every limit off shows the "Goals" heading with nothing under it
+  - E-03 S-05 with no apps and an empty search says "No matching apps"
+  - A-01 S-03's "Some things won't work" dialog doesn't scroll; with all four missing at 200% it only just fits a 411 × 915 dp screen
+  - A-02 Sub-headings not marked as headings for TalkBack: S-04 "Pet"/"Personality", S-07 "What's shared"/"Never shared", Home "Goals"
+  - A-03 Sliders: uiautomator shows an empty content-desc and a 44 dp tall node; whether TalkBack says the name needs a check (a device test, then by ear)
+- Tried & abandoned: checking TalkBack's speech on the emulator — adb swipes don't move TalkBack's focus and speech isn't logged. TalkBack and 200% font turned back off on the emulator
+- Next: the developer's go-ahead on the fixes; the Pixel's real day
