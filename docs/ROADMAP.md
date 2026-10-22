@@ -333,7 +333,7 @@ Done when:
 Verify with: `npm test` · `curl -i localhost:3000/v1/config?schema=1`
 Not in this milestone: admin routes (→ M11)
 
-### M11 — Admin login + console            status: in-progress
+### M11 — Admin login + console            status: done
 Goal: you can log in, edit the draft in a generated form and publish.
 Depends on: M10
 Stories: US-19, US-20, US-23

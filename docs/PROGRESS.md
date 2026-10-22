@@ -1,7 +1,7 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M11 Admin login + console (in progress; branch `feat/m11-admin`)
+- Phase: 5 — Build · Milestone: M11 Admin login + console (done; PR open from `feat/m11-admin`)
 - Last done: M11 built and verified locally 2026-10-22 — login, draft/publish API, console W-01 to W-03, console in the image; Done-when checked in headless Chrome
-- Next step: developer's QA in a real browser → PR, merge, tag `m11-done`. Each dev needs an admin login in `backend/.env` (`npm run hash-password`, `backend/README.md`)
+- Next step: merge the M11 PR, tag `m11-done`; then M12 (app fetches remote config) in a new session, LLD first. Each dev needs an admin login in `backend/.env` (`npm run hash-password`, `backend/README.md`)
 - Blockers: none. Docker note: Homebrew's `docker` CLI comes first on PATH and can't find Docker Desktop's credential helper (`docker pull` fails); put `/Applications/Docker.app/Contents/Resources/bin` first or `brew uninstall docker`
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37; start it with `-gpu swiftshader_indirect`, see log 2026-10-22 M9) + Pixel 7a
@@ -252,5 +252,6 @@
 - Tried & abandoned: Ajv's ES-module standalone output (RJSF names functions after hashes that can start with a digit → "invalid export name"); wrapped the CommonJS output instead. `@fastify/static`'s `redirect: true` doesn't cover the bare prefix → explicit `GET /console` redirect. Rejecting extra login keys: Fastify's default Ajv drops them (`removeAdditional`), so they're ignored
 - Verified: backend `npm run lint`, `npm run test:coverage` (114 tests, 100% lines on `src/features/`); console `npm run lint` + `npm run build`; `docker build`; walkthrough in headless Chrome (DevTools protocol, no new dependency) against the image: wrong password message, login, cookie flags (`HttpOnly`, `SameSite=Strict`, `Path=/admin`), edit Social default 60 → 45 → Changes list → Save draft v2 → Publish → `GET /v1/config` `ETag "2"` with 45, cross-field error shown at the top and under the field, browser schema error on the Pets tab, logout → login after reload, **no CSP errors**, audit log lines for login/failed login/save/publish
 - Verified: pushed `feat/m11-admin`; Backend CI green (run 39790670501: `test` 53 s incl. Docker build with the console stage, `console` 13 s)
-- Not verified: a real (non-headless) browser session by the developer; the `Secure` cookie over HTTPS (production, M15)
+- Verified: the developer's browser check of the console (2026-10-22)
+- Not verified: the `Secure` cookie over HTTPS (production, M15)
 - Known: a server error under a field can show twice (RJSF quirk; parking lot)
