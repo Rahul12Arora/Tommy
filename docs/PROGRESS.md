@@ -1,8 +1,8 @@
 ## Current state
 - Phase: 5 — Build · Milestone: M8 Focus sessions (in progress; branch `feat/m8-focus`)
-- Last done: M8 built and unit-tested (`2ad8e77`, `829280c`); not yet run on a device
-- Next step: plug in the Pixel 7a (or wipe the emulator) → `connectedDebugAndroidTest` → install over M7 (v4 → v5) → the three focus scenarios → done-when session with real YouTube/Instagram → PR
-- Blockers: no device. The API 37 emulator still hangs at boot, also on a cold boot from the command line (2026-10-22) ("hanging thread 'QEMU2 main loop'"); it needs a cold boot or wipe from Android Studio before it's used again
+- Last done: M8 built; unit tests and 58/58 device tests on the Pixel 7a; installed over M7 with data kept
+- Next step: the three setup-state device tests (they reset Nyx's setup on the phone: developer's OK needed) → the three focus scenarios → done-when session with real YouTube/Instagram → PR
+- Blockers: none (Pixel 7a connected). The API 37 emulator still hangs at boot, also on a cold boot from the command line (2026-10-22) ("hanging thread 'QEMU2 main loop'"); it needs a cold boot or wipe from Android Studio before it's used again
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
 - Build setup: Homebrew JDK on PATH starts Gradle; daemon runs on JDK 25 (`android/README.md`). With the phone plugged in, set `ANDROID_SERIAL` for device tasks
@@ -166,3 +166,6 @@
 - Verified: `assembleDebug assembleRelease testDebugUnitTest lint` clean; 316 unit tests (+53), 0 skipped; `focus/Focus.kt` 48/48, `focus/FocusSessions.kt` 71/71 lines
 - Not verified: device tests (written, compile), install over M7, by-hand checks, the Pixel. Tried a cold boot of the emulator from the command line: hung at "QEMU2 main loop" again; stopped it. Wiping it needs the developer's OK
 - Next: device run, by-hand checks, PR
+- Verified on the Pixel 7a: `adb install -r` over the M7 build kept today's totals and mood 55 (Room v4 → v5). Device tests 58/58 through `am instrument` (not Gradle, which uninstalls the app): all classes except `US01_SetupGatingTest`, `US02_AgeCheckTest`, `US28_NavigationTest`, which reset setup state. First run 56/58: the two timer-text checks looked in the merged tree, where `clearAndSetSemantics` hides the text; fixed in the tests (unmerged tree; the ring shows it twice). Ring and badge classes then green twice in a row
+- Learned: `am instrument` kills the app's process, and the pet service doesn't come back by itself; opening the app restarts it. Phone's "stay awake" was on only during the runs (back to 0)
+- Next: developer's OK for the three setup-state classes; by-hand checks; PR

@@ -65,7 +65,7 @@ class PetWindowBubbleTest {
         val focus = FocusStatus(FocusGoal.UNTIL_DONE, null, focusMs = 34 * 60_000L, FocusPhase.RUNNING, switches = 0, canDone = true, minDoneMinutes = 5)
         composeRule.setContent { PetWindow(today, glowing = false, bubble = null, layout, onPetClick = {}, focus = focus) }
 
-        composeRule.onNodeWithText("34m").assertIsDisplayed()
+        composeRule.onNodeWithText("34m", useUnmergedTree = true).assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Nyx, your pet. Focus session, 34 min so far").assertIsDisplayed()
     }
 }

@@ -1,10 +1,12 @@
 package com.companionstudio.nyx.pet
 
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
@@ -160,7 +162,10 @@ class US07_ActionsRingTest {
         }
 
         composeRule.onNodeWithContentDescription("Start focus").assertDoesNotExist()
-        composeRule.onNodeWithText("!12m").assertIsDisplayed()
+        // The ring slot and the pet's badge
+        val timers = composeRule.onAllNodesWithText("!12m", useUnmergedTree = true).assertCountEquals(2)
+        timers[0].assertIsDisplayed()
+        timers[1].assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Nyx, your pet. Focus session, 12 min left · switched away once · away from your focus apps")
             .assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Focus: 12 min left · switched away once · away from your focus apps").performClick()
