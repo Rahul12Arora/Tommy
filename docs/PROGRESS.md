@@ -1,7 +1,7 @@
 ## Current state
 - Phase: 5 — Build · Milestone: M8 Focus sessions (in progress; branch `feat/m8-focus`)
 - Last done: M8 built; 66/66 device tests and all three focus scenarios on the Pixel 7a
-- Next step: the done-when session by the developer with real YouTube/Instagram (from the ring over YouTube) → PR
+- Next step: CI on the PR → the developer merges → tag `m8-done`, close M8
 - Blockers: none (Pixel 7a connected). The API 37 emulator still hangs at boot, also on a cold boot from the command line (2026-10-22) ("hanging thread 'QEMU2 main loop'"); it needs a cold boot or wipe from Android Studio before it's used again
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37) + Pixel 7a
@@ -175,3 +175,6 @@
 - Privacy note: one screenshot taken to check the app's state showed another app the developer was using; deleted at once, no screenshots since. Scenario checks are read from the debug log only
 - Scenario stopped afterwards (`--ez stop true`): real usage and clock again; today's tracked time and events were cleared by the scenarios, as agreed
 - Verified after the call (audio mode 0): `youtube-instagram` — no switching broke at 10 min with the broken line, mood unchanged; set time with reward at the end drifted once with the drift line, no check-ins, completed at about 26 min, mood 70 → 85. Scenario stopped afterwards
+- Verified by the developer on the Pixel 7a: the done-when session with real YouTube and Instagram (Instagram installed for it) — no switching broke on Instagram; a set-time session completed with the reward and +15
+- Open from M8: TalkBack by ear
+- Next: push `feat/m8-focus`, open the PR, CI

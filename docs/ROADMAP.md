@@ -259,14 +259,14 @@ Depends on: M7
 Stories: US-12, US-13, US-14
 Tasks:
 - [x] LLD: session model, goal types, allowed-app picker, drift detection, check-ins, rewards, held nags release (D-25)
-- [x] S-09 Focus setup (from the ring and Home) — device tests on the Pixel; by hand in the done-when session
-- [x] Focus timer icon on the actions ring (CR-09) — device tests on the Pixel; by hand in the done-when session
+- [x] S-09 Focus setup (from the ring and Home) — device tests and the done-when session on the Pixel
+- [x] Focus timer icon on the actions ring (CR-09) — device tests and the done-when session on the Pixel
 - [x] SM-04: running, drifting, paused on lock, completed, broken, ended early
 - [x] Pet modes: quiet / check-in every X min / reward at the end
 - [x] Hold nags, break reminders and idle lines during focus; release those that still apply
 - [x] Tests: every SM-04 transition, A-02 exclusions (shade, panel, call), held-nag release, day reset during a session (A-25) — unit tests; device tests 66/66 on the Pixel 7a; scenarios on the Pixel
 Done when:
-- [ ] A 25-min "no switching" session on YouTube: opening Instagram breaks it; a fixed-time session completes with a reward and mood +15
+- [x] A 25-min "no switching" session on YouTube: opening Instagram breaks it; a fixed-time session completes with a reward and mood +15 — passed on the Pixel 7a (the developer, 2026-10-22)
 Verify with: `./gradlew test` · fake scenarios · real session on your phone
 Not in this milestone: focus stats in trends (→ M13)
 
