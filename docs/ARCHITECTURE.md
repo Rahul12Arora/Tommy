@@ -52,7 +52,7 @@ flowchart LR
   subgraph HOST["Hosting — one container + managed Postgres"]
     API["Fastify API<br/>/v1 · /admin · /health"]:::pending
     STATIC["Console files<br/>/console/"]:::pending
-    PG[("PostgreSQL")]:::pending
+    PG[("PostgreSQL")]:::done
   end
   BROWSER["Admin's browser<br/>React console"]:::pending
   SHARED["shared/<br/>schema · default config · fixtures"]:::done
@@ -2264,7 +2264,7 @@ Written 2026-10-22; D-121 to D-130 and CR-11 approved 2026-10-22.
 | `src/server.js` | Start-up: read env → pool → migrations → initial config → `buildApp` → listen; closes cleanly on `SIGTERM`/`SIGINT` |
 | `src/app.js` | `buildApp({ pool, logLevel, trustProxy })`: Fastify with the logger settings, error and not-found handlers, the health and config routes. Tests build it with their own pool |
 | `src/lib/env.js` | `readEnv(process.env)`: checks the variables, returns typed values or throws one error listing every problem |
-| `src/lib/db.js` | `createPool(url)` |
+| `src/lib/db.js` | `createPool(url, onIdleError)`: the pool, with a listener for connections that drop while idle (without one, a database restart kills the process, BUG-05) |
 | `src/lib/migrate.js` | `runMigrations(pool, dir)` (D-126) |
 | `src/lib/sharedFiles.js` | Paths to `shared/` resolved from `import.meta.url` — `../../../shared/` both in the repo and in the image, which keeps the same layout (`/app/backend`, `/app/shared`) |
 | `src/lib/httpError.js` | `HttpError(statusCode, code, message, details)` — what our own code throws |
@@ -2448,6 +2448,7 @@ sequenceDiagram
 | `middleware/errorHandler.test.js` | Unknown route → 404 shape · a thrown `Error("secret detail")` → 500 `INTERNAL` without the detail · an `HttpError` → its status and code (test routes registered on a test app) |
 | `lib/migrate.test.js` (DB) | Applies `001` once · second run applies nothing · a failing file rolls back and isn't recorded (temporary folder) |
 | `lib/env.test.js` | Defaults · every bad value reported together · `DATABASE_URL` required |
+| `lib/db.test.js` (DB) | BUG-05: an idle connection killed by the server is reported to `onIdleError`, the process lives and the pool keeps working |
 | `seeds/initial-config.test.js` (DB) | Empty table → version 1 published, equal to `default-config.json` · second run → still one row · a table that already has rows → untouched |
 
 - DB tests need the `db` container (`docker compose up db`); CI uses its service container.

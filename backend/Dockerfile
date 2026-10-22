@@ -10,6 +10,7 @@ RUN npm ci --omit=dev
 
 COPY backend/src ./src
 COPY backend/migrations ./migrations
+COPY backend/seeds ./seeds
 COPY shared/config.schema.json shared/default-config.json /app/shared/
 
 USER node

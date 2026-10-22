@@ -324,9 +324,9 @@ Tasks:
 - [x] `backend/` scaffold per ARCHITECTURE §13; Biome; `.env.example`; `README.md` (2026-10-22)
 - [x] `docker-compose.yml`: Postgres 18 + API (2026-10-22)
 - [x] Migration runner + `001_init.sql` (`config_versions`; `daily_stats` → M14, D-125) (2026-10-22)
-- [ ] Seed: publish `shared/default-config.json` as version 1
-- [ ] `GET /v1/config?schema=` with ETag / 304; `GET /health`. Serve the re-serialised document, not stored text, so `3.0` can't reach phones (D-54)
-- [ ] Shared fixtures test (same results as the phone)
+- [x] Seed: publish `shared/default-config.json` as version 1 (2026-10-22)
+- [x] `GET /v1/config?schema=` with ETag / 304; `GET /health`. Serve the re-serialised document, not stored text, so `3.0` can't reach phones (D-54) (2026-10-22)
+- [x] Shared fixtures test (same results as the phone) (2026-10-22)
 - [ ] CI: Node lint + tests
 Done when:
 - [ ] `curl` returns the config, then `304` with the ETag; fixture tests match the phone's

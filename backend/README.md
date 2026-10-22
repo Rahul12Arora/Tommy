@@ -2,16 +2,28 @@
 
 The Nyx API (Node.js + Fastify, plain JavaScript ES modules). It serves the one config document to every phone, and later takes opt-in daily stats (M14) and hosts the admin console (M11). Design: `docs/ARCHITECTURE.md` §7, §9, §12 and §14.10.
 
+## Endpoints
+
+| Method | Path | What |
+|---|---|---|
+| GET | `/v1/config?schema=1` | The published config for that schema version. `ETag: "<configVersion>"`; send it back as `If-None-Match` to get `304` when nothing changed. `404` if nothing is published for that schema version |
+| GET | `/health` | `200 {"status":"ok"}`, or `503` when the database doesn't answer within 5 s |
+
+Errors always look like `{"error":{"code":"NOT_FOUND","message":"…","details":[…]}}` (codes in ARCHITECTURE §7).
+
 ## Layout
 
 ```text
 src/
-├── features/      ← one folder per feature: routes, service, model, validation, tests
+├── features/
+│   ├── config/    ← GET /v1/config; config.validation.js checks documents like the phone does
+│   └── health/    ← GET /health
 ├── middleware/    ← errorHandler.js (every error → the standard error shape)
-├── lib/           ← env.js (checks env vars), db.js (Postgres pool), migrate.js, httpError.js
+├── lib/           ← env.js (checks env vars), db.js (Postgres pool), migrate.js, sharedFiles.js, httpError.js
 ├── app.js         ← builds the Fastify app (tests use it directly)
 └── server.js      ← starts it
 migrations/        ← 001_init.sql … applied in name order at start-up
+seeds/             ← initial-config.js: publishes shared/default-config.json as version 1 into an empty database
 testing/           ← test helpers (not `test/`: Node would run every file there as a test)
 ```
 
@@ -59,3 +71,5 @@ npm test                 # node:test, one file at a time
 npm run test:coverage    # same, and fails below 80% line coverage on src/features/
 npm run lint             # Biome: lint + format check (npx biome check --write . fixes formatting)
 ```
+
+The config tests include the contract with the phone: every file in `shared/fixtures/valid/` must be accepted and every file in `shared/fixtures/invalid/` rejected with the rule in its name, exactly as the Android tests do. CI runs lint, tests with coverage and a Docker build on every push that touches `backend/` or `shared/` (`.github/workflows/backend.yml`).

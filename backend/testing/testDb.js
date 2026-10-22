@@ -7,7 +7,7 @@ import { createPool } from "../src/lib/db.js";
 export function testPool() {
   const url = process.env.TEST_DATABASE_URL;
   if (!url) throw new Error("TEST_DATABASE_URL is not set: copy backend/.env.example to backend/.env");
-  return createPool(url);
+  return createPool(url, (error) => console.error("test pool: idle connection lost", error));
 }
 
 /** Drops every table, so the next `runMigrations` starts from nothing. Test database only. */

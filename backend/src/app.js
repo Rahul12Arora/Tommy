@@ -1,12 +1,14 @@
 import { randomUUID } from "node:crypto";
 import Fastify from "fastify";
+import { configRoutes } from "./features/config/config.routes.js";
+import { healthRoutes } from "./features/health/health.routes.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 
 /**
  * Builds the API without starting it, so tests can send requests in-process (ARCHITECTURE §14.10).
  * Fastify's default request serializer logs method, URL, host and remote address only: no headers, no bodies.
  */
-export function buildApp({ logLevel = "info", trustProxy = false } = {}) {
+export function buildApp({ pool, logLevel = "info", trustProxy = false } = {}) {
   const app = Fastify({
     logger: { level: logLevel },
     // Our own IDs only: a client can't pick the ID its request is logged under
@@ -17,6 +19,9 @@ export function buildApp({ logLevel = "info", trustProxy = false } = {}) {
 
   app.setErrorHandler(errorHandler);
   app.setNotFoundHandler(notFoundHandler);
+
+  healthRoutes(app, pool);
+  configRoutes(app, pool);
 
   return app;
 }
