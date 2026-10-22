@@ -1,7 +1,7 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M12 App fetches remote config (done on `feat/m12-remote-config`; PR open, merge + tag `m12-done` pending)
-- Last done: M12 verified on the emulator and the Pixel; PR opened
-- Next step: the developer merges the M12 PR, tag `m12-done`; then M13 Trends + positive goals, LLD first. Local dev DB now has v4 published (same content as v2); v3 is the forced-invalid one, superseded. Each dev needs an admin login in `backend/.env` (`npm run hash-password`, `backend/README.md`)
+- Phase: 5 — Build · Milestone: M13 Trends + positive goals (next)
+- Last done: M12 done 2026-10-23 — PR #19 merged, tagged `m12-done` (`e71d3a9`)
+- Next step: M13 in a new session, LLD first. Local dev DB has v4 published (same content as v2); v3 is the forced-invalid one, superseded. Each dev needs an admin login in `backend/.env` (`npm run hash-password`, `backend/README.md`)
 - Blockers: none. Docker note: Homebrew's `docker` CLI comes first on PATH and can't find Docker Desktop's credential helper (`docker pull` fails); put `/Applications/Docker.app/Contents/Resources/bin` first or `brew uninstall docker`
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37; start it with `-gpu swiftshader_indirect`, see log 2026-10-22 M9) + Pixel 7a
@@ -274,3 +274,5 @@
 - Device tests: 76/77 on the emulator; `US21_BuiltInConfigTest` failed because it asserted "no cache file yet", which M12 makes untrue. Rewritten to load the asset through its own `ConfigManager` with no cache (same checks: version 1, Cat and Blob) → passes. Flagged for the developer
 - Done: ROADMAP M12 ticked, status done; HLD diagram: `ConfigClient · ConfigRefresher` done, `StatsUploader` split out as pending (M14)
 - Verified: PR #19 opened; Android CI green (run 39840852683, 4 min 42 s). Backend CI not triggered (no `backend/` or `shared/` change)
+- Done: PR #19 merged to `main` (`e71d3a9`), tagged `m12-done`
+- Next: M13 — Trends + positive goals, LLD first
