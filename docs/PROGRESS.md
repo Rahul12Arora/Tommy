@@ -1,7 +1,7 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M11 Admin login + console (next; branch `feat/m11-admin` from `main`)
+- Phase: 5 — Build · Milestone: M11 Admin login + console (in progress; branch `feat/m11-admin`)
 - Last done: M10 done 2026-10-22 — PR #17 merged, tagged `m10-done` (`61b5430`)
-- Next step: M11 in a new session, LLD first (login, session cookie, CSRF rules, draft/publish endpoints, console W-01 to W-03)
+- Next step: `hash-password` + login/logout + `requireAdmin` + rate limit (M11 LLD approved, §14.11)
 - Blockers: none. Docker note: Homebrew's `docker` CLI comes first on PATH and can't find Docker Desktop's credential helper (`docker pull` fails); put `/Applications/Docker.app/Contents/Resources/bin` first or `brew uninstall docker`
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37; start it with `-gpu swiftshader_indirect`, see log 2026-10-22 M9) + Pixel 7a
@@ -240,3 +240,8 @@
 - Done: PR #17 opened (M10 → main) with the manual QA checklist; merging is the developer's step
 - Done: the developer merged PR #17; tagged `m10-done` on the merge (`61b5430`). M10 closed; `feat/m11-admin` started from `main` for the close-out docs
 - Next: M11 Admin login + console
+
+### 2026-10-22 (M11)
+- Done: M11 LLD written in ARCHITECTURE §14.11: stateless signed session cookie, JSON-only CSRF rule, scrypt settings, draft/publish on the existing `config_versions` (no migration), console W-01 to W-03 with RJSF tabs and a Changes list, Docker console stage, CI console job, test list
+- Verified before writing: the register's versions, licences and peer dependencies on npm; `@fastify/cookie` signing (HMAC-SHA256, timing-safe unsign, `signCookie` for tests), `@fastify/rate-limit` per-route `config.rateLimit` with `global: false`, `@fastify/static` `prefix`/`redirect`, RJSF 6.11 `extraErrors`/`liveValidate`/`validateForm`/`submitButtonOptions.norender`, Vite 8 `server.fs.allow`
+- Decided: D-131 to D-139 approved; HLD updated to match (§7, §9, §11, §12, §13)
