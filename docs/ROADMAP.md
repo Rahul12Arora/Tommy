@@ -315,7 +315,7 @@ Verify with: manual QA checklist · Android battery usage screen
 
 ## 5. Milestones — week 2
 
-### M10 — Backend + config API            status: in-progress
+### M10 — Backend + config API            status: done
 Goal: the backend serves the published config with ETags, locally in Docker.
 Depends on: M2 (schema + default config)
 Stories: US-19 (serving), US-21
@@ -327,9 +327,9 @@ Tasks:
 - [x] Seed: publish `shared/default-config.json` as version 1 (2026-10-22)
 - [x] `GET /v1/config?schema=` with ETag / 304; `GET /health`. Serve the re-serialised document, not stored text, so `3.0` can't reach phones (D-54) (2026-10-22)
 - [x] Shared fixtures test (same results as the phone) (2026-10-22)
-- [ ] CI: Node lint + tests
+- [x] CI: Node lint + tests (2026-10-22; also builds the Docker image)
 Done when:
-- [ ] `curl` returns the config, then `304` with the ETag; fixture tests match the phone's
+- [x] `curl` returns the config, then `304` with the ETag; fixture tests match the phone's (2026-10-22)
 Verify with: `npm test` · `curl -i localhost:3000/v1/config?schema=1`
 Not in this milestone: admin routes (→ M11)
 

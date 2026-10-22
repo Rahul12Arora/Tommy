@@ -1,7 +1,7 @@
 ## Current state
-- Phase: 5 — Build · Milestone: M10 Backend + config API (in progress, branch `feat/m10-backend`)
+- Phase: 5 — Build · Milestone: M10 Backend + config API (done; PR open from `feat/m10-backend`, waiting for the developer's merge)
 - Last done: config validation (+ shared fixtures), initial config seed, `GET /v1/config`, `GET /health`, BUG-05 fixed, backend CI workflow
-- Next step: backend CI green on GitHub, then close M10 (PR, tag `m10-done`)
+- Next step: the developer merges the M10 PR → tag `m10-done` on the merge → M11 in a new session, LLD first
 - Blockers: none. Docker note: Homebrew's `docker` CLI comes first on PATH and can't find Docker Desktop's credential helper (`docker pull` fails); put `/Applications/Docker.app/Contents/Resources/bin` first or `brew uninstall docker`
 - Open questions: Q-04 (success-metric targets, not blocking)
 - Test devices: emulator (API 37; start it with `-gpu swiftshader_indirect`, see log 2026-10-22 M9) + Pixel 7a
@@ -234,4 +234,6 @@
 - Done: `.github/workflows/backend.yml` — Postgres 18.6 service (`nyx_test`), setup-node v7.1.0 by SHA with Node 26.12.1 and npm cache, `npm ci`, lint, `test:coverage`, Docker image build from the repo root
 - Verified: `npm test` 73/73 (40 validation incl. all 3 valid and 18 invalid fixtures with the same rule IDs as the phone, 9 route, 4 seed, 2 health, 1 BUG-05); coverage 100% lines on `src/features/`; lint clean. Fresh Compose (`docker compose down -v` on the dev volume made this session, then `up --build`): `applied ["001_init.sql"]`, `seeded: true`; `curl` → 200 `ETag: "1"` 8,613 bytes, `If-None-Match: "1"` → 304, schema 2 → 404 shape, `/health` 200; restart → `seeded: false`; `docker compose stop db` → `/health` 503 in 36 ms and the API stays up (restart count 0), `start db` → 200 again
 - Not verified: CI on GitHub (not pushed yet)
+- Verified: Backend CI green on GitHub (run 39785639070): lint, 73/73 tests, 100% lines on `src/features/`, Docker image builds. Android CI not triggered (no `android/` or `shared/` change)
+- Done: ROADMAP M10 ticked and status done; AGENTS card on M11
 
