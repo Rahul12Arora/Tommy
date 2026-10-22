@@ -2,7 +2,8 @@
 <!-- Debug builds only: test tools (docs/ARCHITECTURE.md §14.4, D-67) -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <application>
+    <!-- Plain HTTP to the local backend (D-142) -->
+    <application android:networkSecurityConfig="@xml/network_security_config">
         <!-- Exported so adb can reach it, but only senders holding DUMP can: the shell has it, apps don't -->
         <receiver
             android:name=".debug.ScenarioReceiver"

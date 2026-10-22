@@ -2796,7 +2796,8 @@ class ConfigRefresher(
 - A failed check counts as a check: the next try is 6 h later (§9 Errors). Nothing hammers a server that's down.
 - The fetch runs on `Dispatchers.IO`, off the engine coroutine; a slow server never delays a tick.
 - **Applying while running** (D-144): `effectiveConfig` follows `base`. The engine reads `effectiveConfig.first()` every tick, and the overlay and screens collect it, so a new document is used from the next tick — no restart needed. User values are re-resolved and clamped into any narrowed range (US-22).
-- **Log lines** (tag `Nyx`, release too — they hold no usage data or identifiers): `Config 7 applied` · `Config 7 unchanged (304)` · `Fetched config 8 ignored: setting-range at nags.snoozeMinutes, …` · `Config check failed: HTTP 503` / `… SocketTimeoutException …`.
+- **Log lines** (tag `Nyx`, release too — they hold no usage data or identifiers): `Config 7 applied` (+ `; not saved: …` when the cache write failed) · `Config 7 unchanged (304)` · `Fetched config ignored: setting-range at nags.snoozeMinutes, …` · `Config check failed: HTTP 503` / `… SocketTimeoutException …`.
+- **Clock:** the real system clock, not `AppContainer.clock`: a debug scenario's faster time (D-67) is about usage, and shouldn't make the app check the server more often.
 
 ```mermaid
 sequenceDiagram
@@ -2810,7 +2811,7 @@ sequenceDiagram
   loop screen on, every 15 min
     R->>R: due? (no check yet, or ≥ 6 h, or clock went back)
     R->>M: cachedVersion() → 7
-    R->>C: fetch(7)  [Dispatchers.IO]
+    R->>C: fetch(7)  [keepFresh runs on Dispatchers.IO]
     C->>API: ?schema=1, If-None-Match "7"
     alt 304
       API-->>C: 304
@@ -2855,16 +2856,16 @@ sequenceDiagram
 | release | `""` until M15 sets the production HTTPS address; blank → no refresher is created and the app runs on cache/built-in, logged once | No network security config: Android's default (API 28+) refuses all plain HTTP (§9) |
 
 - `adb reverse` must be run again whenever the phone reconnects or the emulator restarts; the README says so. Without it the check fails like being offline, which is itself a useful test.
-- To check while implementing: a `domain-config` entry for an IP address allows plain HTTP to it on API 30 and 36 (verified on the emulator and the Pixel before anything else is built).
+- Checked first on the emulator (API 37), 2026-10-22: `127.0.0.1` through `adb reverse` → `200`, then `304` with the ETag; `http://10.0.2.2:3000` → `Cleartext HTTP traffic to 10.0.2.2 not permitted`.
 
 **Tests** (`src/test/`, JVM; `config/` keeps its ≥ 90% coverage target, ROADMAP §2)
 
 | Test | Checks |
 |---|---|
-| `US21_ConfigClientTest` | Against a local HTTP server on a free port (JDK's `com.sun.net.httpserver`; if the unit-test classpath hides it, a ~30-line `ServerSocket` stub instead): sends `?schema=1` and `User-Agent: Nyx/…` · `If-None-Match: "7"` sent for cached 7, absent for `null` · `200` → `Fetched` with the body (UTF-8, emoji intact) · `304` → `NotModified` · `404`, `500` → `Failed("HTTP …")` · server stopped (refused) → `Failed` · no answer within the timeout (100 ms in the test) → `Failed` · body over 1 MiB → `Failed` |
+| `US21_ConfigClientTest` | Against a local HTTP server on a free port (the JDK's `com.sun.net.httpserver`, usable from unit tests): sends `?schema=1` and `User-Agent: Nyx/…` · `If-None-Match: "7"` sent for cached 7, absent for `null` · `200` → `Fetched` with the body (UTF-8, emoji intact) · `304` → `NotModified` · `404`, `500` → `Failed("HTTP …")` · server stopped (refused) → `Failed` · no answer within the timeout (100 ms in the test) → `Failed` · body over 1 MiB → `Failed` |
 | `US21_ConfigManagerTest` (extended) | `base` emits the cache at start, the built-in without one · `accept(valid v2)` → `Applied(2)`, cache file holds it, `base` emits it, `cachedVersion()` = 2 · every `shared/fixtures/invalid/` file → `Rejected` with its rule, cache and `base` unchanged · `schemaVersion` 2 → `Rejected(schema)` · same version → `Unchanged`, file not rewritten · lower version → `Applied` · a leftover `.tmp` doesn't affect loading · a cache directory that can't be written → still `Applied` in memory, no throw · `cachedVersion()` is `null` on built-in |
 | `US19_ConfigRefresherTest` | `runTest` virtual time + a fake clock and fake `fetch`: screen on at start → one check at once · none again before 6 h · one at 6 h · clock moved back → a check · screen off → no checks, even past 6 h; screen on after that → a check · a `Failed` check counts (next one 6 h later) · `NotModified` → nothing accepted · `Fetched(invalid)` → logged with rule IDs, base unchanged |
-| `US22_EffectiveConfigTest` (extended) | A new base with a narrower range → the stored user value is clamped in the emitted `EffectiveConfig`, and not rewritten |
+| `US22_EffectiveConfigTest` (extended) | `ConfigManager.base` combined with user values the way `AppContainer` does it: an accepted document with a narrower range → the stored value 25 comes out clamped to 15 |
 
 **Manual check — ROADMAP "Done when"** (emulator and the Pixel, against local Docker)
 1. `docker compose up`, `adb reverse tcp:3000 tcp:3000`, install debug, `adb logcat -s Nyx` → `Config 1 applied` (first start: no cache, so no ETag, D-141); force-stop and open again → `Config 1 unchanged (304)`.

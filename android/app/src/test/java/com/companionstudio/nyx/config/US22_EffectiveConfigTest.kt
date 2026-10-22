@@ -1,10 +1,20 @@
 package com.companionstudio.nyx.config
 
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 
 class US22_EffectiveConfigTest {
+
+    @get:Rule
+    val folder = TemporaryFolder()
 
     private val minimal = SharedFiles.minimalConfig
     private val snooze = SettingPaths.SNOOZE_MINUTES
@@ -79,5 +89,17 @@ class US22_EffectiveConfigTest {
             listOf("limits.categories.social.dailyMinutes", "limits.categories.games.dailyMinutes"),
             config.settingsByPath().keys.filter { it.startsWith("limits.categories.") },
         )
+    }
+
+    @Test
+    fun fetchedDocumentWithANarrowerRange_clampsTheStoredValue() = runTest {
+        val manager = ConfigManager({ Json.encodeToString(minimal) }, folder.root.resolve(ConfigManager.CACHE_FILE), onRejected = {})
+        // Built the way AppContainer builds it
+        val effective = combine(manager.base, flowOf(mapOf(snooze to 25)), ::EffectiveConfig)
+        assertEquals(25, effective.first().valueOf(snooze))
+
+        manager.accept(Json.encodeToString(withSnooze(max = 15).copy(configVersion = 2)))
+
+        assertEquals(15, effective.first().valueOf(snooze))
     }
 }

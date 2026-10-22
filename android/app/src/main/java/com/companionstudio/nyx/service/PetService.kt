@@ -102,6 +102,11 @@ class PetService : LifecycleService() {
                 .collect { engine.requests.trySend(EngineRequest.Tick) }
         }
 
+        // Blocking network calls, off the engine coroutine: a slow server never delays a tick (§14.12)
+        container.configRefresher?.let { refresher ->
+            lifecycleScope.launch(Dispatchers.IO) { refresher.keepFresh(screenOn) }
+        }
+
         // Off the main thread: reading the event log and package info are blocking calls, and the app's screens
         // share this process. Still one coroutine, so engine state has one owner (§3)
         lifecycleScope.launch(Dispatchers.Default) {
