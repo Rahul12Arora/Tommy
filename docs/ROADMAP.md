@@ -349,16 +349,16 @@ Done when:
 Verify with: `npm test` · browser walkthrough
 Not in this milestone: stats view (→ M14)
 
-### M12 — App fetches remote config            status: in-progress
+### M12 — App fetches remote config            status: done
 Goal: phones pick up published config within 6 hours, safely.
 Depends on: M11
 Stories: US-19 (pickup), US-21, US-22
 Tasks:
 - [x] LLD: `ConfigClient`, schedule, cache, error handling, debug base URL for a USB phone (ARCHITECTURE §14.12, D-141 to D-146)
-- [ ] Fetch on service start and every 6 h; ETag; atomic cache; fallback chain
+- [x] Fetch on service start and every 6 h; ETag; atomic cache; fallback chain
 - [x] Tests: 200 / 304 / offline / invalid document / unknown schema version
 Done when:
-- [ ] Publish a new limit → the app uses it after restart; an invalid published fixture (forced in dev) is ignored
+- [x] Publish a new limit → the app uses it after restart; an invalid published fixture (forced in dev) is ignored
 Verify with: `./gradlew test` · emulator against local Docker
 
 ### M13 — Trends + positive goals            status: pending

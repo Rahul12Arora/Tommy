@@ -4,7 +4,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.companionstudio.nyx.config.ConfigManager
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
@@ -15,11 +14,15 @@ class US21_BuiltInConfigTest {
 
     @Test
     fun appLoadsTheBuiltInConfigFromAssets() {
-        val app = InstrumentationRegistry.getInstrumentation().targetContext.applicationContext as PetApp
-        // Nothing writes the cache until M12, so the base document has to be the built-in one
-        assertFalse(File(app.filesDir, ConfigManager.CACHE_FILE).exists())
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        // Since M12 the app's own cache may hold a fetched document, so this reads the asset with no cache
+        val manager = ConfigManager(
+            readBuiltIn = { context.assets.open(ConfigManager.BUILT_IN_ASSET).bufferedReader().use { it.readText() } },
+            cacheFile = File(context.cacheDir, "no-such-config-cache.json"),
+            onRejected = { error("No cache to reject: $it") },
+        )
 
-        val config = app.container.configManager.loadBase()
+        val config = manager.loadBase()
 
         assertEquals(1, config.configVersion)
         assertEquals(listOf("cat", "blob"), config.pets.map { it.id })

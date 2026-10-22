@@ -44,7 +44,8 @@ flowchart LR
       end
       CFG["ConfigManager<br/>built-in → admin → user"]:::done
       STORE[("Room · DataStore<br/>config cache file")]:::done
-      NET["ConfigClient · StatsUploader<br/>week 2"]:::pending
+      NET["ConfigClient · ConfigRefresher"]:::done
+      UPL["StatsUploader<br/>M14"]:::pending
     end
     OS["Android system services<br/>usage events · overlay windows<br/>notifications · package info"]
     GPS["Google Play services<br/>emoji font"]
@@ -73,7 +74,8 @@ flowchart LR
   OVL -->|"draws over other apps"| OS
   NTF --> OS
   OVL -.->|"emoji font"| GPS
-  NET -->|"HTTPS GET /v1/config<br/>POST /v1/stats"| API
+  NET -->|"HTTPS GET /v1/config"| API
+  UPL -->|"HTTPS POST /v1/stats"| API
   NET --> CFG
   BROWSER -->|"HTTPS /admin/*"| API
   BROWSER -->|"loads"| STATIC
@@ -2865,13 +2867,14 @@ sequenceDiagram
 | `US21_ConfigClientTest` | Against a local HTTP server on a free port (the JDK's `com.sun.net.httpserver`, usable from unit tests): sends `?schema=1` and `User-Agent: Nyx/…` · `If-None-Match: "7"` sent for cached 7, absent for `null` · `200` → `Fetched` with the body (UTF-8, emoji intact) · `304` → `NotModified` · `404`, `500` → `Failed("HTTP …")` · server stopped (refused) → `Failed` · no answer within the timeout (100 ms in the test) → `Failed` · body over 1 MiB → `Failed` |
 | `US21_ConfigManagerTest` (extended) | `base` emits the cache at start, the built-in without one · `accept(valid v2)` → `Applied(2)`, cache file holds it, `base` emits it, `cachedVersion()` = 2 · every `shared/fixtures/invalid/` file → `Rejected` with its rule, cache and `base` unchanged · `schemaVersion` 2 → `Rejected(schema)` · same version → `Unchanged`, file not rewritten · lower version → `Applied` · a leftover `.tmp` doesn't affect loading · a cache directory that can't be written → still `Applied` in memory, no throw · `cachedVersion()` is `null` on built-in |
 | `US19_ConfigRefresherTest` | `runTest` virtual time + a fake clock and fake `fetch`: screen on at start → one check at once · none again before 6 h · one at 6 h · clock moved back → a check · screen off → no checks, even past 6 h; screen on after that → a check · a `Failed` check counts (next one 6 h later) · `NotModified` → nothing accepted · `Fetched(invalid)` → logged with rule IDs, base unchanged |
+| `US21_BuiltInConfigTest` (device, changed) | Builds its own `ConfigManager` from the app's assets with no cache file: since M12 the app's own cache may hold a fetched document, so "no cache yet" can't be assumed |
 | `US22_EffectiveConfigTest` (extended) | `ConfigManager.base` combined with user values the way `AppContainer` does it: an accepted document with a narrower range → the stored value 25 comes out clamped to 15 |
 
 **Manual check — ROADMAP "Done when"** (emulator and the Pixel, against local Docker)
 1. `docker compose up`, `adb reverse tcp:3000 tcp:3000`, install debug, `adb logcat -s Nyx` → `Config 1 applied` (first start: no cache, so no ETag, D-141); force-stop and open again → `Config 1 unchanged (304)`.
 2. Console: Social limit default 60 → 45, Publish (v2). Force-stop, open the app → `Config 2 applied`; S-11 shows 45 for a user who never moved the slider; a user value above a narrowed max is clamped.
 3. `docker compose stop api`, force-stop, open → `Config check failed: …ConnectException…`; Settings still show v2. Same in airplane mode.
-4. **Invalid published document, forced in dev:** a SQL snippet (dev only, in `android/README.md`) supersedes the published row and inserts the next version with `nags.snoozeMinutes.default` = 400, bypassing the backend's validation. Force-stop, open → `Fetched config 3 ignored: setting-range at nags.snoozeMinutes`; Settings still show v2. Publishing from the console afterwards (v4) → applied.
+4. **Invalid published document, forced in dev:** a SQL snippet (dev only, in `android/README.md`) supersedes the published row and inserts the next version with `nags.snoozeMinutes.default` = 400, bypassing the backend's validation. Force-stop, open → `Fetched config ignored: schema at nags.snoozeMinutes.default, setting-range at nags.snoozeMinutes`; Settings still show v2. Publishing a valid version afterwards (v4) → applied.
 5. With the app open on S-11, publish again → the change shows without a restart once the next check is due (to see it at once: force-stop + open).
 
 **Decisions** (approved 2026-10-22)

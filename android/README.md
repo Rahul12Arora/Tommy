@@ -72,7 +72,7 @@ SELECT next.n, 1, 'published',
 FROM live, next;"
 ```
 
-The app logs `Fetched config ignored: setting-range at nags.snoozeMinutes` and keeps its version. Publish from the console to go back to a valid one.
+The app logs `Fetched config ignored: schema at nags.snoozeMinutes.default, setting-range at nags.snoozeMinutes` (400 is outside both the schema's bounds and the setting's range) and keeps its version. To go back, publish a valid version from the console, or reuse the SQL above with the last good row's document instead of the broken one.
 
 ## Versions and dependencies
 
